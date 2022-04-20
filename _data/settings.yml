@@ -1,26 +1,24 @@
 #-------------------------------
 # General Site Settings
-title: Zolan
-logo: logo.svg # You can add own logo.
+title: today is winday
+logo: logo.jpg # You can add own logo.
 description: Zolan is modern minimal theme for Jekyll
 
 
 #-------------------------------
 # Author Settings
 author:
-  name: Alex Rodriguez
-  image: 01.jpg
-  say-hello: Hello, I’m <strong>Alex Rodriguez</strong>
-  bio: Designs, talks, and writes about <strong>web</strong>, <strong>ethics</strong>, <strong>privacy</strong>, and dev. I share design tutorials, free resources and inspiration. Loves <a href="#">music</a> & riding his bicycle.
+  name: 박승일
+  image: me.png
+  say-hello: 안녕하세요, 저는 <strong>박승일</strong> 입니다.
+  bio: 항상 더 나은 서비스를 구상하고 개발하고자 하는 <br> <strong>Back-End Engineer</strong> 입니다.
 
 
 #-------------------------------
 # Contact links
-twitter: https://twitter.com/ # Add your Twitter handle
-facebook: https://facebook.com/ # Add your Facebook handle
-dribbble: https://dribbble.com/ # Add your Dribbble handle
-instagram: https://instagram.com/ # Add your Instagram handle
-pinterest: https://pinterest.com/ # Add your Pinterest handle
+github: https://twitter.com/ # Add your Twitter handle
+tistory: https://bob8dod.tistory.com/
+instagram: https://www.instagram.com/snn.il/ # Add your Instagram handle
 
 
 #-------------------------------
