@@ -1,8 +1,8 @@
 ---
 layout: post
 title:  "Spring Boot 입문"
-date:   2022-04-20
-image:  /posts/post0/springbootpng.png
+date:   2022-02-24
+image:  /posts/springbootpng.png
 tags:   SpringBoot
 ---
 
@@ -58,11 +58,9 @@ tags:   SpringBoot
             기본 객체처리: MappingJackson2HttpMessageConverter
             - byte 처리 등등 기타 여러 HttpMessageConverter가 기본으로 등록되어 있음
             
-            ```
-            참고: 클라이언트의 HTTP Accept 해더와 서버의 컨트롤러 반환 타입 정보 둘을 조합해서
+            > 참고: 클라이언트의 HTTP Accept 해더와 서버의 컨트롤러 반환 타입 정보 둘을 조합해서
             HttpMessageConverter 가 선택된다.
-            ```
-
+          
             ![]({{site.baseurl}}/images/posts/post0/0.png)
 
             
@@ -441,7 +439,7 @@ tags:   SpringBoot
     - 즉, 공통 관심 사항(cross-cutting concern)과 핵심 관심 사항(core concern)을 명확히 구분하여 효율적인 개발을 위한 기술
     - AOP는 DI가 존재하기에 가능한 기술. → 내가 만약 DI를 설정하지 않고 직접 연결했다고 하면 당연히 각 코드별로 AOP에 해당하는 기능을 넣어줘야 함. 하지만, DI가 있기에 AOP를 따로 만들어주기만 하면 DI에 따라 AOP가 자동으로 실행되는 것.
 
-      ![가짜 객체(프록시)를 만들어 해당 객체에 접근하기 전에 이를 인지할 수 있도록 함]({{site.baseurl}}/images/posts/post0/3.png)
+      ![3]({{site.baseurl}}/images/posts/post0/3.png)
       가짜 객체(프록시)를 만들어 해당 객체에 접근하기 전에 이를 인지할 수 있도록 함
 
       ![Untitled]({{site.baseurl}}/images/posts/post0/4.png)

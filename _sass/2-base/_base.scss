@@ -3,7 +3,7 @@
 }
 
 body {
-  font-family: $base-font-family;
+  font-family: $base-font-family !important;
   font-size: $base-font-size;
   line-height: $base-line-height;
   color: $text-color;
@@ -66,18 +66,36 @@ h6 {
   font-size: $font-size-h6;
 }
 
+li {
+  padding: 3px 2px;
+  margin-bottom: 10px;
+}
+
+//blockquote {
+//  margin: 30px -100px;
+//  font-size: 28px;
+//  line-height: 45px;
+//  letter-spacing: 0.5px;
+//  font-style: normal;
+//  text-align: center;
+//
+//  @media only screen and (max-width: $tablet) {
+//    margin: 30px 0;
+//    font-size: 24px;
+//    line-height: 38px;
+//  }
+//}
+
 blockquote {
-  margin: 30px -100px;
-  font-size: 28px;
-  line-height: 45px;
-  letter-spacing: 0.5px;
-  font-style: normal;
-  text-align: center;
-  
-  @media only screen and (max-width: $tablet) {
-    margin: 30px 0;
-    font-size: 24px;
-    line-height: 38px;
+  border-left: rem(5px) solid;
+  padding: 0 rem(10px);
+  //margin: rem(30px) auto;
+  width: 90%;
+
+  p {
+    font-size: rem(17px);
+    color: rgba(0, 0, 0, 0.6);
+    margin: 0;
   }
 }
 
@@ -86,7 +104,7 @@ pre {
   padding: 15px;
   margin-bottom: 0;
   font-size: 14px;
-  white-space: pre-wrap;
+  //white-space: pre-wrap;
   word-wrap: break-word;
   word-break: break-all;
 }

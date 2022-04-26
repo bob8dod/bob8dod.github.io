@@ -1,4 +1,4 @@
-I"E�<h2 id="chapter-1"><strong>Chapter 1</strong></h2>
+I"��<h2 id="chapter-1"><strong>Chapter 1</strong></h2>
 
 <ul>
   <li><strong>프로젝트 생성</strong>
@@ -77,9 +77,10 @@ Preferences → Build, Execution, Deployment → Build Tools → Gradle</li>
               <li>byte 처리 등등 기타 여러 HttpMessageConverter가 기본으로 등록되어 있음</li>
             </ul>
 
-            <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  참고: 클라이언트의 HTTP Accept 해더와 서버의 컨트롤러 반환 타입 정보 둘을 조합해서
-  HttpMessageConverter 가 선택된다.
-</code></pre></div>            </div>
+            <blockquote>
+              <p>참고: 클라이언트의 HTTP Accept 해더와 서버의 컨트롤러 반환 타입 정보 둘을 조합해서
+  HttpMessageConverter 가 선택된다.</p>
+            </blockquote>
 
             <p><img src="/images/posts/post0/0.png" alt="" /></p>
           </li>
@@ -533,7 +534,7 @@ JpaRepository를 상속받으면 자동으로 컴포넌트 스캐너가 인식�
       <li>
         <p>AOP는 DI가 존재하기에 가능한 기술. → 내가 만약 DI를 설정하지 않고 직접 연결했다고 하면 당연히 각 코드별로 AOP에 해당하는 기능을 넣어줘야 함. 하지만, DI가 있기에 AOP를 따로 만들어주기만 하면 DI에 따라 AOP가 자동으로 실행되는 것.</p>
 
-        <p><img src="/images/posts/post0/3.png" alt="가짜 객체(프록시)를 만들어 해당 객체에 접근하기 전에 이를 인지할 수 있도록 함" />
+        <p><img src="/images/posts/post0/3.png" alt="3" />
 가짜 객체(프록시)를 만들어 해당 객체에 접근하기 전에 이를 인지할 수 있도록 함</p>
 
         <p><img src="/images/posts/post0/4.png" alt="Untitled" /></p>

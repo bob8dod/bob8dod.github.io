@@ -9,14 +9,14 @@ description: Zolan is modern minimal theme for Jekyll
 # Author Settings
 author:
   name: 박승일
-  image: me.png
-  say-hello: 안녕하세요, 저는 <strong>박승일</strong> 입니다.
+  image: me.jpg
+  say-hello: 안녕하세요, 저는 <strong>박승일</strong>입니다.
   bio: 항상 더 나은 서비스를 구상하고 개발하고자 하는 <br> <strong>Back-End Engineer</strong> 입니다.
 
 
 #-------------------------------
 # Contact links
-github: https://twitter.com/ # Add your Twitter handle
+github: https://github.com/bob8dod # Add your Twitter handle
 tistory: https://bob8dod.tistory.com/
 instagram: https://www.instagram.com/snn.il/ # Add your Instagram handle
 

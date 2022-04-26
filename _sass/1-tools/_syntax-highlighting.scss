@@ -2,11 +2,15 @@
   Syntax Highlighting
 */
 
+@function rem($pixels) {
+  @return ($pixels / 16px) * 1rem;
+}
+
+
 .highlight {
   background: #f8f8f8;
-
   .highlighter-rouge & {
-    background: #eef;
+    background: #fff8ef;
   }
 
   .c     { color: #998; font-style: italic } // Comment
