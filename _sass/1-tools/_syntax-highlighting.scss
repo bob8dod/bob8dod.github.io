@@ -6,11 +6,18 @@
   @return ($pixels / 16px) * 1rem;
 }
 
+.highlighter-rouge {
+  background: #d7d7d1;
+  border-radius: 0.25em;
+  color: #4d4d4d;
+  //font-weight: bold;
+  font-family: "Monaco", "Consolas", "Menlo", monospace !important;
+}
 
 .highlight {
   background: #f8f8f8;
   .highlighter-rouge & {
-    background: #fff8ef;
+    background: #f6f5f2;
   }
 
   .c     { color: #998; font-style: italic } // Comment

@@ -1,4 +1,4 @@
-I"e}<h2 id="개념-및-이론">개념 및 이론</h2>
+I"�x<h2 id="개념-및-이론">개념 및 이론</h2>
 
 <ol>
   <li>데이터베이스 (DB, DataBase)
@@ -136,7 +136,7 @@
             <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">UPDATE</span> <span class="n">topic</span> 
   <span class="k">SET</span> <span class="n">title</span><span class="o">=</span><span class="s1">'ORACLE'</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">'Relational DBMS'</span>
   <span class="k">WHERE</span> <span class="n">title</span><span class="o">=</span><span class="s1">'MySQL'</span><span class="p">;</span> 
-  <span class="o">#</span> <span class="n">title</span><span class="err">이</span> <span class="n">MySQL</span><span class="err">인</span> <span class="err">놈을</span> <span class="err">해당</span> <span class="n">setting</span><span class="err">으로</span> <span class="err">변경</span><span class="p">.</span>
+  <span class="c1">-- title이 MySQL인 놈을 해당 setting으로 변경.</span>
 </code></pre></div>            </div>
           </li>
         </ul>
@@ -148,7 +148,7 @@
 
             <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">DELETE</span> <span class="k">FROM</span> <span class="n">topic</span> 
   <span class="k">WHERE</span> <span class="n">id</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span>
-  <span class="o">#</span> <span class="n">id</span><span class="err">가</span> <span class="mi">1</span><span class="err">인놈을</span> <span class="err">삭제</span><span class="p">.</span>
+  <span class="c1">-- id가 1인놈을 삭제.</span>
 </code></pre></div>            </div>
           </li>
         </ul>
@@ -164,7 +164,7 @@
                 <p>일부 데이터 내림차순으로 정렬한 후 상위 2개만 표시</p>
 
                 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">topic</span> 
-  <span class="k">WHERE</span> <span class="n">author</span><span class="o">=</span><span class="err">’</span><span class="n">PARK</span><span class="err">’</span> 
+  <span class="k">WHERE</span> <span class="n">author</span><span class="o">=</span><span class="nv">"PARK"</span> 
   <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">id</span> <span class="k">DESC</span> 
   <span class="k">LIMIT</span> <span class="mi">2</span><span class="p">;</span>
 </code></pre></div>                </div>
@@ -199,7 +199,7 @@
 
             <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">SELECT</span> <span class="n">ANIMAL_ID</span><span class="p">,</span> <span class="n">NAME</span> 
   <span class="k">FROM</span> <span class="n">ANIMAL_INS</span> 
-  <span class="k">WHERE</span> <span class="n">INTAKE_CONDITION</span> <span class="o">=</span><span class="s1">'Sick'</span>
+  <span class="k">WHERE</span> <span class="n">INTAKE_CONDITION</span> <span class="o">=</span><span class="nv">"Sick"</span>
 </code></pre></div>            </div>
 
             <ul>
@@ -246,7 +246,7 @@
 
                 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">SELECT</span> <span class="n">ANIMAL_ID</span><span class="p">,</span> <span class="n">NAME</span>
   <span class="k">FROM</span> <span class="n">ANIMAL_INS</span>
-  <span class="k">WHERE</span> <span class="n">NAME</span> <span class="k">LIKE</span> <span class="s1">'%el%'</span> <span class="o">#</span> <span class="err">이름에</span> <span class="s1">'el'</span> <span class="err">이</span> <span class="err">들어간</span> <span class="err">놈</span>
+  <span class="k">WHERE</span> <span class="n">NAME</span> <span class="k">LIKE</span> <span class="s1">'%el%'</span> <span class="c1">-- 이름에 'el' 이 들어간 놈</span>
 </code></pre></div>                </div>
               </li>
             </ul>
@@ -404,12 +404,12 @@
                     <p>WITH RECURSIVE [ 테이블이름(변수) ] as ( … )</p>
 
                     <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">with</span> <span class="k">recursive</span> <span class="nb">time</span><span class="p">(</span><span class="n">hour</span><span class="p">)</span> <span class="k">as</span><span class="p">(</span>
-      <span class="k">select</span> <span class="mi">0</span> <span class="o">#</span> <span class="n">hour</span><span class="err">의</span> <span class="err">초깃값</span>
+      <span class="k">select</span> <span class="mi">0</span> <span class="c1">-- hour의 초깃값</span>
                         
-      <span class="k">union</span> <span class="k">all</span> <span class="o">#</span> <span class="err">해당</span> <span class="err">코드의</span> <span class="err">결과를</span> <span class="err">계속</span> <span class="err">합치겠다는</span> <span class="err">뜻</span>
+      <span class="k">union</span> <span class="k">all</span> <span class="c1">-- 해당 코드의 결과를 계속 합치겠다는 뜻</span>
       <span class="k">select</span> <span class="n">hour</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">from</span> <span class="nb">time</span> <span class="k">where</span> <span class="n">hour</span> <span class="o">&lt;</span> <span class="mi">23</span>
-  		<span class="o">#</span> <span class="err">해당</span> <span class="nb">time</span> <span class="err">테이블에서</span> <span class="err">조건에</span> <span class="err">맞게</span> <span class="n">hour</span><span class="err">를</span> <span class="err">가져온</span> <span class="err">후</span> <span class="o">+</span><span class="mi">1</span>
-  <span class="p">)</span> <span class="o">#</span> <span class="o">-&gt;</span> <span class="mi">0</span><span class="o">~</span><span class="mi">23</span> <span class="err">값을</span> <span class="err">가지는</span> <span class="err">테이블</span> <span class="err">생성됨</span> 
+  		<span class="c1">-- 해당 time 테이블에서 조건에 맞게 hour를 가져온 후 +1</span>
+  <span class="p">)</span> <span class="c1">-- -&gt; 0~23 값을 가지는 테이블 생성됨 </span>
                     
   <span class="k">SELECT</span> <span class="n">hour</span><span class="p">,</span> <span class="k">count</span><span class="p">(</span><span class="n">animal_id</span><span class="p">)</span>
   <span class="k">from</span> <span class="nb">time</span> <span class="n">t</span>
