@@ -103,6 +103,28 @@
   h2 {
     background-color: #ffd99c !important;
   }
+
+  h3 {
+    background-color: #e1e1e1 !important;
+  }
+
+  aside{
+    border: thick double #b69653;
+    border-radius: 0.2em;
+    padding: 10px;
+    margin-bottom: 10px;
+
+    strong{
+      color: #b69653;
+    }
+
+    ol, ul{
+      margin-bottom: 0px;
+    }
+    li{
+      margin-bottom: 3px;
+    }
+  }
 }
 
 

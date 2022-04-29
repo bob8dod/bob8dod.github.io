@@ -1,0 +1,429 @@
+I"^H<h3 id="세모공세상의-모든-공부---tiltoday-i-learned-공유-서비스">세모공(세상의 모든 공부) - TIL(Today I Learned) 공유 서비스</h3>
+
+<aside>
+💡 <strong> 오늘 한 공부를 공유하며 내가 공부한 시간을 기록해주는 서비스 </strong>
+    <ul>
+    <li> 사용자의 공부 상태에 따른 공부 시간 자동 기록 </li>
+    <li> 공부 기록에 따른 분석 제공 </li>
+    <li> 마크다운 에디터를 통해 통일된 TIL 작성 툴 제공 </li>
+    <li> 웹서비스 배포를 통한 전반적인 DevOps 운영 </li>
+    </ul>
+</aside>
+
+<p><br />
+<br /></p>
+
+<h2 id="demo-version-before-release">DEMO Version (Before Release)</h2>
+
+<h3 id="220325">&lt;220325&gt;</h3>
+
+<ul>
+  <li>공부중 click
+    <ol>
+      <li>공부중 처음 클릭 (사용자의 현재상태가 완료인경우)
+        <ul>
+          <li>시간 list에 클릭시간 저장 (post의 첫번째 시간)</li>
+          <li>해당 시간을 ex) “공부 click 시간” ~ 로 표현 및 공부중 출력</li>
+          <li>새로운 포스팅 시작.</li>
+        </ul>
+      </li>
+      <li>휴식 후 공부중 클릭 (사용자의 현재상태가 휴식중인경우)
+        <ul>
+          <li>시간 list에 클릭시간 저장 (post의 세번째 시간)</li>
+          <li>해당 시간을 ex) [13:00 ~ 15:00] [“공부 click 시간” ~] 로 표현 및 공부중 출력</li>
+          <li>작성중인 포스팅 표출</li>
+        </ul>
+      </li>
+      <li>공부중 공부 클릭 (사용자의 현재상태가 완료인경우)
+        <ul>
+          <li>이미 공부중이십니다! 경고</li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+  <li>휴식중 click
+    <ol>
+      <li>공부 도중 휴식중 클릭 (사용자의 현재상태가 공부중인 경우)
+        <ul>
+          <li>시간 list에 클릭시간 저장 (post의 두번째 시간)</li>
+          <li>해당 시간을 ex) [13:00 ~ “휴식 click 시간”] 로 표현 및 휴식중 출력</li>
+        </ul>
+      </li>
+      <li>휴식 중 or 완료 상태에서 클릭 (사용자의 현재상태가 휴식 중, 완료 인 경우)
+        <ul>
+          <li>아직 공부를 시작하지 않았습니다! 경고</li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+  <li>공부완료 click
+    <ol>
+      <li>공부 도중 완료 클릭 (사용자의 현재상태가 공부중 or 휴식중인경우)
+        <ul>
+          <li>시간 list에 클릭시간 저장 (post의 마지막 시간)</li>
+          <li>해당 시간을 ex) [13:00 ~ “완료 click 시간”] 로 표현 및 완료 출력</li>
+        </ul>
+      </li>
+      <li>휴식 중 완료 클릭 (사용자의 현재상태가 휴식중인경우)
+        <ul>
+          <li>시간 list에 클릭시간 저장 X</li>
+          <li>휴식 클릭 시간 그대로 공부 완료로 변경</li>
+        </ul>
+      </li>
+      <li>완료인 상태에서 클릭
+        <ul>
+          <li>아직 공부를 시작하지 않았습니다! 경고</li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+  <li>수정필요
+    <ol>
+      <li>Date가 아닌 Time으로</li>
+      <li>공부완료 상태에서 다시 공부중으로 변경하고 싶다면
+        <ul>
+          <li>이때 공부중 클릭하고 게시글 저장을 안하면 어떻게 할지도 처리해야됨.</li>
+          <li>그날 기록된 공부 게시글이 있는 상태에서 공부완료 -&gt; 공부중으로 변경할 때 처리 필요. (그날 공부완료가 있으면 그냥 이어서 공부중으로 하든지…)</li>
+        </ul>
+      </li>
+      <li>공부중 클릭했을 때의 시간으로 time 저장</li>
+    </ol>
+  </li>
+</ul>
+
+<h3 id="220326">&lt;220326&gt;</h3>
+
+<ul>
+  <li>로그인 기능 구현 - Spring Security -&gt; 구글링을 통해 노베이스로 한 거라 나중에 학습 후 수정 필요
+    <ol>
+      <li>로그인
+        <ul>
+          <li>Member Entity에 login에 필요한 loginId, password, role 추가</li>
+          <li>login 시 authoriazation을 확인할 객체인 MyUserDetail 추가</li>
+        </ul>
+      </li>
+      <li>회원가입
+        <ul>
+          <li>글 작성 기능 수정
+            <ul>
+              <li>origin -&gt; 원래는 로그인된 아이디로 글 작성이 아니라 회원을 선택하는 방향으로 진행했었음</li>
+              <li>now -&gt; 지금은 로그인 기능을 통해 현재 로그인된 회원으로 글 작성 가능</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+</ul>
+
+<h3 id="220327">&lt;220327&gt;</h3>
+
+<ol>
+  <li>정보수정 기능 개발
+    <ul>
+      <li>정보수정을 통해 회원 정보를 수정</li>
+      <li>Entity 변경 감지를 통해 수정</li>
+    </ul>
+  </li>
+  <li>글 작성 기능 개발
+    <ul>
+      <li>현재 작성 페이지를 마크다운으로 작성할 수 있도록 변경</li>
+      <li>작성된 글을 확인할 수 있도록 설정
+    - 수정 필요</li>
+      <li>글을 수정할 수 있도록 설정 필요</li>
+      <li>글에 멤버정보도 가져올 수 있도록 (API에서 배운것대로 fetch join 사용해 보기)</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="220328">&lt;220328&gt;</h3>
+
+<ol>
+  <li>프론트 개발
+    <ul>
+      <li>home.html 위주로 개선 (post들은 노션과 비슷하게, profile은 우리가 계획한대로)
+        <ul>
+          <li>프로필 개선</li>
+          <li>작성된 Post들을 나열해줄 때 최대한 노션과 비슷하게 보이도록</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>시간 저장 개선
+    <ul>
+      <li>CreateTime 도 따로 String으로 저장해서 보여줄 때 원하는 스타일로 보여줄 수 있도록 설정</li>
+      <li>공부시간은 보이기 깔끔하도록 “HH:mm” 형식으로 String List로 저장 (List<LocalDateTiem> -&gt; List<String>)
+    - 수정 필요 부분</String></LocalDateTiem></li>
+      <li>기능 추가 필요 (기획했던 기능들)</li>
+      <li>프론트적인 부분 개선 필요</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="220329">&lt;220329&gt;</h3>
+
+<ol>
+  <li>Time Stamp 기능 개선
+    <ul>
+      <li>[19:00 ~ 21:00] [22:00 ~ ] 이런식으로 구간으로 나누어서 표현할 수 있도록 개선
+ % 추후 개발 계획</li>
+      <li>게시글 페이징 16개씩.. → 페이징 기능 도입</li>
+      <li>게시글 모달로 표현</li>
+      <li>게시글 접근할 때 바로 edit할 수 있도록.</li>
+      <li>게시글마다 댓글 달 수 있도록.</li>
+      <li>팔로우 기능 추가</li>
+      <li>오른쪽 profile 바 하단 기능들 추가
+        <ol>
+          <li>현재 작성 중인 글 띄우기</li>
+          <li>모든 멤버 상태 띄우기 → 가입 멤버가 많아질 시 팔로우 팔로잉 기능 도입</li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="220401">&lt;220401&gt;</h3>
+
+<ol>
+  <li>init Data 설정 추가
+    <ul>
+      <li>Demo 버전에선 임시로 4명의 회원이 생성된 상태로 시작하게 끔 설정 (Test 버전에서만 사용. Release 시 삭제 예정)</li>
+    </ul>
+  </li>
+  <li>게시글 기능 추가
+    <ul>
+      <li>게시글 모달로 표현</li>
+      <li>게시글 페이징 (limit 12)
+    - 수정 필요</li>
+      <li>
+        <Back>
+</Back>
+        <ol>
+          <li>게시글 접근할 때 바로 edit할 수 있도록. (해당 사용자라면,)</li>
+          <li>게시글마다 댓글 달 수 있도록.</li>
+          <li>post에서 member state를 매번 받아오는 것이 아닌, post에 member state가 저장되게 끔. -&gt; postForm으로 가능할 듯
+            <ul>
+              <li>작성완료 순간에 Member의 모든 정보를 그냥 Post에다가 넣어버리기</li>
+              <li>Or 상태가 바뀔때마다 Post에다가 저장하기</li>
+            </ul>
+          </li>
+          <li>TimeStamp 수정 가능하도록</li>
+        </ol>
+      </li>
+      <li>
+        <Front>
+</Front>
+        <ol>
+          <li>모달로 뜬 화면 자체에서 스크롤 가능하도록</li>
+          <li>모달 화면 좀 이쁘게. (추후 노션마냥 바로 그 조회 페이지에서 수정가능하도록 설정)</li>
+          <li>메인 화면에서의 Post 들이 나오는게 좀 이상함 수정 필요</li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="220404">&lt;220404&gt;</h3>
+
+<ol>
+  <li>댓글 기능
+    <ul>
+      <li>게시물 마다 로그인된 계정으로 댓글을 달 수 있도록 설정</li>
+      <li>Comment Entity 추가. → Post와 ManyToOne 관계, Post가 삭제될 때 같이 삭제될 수 있도록 설정</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="220409">&lt;220409&gt;</h3>
+
+<ol>
+  <li>모달 Front 일부 수정
+    <ul>
+      <li>scroll 추가, text 정리, 댓글 입력 창 수정</li>
+      <li>수정 필요 : 댓글 기록 등 전체적인 front는 계속 수정해야 됨</li>
+    </ul>
+  </li>
+  <li>post state 변경
+    <ul>
+      <li>기존 : 작성 완료된 post가 member를 참조하고 있기에 지난 글이여도 state가 현재 member state로 떠서 end로 떠야 되는게 studying or breaking 으로 떴었음. 즉, member의 연관관계를 계속 가지고 있었음. → 끊어야됨</li>
+      <li>수정 : 아예 post Entity에 state를 저장할 수 있도록 변경.
+        <ul>
+          <li>post가 생성 되면 무조건 post state는 end</li>
+          <li>member state에 따라 변경되는 post state는 member의 가장 최근 post만을 불러와서 실행.</li>
+          <li>즉, 이전 post들은 end로 저장된 상태로 끝나는 것. → PostDto를 통해 End가 눌려지는 시점에 바로 post state에 저장. 나머지는 그냥 member의 값을 가져옴.
+            <ul>
+              <li>수정 필요</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <Back>
+</Back>
+        <ol>
+          <li>Post Edit 기능. (TimeStamp도 수정할 수 있도록), Post 이미지 삽입, Post delete.</li>
+          <li>Member 이미지 삽입.</li>
+          <li>Studying 누르고 post하지 않고 뒤로 나가면 생기는 오류 잡기 -&gt; 그냥 Studying 누르는 순간 빈 Post를 생성해버리고 이를 수정하는 느낌으로 가는게 좋을 듯</li>
+          <li>Modal 재로딩 부분</li>
+          <li>Notion 마냥 modal 자체에서 edit, 등 할 수 있도록!</li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="220410">&lt;220410&gt;</h3>
+
+<ol>
+  <li>Post Edit 기능 구현
+    <ul>
+      <li>PostEditDto를 통해 view로 보내고 받음.</li>
+      <li>보낼 때 : new PostEditDto(post, member) 생성자 를 통해 모든 정보를 보일 수 있도록 설정
+        <ul>
+          <li>즉, PostDto 안에 post 와 member 정보를 모두 담아서 보내는 것</li>
+        </ul>
+      </li>
+      <li>
+        <p>받을 때 : PostEditDto를 통해 받음</p>
+
+        <aside>
+  🚨 <strong> 근데 이때 PostEditDto의 생성자에 빈 생성자가 필수!! </strong> <br /> viewtemplate이 보내주는 객체를 받기 위해선 해당 객체의 생성자를 통해서 생성되는 것! 근데 이때 생성자가 빈생성자가 아닌 인자가 필요한 생성자라면 그 인자들을 요구하는데 viewtemplate은 그 객체만을 보내줌. 그러므로 필수 적으로 빈 생성자가 필수!!!! (오류 찾는데 몇시간 씀!) "즉, Controller에서 ViewTemplate이 주고 받는 DTO는 빈생성자를 필수로 가지고 있어야 함! -&gt; 이를 통해 보내고, 보낸 객체를 생성자를 통해 생성하여 만들기 때문!"
+        
+  </aside>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<ul>
+  <li>수정 필요
+    <ol>
+      <li>post/new 를 post/edit으로 -&gt; 3번과 관련된 수정 o</li>
+      <li>Post, Member 이미지 삽입. 객체 삭제 기능</li>
+      <li>Studying 누르고 post하지 않고 뒤로 나가면 생기는 오류 잡기 -&gt; 그냥 Studying 누르는 순간 빈 Post를 생성해버리고 이를 수정하는 느낌으로 가는게 좋을 듯 o</li>
+      <li>Modal 재로딩 부분</li>
+      <li>Notion 마냥 modal 자체에서 edit, 등 할 수 있도록!</li>
+    </ol>
+  </li>
+</ul>
+
+<h3 id="220411---220413">&lt;220411&gt; - &lt;220413&gt;</h3>
+
+<ol>
+  <li>Member Edit
+    <ul>
+      <li>회원가입 시 작성하지 않는 ‘이미지’, ‘링크’ 등을 edit 화면에서 추가할 수 있도록 설정
+        <ul>
+          <li>링크
+            <ul>
+              <li>링크를 화면내에서 + 버튼을 눌르면 추가하고 x 버튼을 누르면 삭제할 수 있도록 설정</li>
+              <li>여기서 중요한 점은 그 링크 자체가 독립된 list로 Controller와 viewtemplate이 주고 받는 것이 아닌, Object(Entity)안의 list인 점이 까다로웠음.</li>
+              <li>변경 감지와 추가 삭제를 해야 하기에 해당 Object 안의 list를 독립적으로 빼서 따로 만들어 준 채로 하기에는 번거롭고 비효율적인 것을 인지.</li>
+              <li>객체안의 list로 보내줘서 객체안의 list 그대로 받아오자!</li>
+            </ul>
+
+            <aside>
+  🚨 <strong> thymleaf 안에서 list 다루기! </strong>
+  <ul>
+  <li> 받아 오면 그 list를 인덱스로 접근하여 수정, 삭제. </li>
+  <li> 추가는 인덱스를 늘리면서 저장 → thymeleaf는 list 범위가 벗어나면 벗어 난 대로 그대로 저장해줌. (즉, 길이가 6이면 원래는 index는 5까지 밖에 접근 안되지만, 인덱스를 6으로 주고 접근하면 자동으로 list에다 add를 해줌.) </li>
+  <li> 삭제했거나 빈값이 들어간 list의 요소에 대해선 추후 controller 단에서 처리. </li>
+  <li> 이걸 해결하려고 하루종일 고생한 듯! </li>
+  </ul>
+  </aside>
+          </li>
+          <li>이미지 업로드
+            <ul>
+              <li>Demo 버전에선 이미지를 업로드 하면 로컬에 저장하고 불러올 때도 로컬에서 불러옴.
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@ResponseBody</span>
+  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/images"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">Resource</span> <span class="nf">showImage</span><span class="o">(</span><span class="nd">@RequestParam</span><span class="o">(</span><span class="s">"filename"</span><span class="o">)</span> <span class="nc">String</span> <span class="n">filename</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">MalformedURLException</span> <span class="o">{</span>
+  <span class="nc">String</span> <span class="n">rootPath</span> <span class="o">=</span> <span class="o">{</span><span class="n">이미지</span> <span class="n">저장경로</span><span class="o">};</span>
+  <span class="k">return</span> <span class="k">new</span> <span class="nf">UrlResource</span><span class="o">(</span> <span class="s">"file:"</span> <span class="o">+</span> <span class="n">rootPath</span> <span class="o">+</span> <span class="n">filename</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>                </div>
+              </li>
+            </ul>
+            <aside>
+  🚨 <strong> 여기서 3가지 문제 발생. </strong>
+  <ol>
+  <li> 이미지는 다른 input들과 어울려서 form에 존재할 수 없음 → 이미지 form은 따로 둠. (추후 API로 해결할 예정) </li>
+  <li> 이미지를 받아오는 과정에서 문제 발생 </li>
+      <ul>
+      <li> `MultipartFile` class로 file을 받아 오는데, 해당 class가 작동하지 않음 → `MultipartFile[]` class로 array형태인 files로 받아온 후 인덱싱을 통해 file을 걸러냄. </li>
+      <li> 그 후 정해진 로직에 따라 이미지를 로컬에 저장. </li>
+      </ul>
+  <li>  로컬 링크로 설정해도 불러오지 않는 문제 발생. → 통신으로써 이미지를 로드해와야 됨. (API 통신으로 수행, /images + filename 으로 Get 요청 실시) </li>
+  </ol>
+  <ul><li>얘도 하루종일 고생함</li></ul>
+  </aside>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>Post Edit
+    <ul>
+      <li>Member와 동일하게 작업.
+    - 수정 필요</li>
+      <li>DB 연결을 AWS로 설정하고</li>
+      <li>이미지 등 파일을 저장하는 storage는 AWS의 S3로 설정</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="220414">&lt;220414&gt;</h3>
+
+<ol>
+  <li>전반적인 오류 수정
+    <ul>
+      <li>Login 시 생기는 오류 처리 → CustomAuthFailerHandler 를 통해 로그인시 발생하는 오류 처리</li>
+      <li>인증 (post edit, member edit, commit delete 접근) 과정에서 필요한 id 값을 각 DTO에 추가</li>
+      <li>이미지가 없는 상태의 member나 post에 default 이미지 할당</li>
+    </ul>
+  </li>
+  <li>수정된 Front merge 작업
+    <ul>
+      <li>협업자가 작성한 Front를 Back과 연결하기 위한 merge 작업 실시</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="220415">&lt;220415&gt;</h3>
+
+<ol>
+  <li>기능 추가
+    <ul>
+      <li>All Members 기능 추가
+        <ul>
+          <li>모든 멤버들의 공부상태 (Studying, Breaking, End) 를 확인할 수 있도록 설정</li>
+          <li>추후 서비스 이용자가 증가하면 팔로우, 팔로잉 기능을 추가하여 팔로우 한 사람들에 대해서만 확인하도록 설정 예정</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>본격적인 서비스 배포 준비
+    <ul>
+      <li>DB연결을 AWS의 mysql로 설정
+        <ul>
+          <li>application.yml의 jpa 설정 수정</li>
+        </ul>
+      </li>
+      <li>Storage를 로컬이 아닌 AWS S3에 연결
+        <ul>
+          <li>이미지가 업로드 되면 인증된 client를 통해 S3에 저장</li>
+          <li>저장된 URL을 받아와 image에 원본이미지이름, 저장URL을 저장 하는 방식으로 진행</li>
+          <li>viewTemplate은 그 image에 저장된 URL을 통해 image를 보여줌</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>서비스 배포
+    <ul>
+      <li>DEMO 버전 종료.</li>
+      <li>본격적인 출시 이전에 직접 배포하며 기능 개선, 추가 / 오류 수정 작업을 거칠 예정</li>
+      <li>Github Repo를 통해 버전 관리, Issue를 통해 기능 오류,개선,추가 토의 진행.</li>
+    </ul>
+  </li>
+</ol>
+:ET
