@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Spring MVC #1 part2 "
+title:  "Servlet with MVC Pattern, View Template(JSP)"
 date:   2022-05-04
-image:  /posts/springMVC.jpg
+image:  /posts/servlet+mvc.png
 tags:   SpringBoot MVC
 ---
 
 
-## Chapter 3 [서블릿, JSP, MVC 패턴]
+## 서블릿, JSP, MVC 패턴
 
 > **회원 관리 앱을 통한 서블릿, JSP, MVC 패턴 이해**<br>
 ‘서블릿만’을 이용한 앱 → ‘서블릿 + Template Engine(JSP)’ 을 이용한 앱 → ‘서블릿 + Template Engine(JSP) + MVC 패턴’을 이용한 앱 순으로 개발을 진행하며 구조적으로 어떻게 발전해 왔는지를 확인
@@ -275,7 +275,7 @@ tags:   SpringBoot MVC
     - 이를 해결하기 위한 개념이 “**프론트 컨트롤러**” → 각 컨트롤러를 호출하기 전에 먼저 공통 기능을 처리하는 **수문장 역할**이 필요. 즉, 모든 요청의 입구를 하나로 만드는 것!
     
 
-## Chapter 4 [MVC 패턴]
+## MVC 패턴
 
 > 주어져 있고 자동화되는 Spring 그 자체를 사용하는 것이 아닌, servlet을 이용하여 MVC 패턴을 구현 → 추후 사용되는 Spring Boot가 어떻게 동작하는지 이해하기 위함 (Servlet을 이용해 프론트 컨트롤러를 도입하고, View를 분리하고, Model을 추가하고 실용적이고 유연한 컨트롤러를 도입하면 결국 우리가 사용하고자 하는 **Spring MVC와 똑같은 구조**를 가지게 됨)
 > 

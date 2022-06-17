@@ -2,11 +2,11 @@
 layout: post
 title:  "Spring Boot 입문"
 date:   2022-02-24
-image:  /posts/springbootpng.png
+image:  /posts/SpringBoot.jpg
 tags:   SpringBoot
 ---
 
-## **Chapter 1**
+## Spring Boot Basic
 
 
 - **프로젝트 생성**
@@ -219,7 +219,7 @@ tags:   SpringBoot
 
 
 
-## Chapter 2
+## Spring Boot with Database
 
 
 - 스프링 DB 접근 기술

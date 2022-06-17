@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Spring MVC #1 part1 "
+title:  "Servlet"
 date:   2022-04-28
-image:  /posts/springMVC.jpg
+image:  /posts/servlet.png
 tags:   SpringBoot MVC
 ---
 
 
-## Chapter 1 [웹 애플리케이션 이해]
+## 웹 애플리케이션 이해
 
 ### 웹 서버, 웹 애플리케이션 서버
 
@@ -137,7 +137,7 @@ tags:   SpringBoot MVC
     - 관련기술: React, Vue.js -> 웹 프론트엔드 개발자
     
 
-## Chapter 2 [서블릿]
+## 서블릿
 
 ### 프로젝트 생성
 

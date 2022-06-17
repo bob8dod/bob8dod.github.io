@@ -1,0 +1,786 @@
+I"q<h2 id="서블릿-jsp-mvc-패턴">서블릿, JSP, MVC 패턴</h2>
+
+<blockquote>
+  <p><strong>회원 관리 앱을 통한 서블릿, JSP, MVC 패턴 이해</strong><br />
+‘서블릿만’을 이용한 앱 → ‘서블릿 + Template Engine(JSP)’ 을 이용한 앱 → ‘서블릿 + Template Engine(JSP) + MVC 패턴’을 이용한 앱 순으로 개발을 진행하며 구조적으로 어떻게 발전해 왔는지를 확인</p>
+
+</blockquote>
+
+<h3 id="회원-관리-앱">회원 관리 앱</h3>
+
+<ul>
+  <li>요구사항
+    <ul>
+      <li>회원 정보 : 이름, 나이</li>
+      <li>기능 : 회원 저장, 회원 목록 조회</li>
+    </ul>
+  </li>
+  <li>회원 도메인 모델 (Member.class)
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">Long id</code> : 식별자</li>
+      <li><code class="language-plaintext highlighter-rouge">String username</code> : 이름</li>
+      <li><code class="language-plaintext highlighter-rouge">int age</code> : 나이</li>
+    </ul>
+  </li>
+  <li>회원 저장소 (MemberRepository)
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">static Map&lt;Long, Member&gt; store</code> : HashMap, 원래는 동시성을 고려해서 HashMap을 사용하면 안됨.</li>
+      <li><code class="language-plaintext highlighter-rouge">static long sequence</code> : 식별자 부여 값</li>
+      <li><code class="language-plaintext highlighter-rouge">static final MemberRepository instance</code> : 싱글톤. 하나의 인스턴스만을 사용</li>
+      <li><code class="language-plaintext highlighter-rouge">save, findById, findAll, clearStore</code> Method 생성</li>
+      <li>해당 저장소에 대한 Test 작성
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@AfterEach</code>를 통해 각 Test마다 store이 초기화 될 수 있도록 설정</li>
+          <li><code class="language-plaintext highlighter-rouge">save, findById, findAll, clearStore</code> Method 각각에 대한 Test 설정. → <code class="language-plaintext highlighter-rouge">Assertions.assertThat</code> 으로 검증</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="서블릿servlet으로-앱-만들기">서블릿(Servlet)으로 앱 만들기</h3>
+
+<ul>
+  <li>회원 가입 form을 보여주는 servlet
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">public class MemberFormServlet extends HttpServlet</code> -&gt; <code class="language-plaintext highlighter-rouge">@WebServlet(name = "memberFormServlet", urlPatterns = "/servlet/members/new-form")</code> : 해당 url로 들어오게 되면 생성된 request, response 객체를 담은 MemberFormServlet의 service method 실행.</li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">protected void service( ... )</code> → from 을 보여주는 화면이기에 request는 사용하지 않고 response만을 사용 (회원 정보를 받는 html을 반환해줘야 함)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">response</span><span class="o">.</span><span class="na">setContentType</span><span class="o">(</span><span class="s">"text/html"</span><span class="o">);</span>
+  <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">"utf-8"</span><span class="o">);</span>
+        
+  <span class="nc">PrintWriter</span> <span class="n">w</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">();</span>
+  <span class="n">w</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="s">"&lt;!DOCTYPE html&gt;\n"</span> <span class="o">+</span>
+          <span class="s">"&lt;html&gt;\n"</span> <span class="o">+</span>
+          <span class="s">"&lt;head&gt;\n"</span> <span class="o">+</span>
+          <span class="o">...</span> <span class="o">)</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>html 을 반환할거라는 정보를 알려주고 인코딩 진행.</li>
+          <li>그 후 html 그 자체를 파일형식이 아닌 <strong>text형식으로 보내줌</strong>. (servlet을 사용할 경우. 이를 통한 동적 화면도 가능.)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>저장된 회원 리스트를 보여주는 servlet
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">public class MemberListServlet extends HttpServlet</code> → <code class="language-plaintext highlighter-rouge">@WebServlet(name = "memberListServlet", urlPatterns = "/servlet/members")</code>  : 해당 url로 들어오게 되면 생성된 request, response 객체를 담은 MemberListServlet의 <strong>service method 실행.</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">private MemberRepository memberRepository = MemberRepository.*getInstance*();</code> → 저장된 회원들의 목록을 가져오기에 저장소 (MemberRepository) 사용</li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">protected void service( ... )</code> → 회원 목록만을 보여주는 화면이기에 request는 사용하지 않고 response만을 사용 (회원 정보를 받는 html을 반환해줘야 함)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">response</span><span class="o">.</span><span class="na">setContentType</span><span class="o">(</span><span class="s">"text/html"</span><span class="o">);</span>
+  <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">"utf-8"</span><span class="o">);</span>
+        
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">members</span> <span class="o">=</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findAll</span><span class="o">();</span>
+        
+  <span class="nc">PrintWriter</span> <span class="n">w</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">();</span>
+  <span class="n">w</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="s">"&lt;html&gt;"</span><span class="o">);</span>
+  <span class="o">...</span>
+  <span class="k">for</span> <span class="o">(</span><span class="nc">Member</span> <span class="n">member</span> <span class="o">:</span> <span class="n">members</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">w</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="s">" &lt;tr&gt;"</span><span class="o">);</span>
+      <span class="n">w</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="s">" &lt;td&gt;"</span> <span class="o">+</span> <span class="n">member</span><span class="o">.</span><span class="na">getId</span><span class="o">()</span> <span class="o">+</span> <span class="s">"&lt;/td&gt;"</span><span class="o">);</span>
+      <span class="n">w</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="s">" &lt;td&gt;"</span> <span class="o">+</span> <span class="n">member</span><span class="o">.</span><span class="na">getUsername</span><span class="o">()</span> <span class="o">+</span> <span class="s">"&lt;/td&gt;"</span><span class="o">);</span>
+      <span class="n">w</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="s">" &lt;td&gt;"</span> <span class="o">+</span> <span class="n">member</span><span class="o">.</span><span class="na">getAge</span><span class="o">()</span> <span class="o">+</span> <span class="s">"&lt;/td&gt;"</span><span class="o">);</span>
+      <span class="n">w</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="s">" &lt;/tr&gt;"</span><span class="o">);</span>
+  <span class="o">}</span> <span class="c1">// 동적으로 화면을 구성할 수 있음</span>
+  <span class="o">...</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>html 을 반환할거라는 정보를 알려주고 인코딩 진행.</li>
+          <li>그 후 html 그 자체를 파일형식이 아닌 text형식으로 보내줌. (servlet을 사용할 경우. 이를 통한 동적 화면도 가능.)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>회원 저장, 저장 후 정보를 보여주는 Servlet
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">public class MemberSaveServlet extends HttpServlet</code> → <code class="language-plaintext highlighter-rouge">@WebServlet(name = "memberSaveServlet", urlPatterns = "/servlet/members/save")</code> : 해당 url로 들어오게 되면 생성된 request, response 객체를 담은 MemberFormServlet의 service method 실행.</li>
+      <li><code class="language-plaintext highlighter-rouge">private MemberRepository memberRepository = MemberRepository.*getInstance*();</code> → 저장된 회원들의 목록을 가져오기에 저장소 (MemberRepository) 사용</li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">protected void service( ... )</code> → 이전과는 다르게 회원을 저장하는 기능이 추가되어 response 뿐만 아닌 request도 사용.</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">// username=뭐시기&amp;age=숫자</span>
+  <span class="nc">String</span> <span class="n">username</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"username"</span><span class="o">);</span>
+  <span class="kt">int</span> <span class="n">age</span> <span class="o">=</span> <span class="nc">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"age"</span><span class="o">));</span>
+        
+  <span class="c1">// 값에 따른 Member 객체 생성</span>
+  <span class="nc">Member</span> <span class="n">member</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Member</span><span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">age</span><span class="o">);</span>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"member = "</span> <span class="o">+</span> <span class="n">member</span><span class="o">);</span>
+        
+  <span class="c1">// member 저장</span>
+  <span class="n">memberRepository</span><span class="o">.</span><span class="na">save</span><span class="o">(</span><span class="n">member</span><span class="o">);</span>
+        
+  <span class="c1">// response(반환값) 설정</span>
+  <span class="n">response</span><span class="o">.</span><span class="na">setContentType</span><span class="o">(</span><span class="s">"text/html"</span><span class="o">);</span>
+  <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">"utf-8"</span><span class="o">);</span>
+  <span class="nc">PrintWriter</span> <span class="n">w</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">();</span>
+  <span class="n">w</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="s">"&lt;html&gt;\n"</span> <span class="o">+</span>
+          <span class="s">"&lt;head&gt;\n"</span> <span class="o">+</span>
+  				<span class="o">...</span> <span class="o">+</span>
+  				<span class="s">"&lt;ul&gt;\n"</span> <span class="o">+</span>
+            <span class="s">" &lt;li&gt;id="</span><span class="o">+</span><span class="n">member</span><span class="o">.</span><span class="na">getId</span><span class="o">()+</span><span class="s">"&lt;/li&gt;\n"</span> <span class="o">+</span>
+            <span class="s">" &lt;li&gt;username="</span><span class="o">+</span><span class="n">member</span><span class="o">.</span><span class="na">getUsername</span><span class="o">()+</span><span class="s">"&lt;/li&gt;\n"</span> <span class="o">+</span>
+            <span class="s">" &lt;li&gt;age="</span><span class="o">+</span><span class="n">member</span><span class="o">.</span><span class="na">getAge</span><span class="o">()+</span><span class="s">"&lt;/li&gt;\n"</span> <span class="o">+</span>
+  				<span class="o">...</span> 
+  <span class="o">)</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>request를 통해 넘겨져 온 form 형식의 Form Data 를 조회</li>
+          <li>조회된 값들을 MemberRepository를 통해 저장</li>
+          <li>저장된 결과를 response를 통해 반환 (동적으로 html 생성)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+🚨 <strong>하지만!</strong><br />
+이렇게 Servlet만을 사용해서 HTML을 생성하여 보내주는 것은 동적인 화면을 만들 수 있다는 장점이 있지만, 직접 HTML을 JAVA코드 안에서 Text 형태로 작성해야 된다는 단점이 있음. (광장히 귀찮아!) → Template Engine(JSP, Thymeleaf) 사용을 통해 해결 가능
+
+</aside>
+
+<h3 id="-view-template-jsp를-이용한-앱-만들기">+ View Template (JSP)를 이용한 앱 만들기</h3>
+
+<blockquote>
+  <p>JSP는 현재 잘 사용되고 있는 View Template은 아니지만, 그래도 이전에 계속 사용되었기에 한번 맛보고 넘어가는 것. 이후에는 Veiw Template을 Thymeleaf로 사용할 것임.</p>
+</blockquote>
+
+<ul>
+  <li>JSP
+    <ul>
+      <li>
+        <p>JSP implemantation</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">implementation</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">apache</span><span class="o">.</span><span class="na">tomcat</span><span class="o">.</span><span class="na">embed</span><span class="o">:</span><span class="n">tomcat</span><span class="o">-</span><span class="n">embed</span><span class="o">-</span><span class="n">jasper</span><span class="err">'</span>
+  <span class="n">implementation</span> <span class="err">'</span><span class="n">javax</span><span class="o">.</span><span class="na">servlet</span><span class="o">:</span><span class="n">jstl</span><span class="err">'</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>JSP 는 webapp 하위에 설정해야 됨 (src/main/webapp/jsp/..)</p>
+      </li>
+    </ul>
+
+    <aside>
+  💡 <strong>JSP는 파일 하나 안에서 html, java 둘 다 사용이 가능.</strong><br />
+  <ul>
+  <li>즉, java로 비지니스 로직을 만들고</li>
+  <li>그 결과에 따른 값들을 이용한 html파일을 만들 수 있음 (동적 화면)</li>
+  <li>또한, jsp는 Survlet으로 자동 변환되어서 사용되기에 jsp 안에서 response와 request를 사용할 수 있음</li>
+  </ul>
+  </aside>
+  </li>
+  <li>회원 저장 (save.jsp)
+    <ul>
+      <li>
+        <p>비지니스 로직 (JAVA 코드)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="o">...</span>
+  <span class="o">&lt;%</span><span class="err">@</span> <span class="n">page</span> <span class="n">contentType</span><span class="o">=</span><span class="s">"text/html;charset=UTF-8"</span> <span class="n">language</span><span class="o">=</span><span class="s">"java"</span> <span class="o">%&gt;</span>
+  <span class="o">&lt;%</span> <span class="c1">// 로직</span>
+      <span class="nc">MemberRepository</span> <span class="n">memberRepository</span> <span class="o">=</span> <span class="nc">MemberRepository</span><span class="o">.</span><span class="na">getInstance</span><span class="o">();</span>
+      <span class="nc">String</span> <span class="n">username</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"username"</span><span class="o">);</span>
+      <span class="o">...</span>
+  <span class="o">%&gt;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>여기서 받아오거나 사용된 변수는 html에서도 사용할 수 있음! → <code class="language-plaintext highlighter-rouge">&lt;%=member.getId()%&gt;</code> : 자바코드의 결과를 출력 하는 것 (<code class="language-plaintext highlighter-rouge">&lt;%=  %&gt;</code>, soutv() 라고 생각하면 됨)</li>
+        </ul>
+      </li>
+      <li>
+        <p>반환될 화면 (HTML 코드)</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;html&gt;</span>
+  <span class="nt">&lt;head&gt;</span>
+  ...
+  <span class="nt">&lt;ul&gt;</span>
+      <span class="nt">&lt;li&gt;</span>id=<span class="nt">&lt;</span><span class="err">%=</span><span class="na">member.getId</span><span class="err">()%</span><span class="nt">&gt;&lt;/li&gt;</span>
+      <span class="nt">&lt;li&gt;</span>username=<span class="nt">&lt;</span><span class="err">%=</span><span class="na">member.getUsername</span><span class="err">()%</span><span class="nt">&gt;&lt;/li&gt;</span>
+      <span class="nt">&lt;li&gt;</span>age=<span class="nt">&lt;</span><span class="err">%=</span><span class="na">member.getAge</span><span class="err">()%</span><span class="nt">&gt;&lt;/li&gt;</span>
+  <span class="nt">&lt;/ul&gt;</span>
+  ...
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li>회원 리스트
+    <ul>
+      <li>
+        <p>비지니스 로직 (JAVA 코드)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="o">...</span>
+  <span class="o">&lt;%</span><span class="err">@</span> <span class="n">page</span> <span class="n">contentType</span><span class="o">=</span><span class="s">"text/html;charset=UTF-8"</span> <span class="n">language</span><span class="o">=</span><span class="s">"java"</span> <span class="o">%&gt;</span>
+  <span class="o">&lt;%</span>
+      <span class="nc">MemberRepository</span> <span class="n">memberRepository</span> <span class="o">=</span> <span class="nc">MemberRepository</span><span class="o">.</span><span class="na">getInstance</span><span class="o">();</span>
+      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">members</span> <span class="o">=</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findAll</span><span class="o">();</span>
+  <span class="o">%&gt;</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>반환될 화면 (HTML 코드)</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;html&gt;</span>
+  <span class="nt">&lt;head&gt;</span>
+  ...
+      <span class="nt">&lt;</span><span class="err">%</span>
+          <span class="na">for</span> <span class="err">(</span><span class="na">Member</span> <span class="na">member</span> <span class="na">:</span> <span class="na">members</span><span class="err">)</span> <span class="err">{</span>
+              <span class="na">out.write</span><span class="err">("</span> <span class="err">&lt;</span><span class="na">tr</span><span class="nt">&gt;</span>");
+              out.write(" <span class="nt">&lt;td&gt;</span>" + member.getId() + "<span class="nt">&lt;/td&gt;</span>");
+              out.write(" <span class="nt">&lt;td&gt;</span>" + member.getUsername() + "<span class="nt">&lt;/td&gt;</span>");
+              out.write(" <span class="nt">&lt;td&gt;</span>" + member.getAge() + "<span class="nt">&lt;/td&gt;</span>");
+              out.write(" <span class="nt">&lt;/tr&gt;</span>");
+          }
+      %&gt;
+  ...
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong>HTML 코드 안에 자바 코드를 넣음</strong>으로써 훨씬 <strong>더 동적인 화면 생성</strong> 가능. (servlet에서 작성했던 코드와 유사)</li>
+          <li>HTML 안에서 자바코드를 실행하려면 <code class="language-plaintext highlighter-rouge">&lt;%</code><code class="language-plaintext highlighter-rouge">%&gt;</code> 사용. (servlet에서와 같이 동작함)</li>
+        </ul>
+        <aside>
+  🚨 <strong>하지만!</strong><br />
+   JSP(+servlet)만을 사용하게 된다면, 뷰의 항목과 비지니스 코드가 분리되지 않았다는 것을 알 수 있음. 즉, 비지니스 로직을 변경하려해도 JSP에서 수정해야 되고, 보여지는 화면에 대해 수정할 때도 JSP에서 수정해야됨!<br />
+  → JSP는 목적에 맞게 HTML로 화면(View)을 그리는 일에 집중하도록 해야 함<br />
+  → 분리할 필요가 있음!!! (MVC 패턴 도입 필요!)
+        
+  </aside>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="-mvc-패턴-도입">+ MVC 패턴 도입</h3>
+
+<ul>
+  <li>개요
+    <ul>
+      <li>너무 많은 역할 : 현재 코드는 비지니스 로직을 구현하는 역할, 화면(View)를 그리는 역할 등 분리되지 않고 <strong>한번에 많은 역할</strong>을 맡고 있음</li>
+      <li>변경의 라이프 사이클 : 또한 이 역할들의 <strong>라이프 사이클이 다르다</strong>는 것. 즉, 각각의 변경은 다르게 발생할 경우가 높고 서로 영향을 주지 않음. 그런데 둘이 같은 코드에 같이 존재하는 것은 옳지 않음</li>
+      <li>기능 특화 : 화면을 렌더링 하는데에 최적화 된 Veiw Template은 <strong>그 역할에만 집중</strong>하는 것이 맞음</li>
+    </ul>
+  </li>
+  <li>MVC (Model View Controller)
+    <ul>
+      <li>서로 동작하는 역할에 따라 Controller View 라는 영역으로 나누는 것</li>
+      <li><strong>Controller</strong> : <strong>HTTP 요청을 받</strong>아 파라미터를 확인하고, <strong>비지니스 로직을 실행</strong>. 마지막으로 뷰에 전달할 최종 데이터를 모델에 담음 (비지니스 로직까지 Controller에 맡기면 Controller의 역할 이 방대해짐. 그래서 보통 Service, Repository(저장소)라는 추가적인 계층을 만들어 수행. 따라서 Controller는 Service의 비지니스 로직을 호출하는 역할만을 수행)</li>
+      <li><strong>Model</strong> : 뷰에서 사용될 <strong>데이터</strong>를 담음. 이런 모델이 있기에 View는 비지니스 로직을 몰라도 되고 데이터를 직접 접근할 필요가 없어져 화면을 렌더링 하는 역할에 집중 가능</li>
+      <li><strong>View</strong> : 모델에 담겨 있는 데이터를 사용하여 <strong>화면을 렌더링 하는 일</strong>에 집중. (HTML 생성 부분)</li>
+    </ul>
+  </li>
+  <li>회원 가입 form을 보여주는 Servlet Controller
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">public class MvcMemberFormServlet extends HttpServlet</code> → <code class="language-plaintext highlighter-rouge">@WebServlet(name = "mvcMemberFormServlet", urlPatterns = "/servlet-mvc/members/new-form")</code></li>
+      <li>
+        <p>service 내에서 Controller의 역할 (비지니스 로직 수행, View 렌더링 후 반환) 수행</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">String</span> <span class="n">viewPath</span> <span class="o">=</span> <span class="s">"/WEB-INF/views/new-form.jsp"</span><span class="o">;</span>
+  <span class="nc">RequestDispatcher</span> <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getRequestDispatcher</span><span class="o">(</span><span class="n">viewPath</span><span class="o">);</span>
+  <span class="n">dispatcher</span><span class="o">.</span><span class="na">forward</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>WEB-INF :  이 하위 파일들은 외부에서 호출해도 호출되지 않음. 즉, controller를 통해서만 사용 가능</li>
+          <li><code class="language-plaintext highlighter-rouge">request dispatcher</code>에 이동할 viewPath를 설정.</li>
+          <li><code class="language-plaintext highlighter-rouge">forward</code>를 통해 작동(렌더링 및 반환 실시) →  서블릿에서 <strong>jsp를 호출</strong>하는 기능, 서버 내부에서 다시 호출 발생 (redirect가 아님! 메서드 호출하듯이 서버끼리 노는 것!)</li>
+        </ul>
+      </li>
+      <li>View는 이전과 동일 (비지니스 로직을 제외한 View)</li>
+    </ul>
+  </li>
+  <li>회원 저장 및 저장된 결과를 보여주는 Servlet Controller
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">public class MvcMemberSaveServlet extends HttpServlet</code> → <code class="language-plaintext highlighter-rouge">@WebServlet(name = "mvcMemberSaveServlet", urlPatterns = "/servlet-mvc/members/save")</code></li>
+      <li>
+        <p>service 내에서 Controller 역할 (비지니스 로직 수행, View 렌더링 후 반환) 수행. 추가적으로 렌더링 시 사용될 변수를 Model에 담아 넘겨줌</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="o">...</span>
+  <span class="n">request</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="s">"member"</span><span class="o">,</span> <span class="n">member</span><span class="o">);</span>
+        
+  <span class="nc">String</span> <span class="n">viewPath</span> <span class="o">=</span> <span class="s">"/WEB-INF/views/save-result.jsp"</span><span class="o">;</span>
+  <span class="nc">RequestDispatcher</span> <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getRequestDispatcher</span><span class="o">(</span><span class="n">viewPath</span><span class="o">);</span>
+  <span class="n">dispatcher</span><span class="o">.</span><span class="na">forward</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">request.setAttribute()</code> 를 통해 reqeust 내부 저장소 사용. (Model part)</li>
+          <li><code class="language-plaintext highlighter-rouge">forward</code>를 통해 Model이 저장된 request 및 response를 넘겨줌. → JSP에서 비지니스 로직의 결과 변수를 사용할 수 있음</li>
+        </ul>
+      </li>
+      <li>View는 이전과 유사 (비지니스 로직을 제외한 View)
+        <ul>
+          <li>But, request에 member를 담았기 때문에, request를 통해서 값을 사용해야 됨. → <code class="language-plaintext highlighter-rouge">((Member) request.getAttribute("member")).id</code></li>
+          <li>혹은 JSP에서 제공하는 표현식 사용 → <code class="language-plaintext highlighter-rouge">${member.id}</code></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>회원 목록 조회 Servlet Controller
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">public class MvcMemberListServlet extends HttpServlet</code> → <code class="language-plaintext highlighter-rouge">@WebServlet(name = "mvcMemberListServlet", urlPatterns = "/servlet-mvc/members")</code></li>
+      <li>
+        <p>service 내에서 Controller 역할 (이전 Controller와 동일)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">members</span> <span class="o">=</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findAll</span><span class="o">();</span>
+  <span class="n">request</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="s">"members"</span><span class="o">,</span> <span class="n">members</span><span class="o">);</span>
+  <span class="nc">String</span> <span class="n">viewPath</span> <span class="o">=</span> <span class="s">"/WEB-INF/views/members.jsp"</span><span class="o">;</span>
+  <span class="nc">RequestDispatcher</span> <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getRequestDispatcher</span><span class="o">(</span><span class="n">viewPath</span><span class="o">);</span>
+  <span class="n">dispatcher</span><span class="o">.</span><span class="na">forward</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+</code></pre></div>        </div>
+      </li>
+      <li>View는 이전과 유사 (비지니스 로직을 제외한 View)
+        <ul>
+          <li>JSP 에서 제공하는 loop 문법 사용 → <code class="language-plaintext highlighter-rouge">&lt;c:forEachvar="item" items="${members}"&gt;...</code> (<code class="language-plaintext highlighter-rouge">&lt;%@ **taglib** prefix="c" uri="http://java.sun.com/jsp/jstl/core"%&gt;</code>)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>MVC 패턴의 한계</strong>
+    <ul>
+      <li>포워딩의 중복 : <code class="language-plaintext highlighter-rouge">dispatcher.forward(request, response)</code>가 반복적으로 이루어지고 있음</li>
+      <li>ViewPath의 중복 : 기본 루트 경로의 중복(<code class="language-plaintext highlighter-rouge">”/WEB-INF/views/”</code>)이 있음</li>
+      <li>사용하지 않는 코드 : request, response는 안쓰는 경우도 있음 (특히 현재는 response를 모든 코드에서 사용하지 않고 있음)</li>
+      <li><strong>공통 처리의 어려움</strong> : 각 Controller에서 공통적으로 처리할 수 있게끔 로직을 설정하는 것이 까다로움 (현재는 중복적인 코드로 넣을 수 밖에 없고 이 중복을 메서드로 호출한다해도 그 또한 중복인 것은 마찬가지)</li>
+      <li>이를 해결하기 위한 개념이 “<strong>프론트 컨트롤러</strong>” → 각 컨트롤러를 호출하기 전에 먼저 공통 기능을 처리하는 <strong>수문장 역할</strong>이 필요. 즉, 모든 요청의 입구를 하나로 만드는 것!</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="mvc-패턴">MVC 패턴</h2>
+
+<blockquote>
+  <p>주어져 있고 자동화되는 Spring 그 자체를 사용하는 것이 아닌, servlet을 이용하여 MVC 패턴을 구현 → 추후 사용되는 Spring Boot가 어떻게 동작하는지 이해하기 위함 (Servlet을 이용해 프론트 컨트롤러를 도입하고, View를 분리하고, Model을 추가하고 실용적이고 유연한 컨트롤러를 도입하면 결국 우리가 사용하고자 하는 <strong>Spring MVC와 똑같은 구조</strong>를 가지게 됨)</p>
+
+</blockquote>
+
+<h3 id="프론트-컨트롤러-패턴">프론트 컨트롤러 패턴</h3>
+
+<p><img src="/images/posts/post-220504/Untitled.png" alt="" /></p>
+
+<ul>
+  <li>각각의 controller에서 진행 되었던 <strong>공통로직에 대한 처리</strong>를 Front Controller에서 진행 가능</li>
+  <li>요청은 모두 Front Controller로 가게 되고, 그 후에 해당 하는 Controller를 호출하는 방식</li>
+  <li>즉, Front Controller를 제외한 각 Controller들은 Servlet에 의존하지 않아도 됨 (Front Controller에서 처리하니깐)</li>
+  <li><strong>스프링 웹 MVC도 FrontController 패턴</strong>으로 구현되어 있음</li>
+</ul>
+
+<h3 id="front-controller-도입---ver1">Front Controller 도입 - ver1</h3>
+
+<ul>
+  <li>일단 각 Controller들의 다형성을 위해 ControllerV1을 생성 → 나중에 front controller에서 각 Controller를 제약없이 사용하기 위함(다형성)</li>
+  <li><code class="language-plaintext highlighter-rouge">public interface ControllerV1</code> → response와 request를 받아 작동하는 <code class="language-plaintext highlighter-rouge">process</code> 메서드를 필수 메서드로 설정 (<code class="language-plaintext highlighter-rouge">void process(HttpServletRequest request, HttpServletResponse response) throws ...</code>)</li>
+  <li>그리고 이 ControllerV1을 구현한 FormController(Servlet), SaveController(Servlet), ListController(Servlet) 생성
+    <ul>
+      <li>이렇게 되면 FrontController에서 각 Controller를 Controller V1으로써 사용 가능 (다형성)</li>
+      <li>FormController(Servlet), SaveController(Servlet), ListController(Servlet) 는 ControllerV1을 구현(<code class="language-plaintext highlighter-rouge">implements ControllerV1</code>)한 것만 다르고 이전과 비지니스 로직은 동일</li>
+    </ul>
+  </li>
+  <li>
+    <p>FrontController</p>
+
+    <p><img src="/images/posts/post-220504/Untitled 1.png" alt="" /></p>
+
+    <ul>
+      <li>어떤 요청이 들어와도 가장 먼저 실행되는 Controller, 각 URL에 맞는 Controller를 ControllerV1의 구현체로써 호출하여 로직 실행</li>
+      <li><code class="language-plaintext highlighter-rouge">public class FrontControllerServletV1 extends HttpServlet</code> → <code class="language-plaintext highlighter-rouge">@WebServlet(name = "frontControllerServletV1", urlPatterns = "/front-controller/v1/*")</code> 
+  ⇒ HttpServlet을 상속받으면서 Servlet을 사용할 수 있게 설정. URL은 v1 하위 url(<code class="language-plaintext highlighter-rouge">urlPatterns = "/front-controller/v1/*"</code>)은 모두 받아 실행될 수 있도록 설정</li>
+      <li><strong>FrontController의 역할</strong>
+        <ol>
+          <li>URL 매핑 정보에서 컨트롤러 조회
+            <ul>
+              <li><strong>URL 매핑</strong> 정보 저장소 : <code class="language-plaintext highlighter-rouge">private Map&lt;String, ControllerV1&gt; controllerV1Map = new HashMap&lt;&gt;();</code></li>
+              <li>
+                <p>default 생성자를 통해 해당 FrontServlet이 서블릿 컨테이너에 등록 될 때 각 Mapping 정보가 저장 될 수 있도록 설정</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nf">FrontControllerServletV1</span><span class="o">()</span> <span class="o">{</span>
+  	  <span class="n">controllerV1Map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"front-controller/v1/members/new-form"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">MemberFormControllerV1</span><span class="o">());</span>
+  	  <span class="n">controllerV1Map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"front-controller/v1/members/save"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">MemberSaveControllerV1</span><span class="o">());</span>
+  	  <span class="n">controllerV1Map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"front-controller/v1/members/members"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">MemberListControllerV1</span><span class="o">());</span>
+  <span class="o">}</span>
+</code></pre></div>                </div>
+              </li>
+            </ul>
+          </li>
+          <li>요청된 URL 정보를 얻어와 그 URL에 맞는 Controller를 조회 및 호출 → <code class="language-plaintext highlighter-rouge">ControllerV1 controller = controllerV1Map.get(request.getRequestURI());</code> (다형성이 사용되는 부분! Interface)</li>
+          <li>컨트롤러에서 역할에 맞는 비지니스 로직을 수행하고 JSP foward 진행 → <code class="language-plaintext highlighter-rouge">controller.process(request, response);</code></li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="view-분리---ver-2">View 분리 - ver 2</h3>
+
+<p><img src="/images/posts/post-220504/Untitled 2.png" alt="" /></p>
+
+<ul>
+  <li>모든 Controller에서 View로 이동하는 부분에 중복 존재, 깔끔하지 않았음 (<code class="language-plaintext highlighter-rouge">dispatcher.forward(requset, response)</code> 부분)</li>
+  <li>이를 별도로 처리하는 객체를 통해 공통 처리 필요</li>
+  <li>즉, Controller를 호출하고 각 Controller에서 forward까지 진행하는 것이 아닌, View와 정보를 가지고 있는 <strong>MyView 객체</strong>를 반환하여 Front Controller에서 <strong>MyView를 이용하여 rendering(forward)까지 진행</strong></li>
+  <li>MyView 객체 → <code class="language-plaintext highlighter-rouge">public class MyView</code>
+    <ul>
+      <li>String ViewPath : view(jsp) 경로</li>
+      <li><code class="language-plaintext highlighter-rouge">public void render(HttpServletRequest request, HttpServletResponse response) throws …</code> → forward method, 기존의 각 Controller에서 진행했던 forward를 공통적으로 MyView에서 진행할 수 있음 (공통 처리)</li>
+    </ul>
+  </li>
+  <li>ControllerV2 (interface) → <code class="language-plaintext highlighter-rouge">public interface ControllerV2</code>
+    <ul>
+      <li>이전과 동일하게 각 Controller를 호출하고 사용할 수 있도록 Interface Controller 설정. (각 Controller는 해당 Controller V2를 구현하는 것)</li>
+      <li>이전과는 다르게 각 Controller는 MyView를 통해 ViewPath 설정 및 forward를 진행하기에 MyView를 반환해 줘야 함. → <code class="language-plaintext highlighter-rouge">MyView process(HttpServletRequest ...) throws ...</code></li>
+    </ul>
+  </li>
+  <li>ControllerV2를 구현한 각 Controller들 (Form, Save, List)
+    <ul>
+      <li>이전 버전과 로직은 동일하고 forward 부분 대신 MyView 객체에 원하는 경로를 생성해서 반환만 해주면 됨</li>
+      <li>즉, 각 Controller에서 forward를 진행하지 않고 FrontController로 반환된 MyView객체를 통해 forward가 진행됨 (공통 처리)</li>
+    </ul>
+  </li>
+  <li>FrontController
+    <ul>
+      <li>
+        <p>이전과 동일한 흐름으로 가지만, controller 호출 후 <strong>JSP forward 부분이 호출 후 반환 된 MyView를 통해 진행</strong>됨.</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">MyView</span> <span class="n">view</span> <span class="o">=</span> <span class="n">controller</span><span class="o">.</span><span class="na">process</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+  <span class="n">view</span><span class="o">.</span><span class="na">render</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>즉, Front Controller 도입으로 <code class="language-plaintext highlighter-rouge">MyView</code> 객체의 <code class="language-plaintext highlighter-rouge">render()</code> 를 호출하는 부분을 모두 일관되게 처리할 수 있음. 각각의 Controller는 <code class="language-plaintext highlighter-rouge">MyView</code> 객체를 생성만 해서 반환해주면 됨</p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="model-추가---ver-3">Model 추가 - ver 3</h3>
+
+<ul>
+  <li>ver 2 까지 보면, HttpServletRequest, HttpServletResponse가 필요 없는 Controller가 존재. 즉, <strong>Servlet의 의존성</strong>을 벗어날 필요가 있음</li>
+  <li>request가 필요한 곳은 따로 Java Map을 이용해서 넘겨주면 됨. → Servlet의 의존성을 벗어날 수 있음</li>
+  <li>또한 ViewPath 이름에서 <strong>논리 이름</strong>만을 반환 받도록 설정 필요 → 중복되는 경로와 파일 확장명을 공통처리 해줄 필요 있음 (추가로, 경로를 변경할 때 공통 처리부분에서만 변경해주면 됨)</li>
+</ul>
+
+<p><img src="/images/posts/post-220504/Untitled 3.png" alt="" /></p>
+
+<ul>
+  <li>MyView 객체에서 Model이 추가된 ModelView를 사용함으로써 Servlet의 의존성에서 벗어나고, viewResolver를 통해 Controller에서는 논리이름만 사용하도록 설정</li>
+  <li>ModelView → <code class="language-plaintext highlighter-rouge">public class ModelView</code>
+    <ul>
+      <li>String viewName : view path를 저장 (논리 이름만을 저장, 추후 viewResolver 사용)</li>
+      <li>Map&lt;String, Object&gt; model : rendering할 떄 사용 되는 변수들 저장 ( request를 받지 않기 때문에 request.setAttribute 대신 사용. )</li>
+    </ul>
+  </li>
+  <li>ControllerV3 (interface) → <code class="language-plaintext highlighter-rouge">public interface ControllerV3</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">ModelView process(Map&lt;String, String&gt; paramMap);</code> : request, response를 사용하지 않아도 됨 (request → Model로 대체, response는 View로 대체. 즉, Servlet을 ModelView로 대체함으로써 Servlet 의존성 제거)</li>
+    </ul>
+  </li>
+  <li>ControllerV3 (interface)를 구현하는 각 Controller들
+    <ul>
+      <li>이전 버전과 역시 비지니스 로직은 동일. but ViewPath를 저장할 때는 논리이름으로,  Save와 List 등 reqeust.getParam이 사용되는 부분은 넘겨 받은 paramMap을 통해 처리(get) → (request를 사용하지 않으면서 Servlet의 의존성 제거), request.setParam이 사용되는 부분은 ModelView의 Model을 이용. (Model에 저장하여 front controller에 반환)</li>
+    </ul>
+  </li>
+  <li>FrontController
+    <ul>
+      <li>이전과 다르게 controller에 request,response가 사용되는 것이 아니라 frontController 안에서 request에서 넘겨오는 값들을 따로 조회하여 <strong>paramMap</strong>에 저장한 후 이를 각 controller에 보내고 있음</li>
+      <li>또한, 각 controller는 Model 과 View의 정보를 담은 <strong>ModelView</strong> 객체를 반환. 결국 frontController는 이를 받아 앞선 로직과 동일하게 처리해 줘야 됨.</li>
+      <li>추가로, ModelView의 viewPath는 논리이름으로만 저장하고 있기에 이를 따로 처리해줄 <strong>viewResolver</strong> 필요</li>
+      <li>
+        <p>front controller의 처리 로직</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">paramMap</span> <span class="o">=</span> <span class="n">createParamMap</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+  <span class="nc">ModelView</span> <span class="n">mv</span> <span class="o">=</span> <span class="n">controller</span><span class="o">.</span><span class="na">process</span><span class="o">(</span><span class="n">paramMap</span><span class="o">);</span>
+  <span class="nc">String</span> <span class="n">viewName</span> <span class="o">=</span> <span class="n">mv</span><span class="o">.</span><span class="na">getViewName</span><span class="o">();</span> <span class="c1">// 논리 이름 (ex. new-form)</span>
+  <span class="nc">MyView</span> <span class="n">view</span> <span class="o">=</span> <span class="n">viewResolver</span><span class="o">(</span><span class="n">viewName</span><span class="o">);</span>
+  <span class="n">view</span><span class="o">.</span><span class="na">render</span><span class="o">(</span><span class="n">mv</span><span class="o">.</span><span class="na">getModel</span><span class="o">(),</span> <span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span> 
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>paramMap을 생성하는 createParamMap() method</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="nf">createParamMap</span><span class="o">(</span><span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">paramMap</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+      <span class="n">request</span><span class="o">.</span><span class="na">getParameterNames</span><span class="o">().</span><span class="na">asIterator</span><span class="o">()</span>
+              <span class="o">.</span><span class="na">forEachRemaining</span><span class="o">(</span><span class="n">paramName</span> <span class="o">-&gt;</span> <span class="n">paramMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">paramName</span><span class="o">,</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="n">paramName</span><span class="o">)));</span>
+      <span class="k">return</span> <span class="n">paramMap</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>request에서 들어온 모든 파라미터 값들을 paramMap에 저장</li>
+          <li>각 controller는 이를 이용하여 request 없이 parameter 사용 가능</li>
+        </ul>
+      </li>
+      <li>
+        <p>논리 view path를 물리 viewpath로 변경해주는 viewResolver</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="nc">MyView</span> <span class="nf">viewResolver</span><span class="o">(</span><span class="nc">String</span> <span class="n">viewName</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="k">new</span> <span class="nf">MyView</span><span class="o">(</span><span class="s">"/WEB-INF/views/"</span> <span class="o">+</span> <span class="n">viewName</span> <span class="o">+</span> <span class="s">".jsp"</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>각 Controller는 viewResolver 덕분에 중복되고 길었던 물리이름말고 간단한 논리이름만 ModelView 객체에 저장해주면 됨</li>
+        </ul>
+      </li>
+      <li>
+        <p>forward 시 사용될 값들을 넣어주며 동작하는 <code class="language-plaintext highlighter-rouge">view.render()</code></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">render</span><span class="o">(</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">model</span><span class="o">,</span> <span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="nc">HttpServletResponse</span> <span class="n">response</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ServletException</span><span class="o">,</span> <span class="nc">IOException</span> <span class="o">{</span>
+      <span class="n">model</span><span class="o">.</span><span class="na">forEach</span><span class="o">(</span><span class="nl">request:</span><span class="o">:</span><span class="n">setAttribute</span><span class="o">);</span> <span class="c1">// 기존에는 각각의 controller 안에서 request setAttribute를 통해 설정함. but V3에서는 각각의 controller가 servlet에 의존하지 않기 때문에 render에서 받아온 paramMap을 통해 setAttribute 실시</span>
+      <span class="nc">RequestDispatcher</span> <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getRequestDispatcher</span><span class="o">(</span><span class="n">viewPath</span><span class="o">);</span> <span class="c1">// 해당 viewPath로 이동하는 역할</span>
+      <span class="n">dispatcher</span><span class="o">.</span><span class="na">forward</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span> <span class="c1">//작동. 서블릿에서 jsp를 호출하는 기능, 서버 내부에서 다시 호출 발생 (redirect가 아님! 메서드 호출하듯이 서버끼리 노는 것!)</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>ModelView의 Model의 값들을 request에 넣어줌으로써 forward 시 해당 값을 JSP에서 사용할 수 있게 설정 (JSP 특성 상 해주는 부분)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="단순하고-실용적인-컨트롤러---ver-4">단순하고 실용적인 컨트롤러 - ver 4</h3>
+
+<ul>
+  <li>ver 3 는 아키텍쳐 구조적으로는 좋음. but 개발하는 개발자가 단순하고 편리하게 사용할 수가 없음. 즉, 실용성이 없음</li>
+</ul>
+
+<p><img src="/images/posts/post-220504/Untitled 4.png" alt="" /></p>
+
+<ul>
+  <li>기본적인 구조는 v3와 동일. but Controller가 ModelView를 반환하지 않고, ViewName만을 반환 → 실용성 UP</li>
+  <li>ControllerV4 (interface) → <code class="language-plaintext highlighter-rouge">public interface ControllerV4</code>
+    <ul>
+      <li>ModeView를 반환하는 것이 아닌 String (viewName)을 반환 → <code class="language-plaintext highlighter-rouge">String process(</code><code class="language-plaintext highlighter-rouge">Map&lt;String, String&gt; paramMap, Map&lt;String, Object&gt; model)</code>  → 여기서의 model은 frontController에서 설정해서 인자로 넘겨주는 것, 각 Controller는 받아온 이 model에 값을 저장해주면 됨. (즉, ModelView 객체를 사용할 필요가 없어짐)</li>
+    </ul>
+  </li>
+  <li>ControllerV4 (interface)를 구현한 각 Controller 들
+    <ul>
+      <li>
+        <p>기존에는 ModelView를 생성해서 view name을 넣어주고, ModelView의 model에 값들을 저장 → 그냥 받아 온 인자 <strong>model에 값을 넣어주고 view name을 반환</strong>해주면 됨</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">// ex) save controller의 process</span>
+  <span class="n">model</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"member"</span><span class="o">,</span> <span class="n">member</span><span class="o">);</span>
+  <span class="k">return</span> <span class="s">"save-result"</span><span class="o">;</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li>FrontController
+    <ul>
+      <li>
+        <p>viewName은 각 Controller의 반환값으로 받아 오고 model은 현재 frontController에서 초기화 해준 후 각 Controller로 넘겨 값을 받아 오면 됨</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">paramMap</span> <span class="o">=</span> <span class="n">createParamMap</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+  <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">model</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span> <span class="c1">// model 생성</span>
+        
+  <span class="nc">String</span> <span class="n">viewName</span> <span class="o">=</span> <span class="n">controller</span><span class="o">.</span><span class="na">process</span><span class="o">(</span><span class="n">paramMap</span><span class="o">,</span> <span class="n">model</span><span class="o">);</span> <span class="c1">// controller 자체에서 viewname 반환</span>
+  <span class="nc">MyView</span> <span class="n">view</span> <span class="o">=</span> <span class="n">voewResolver</span><span class="o">(</span><span class="n">viewName</span><span class="o">);</span>
+        
+  <span class="n">view</span><span class="o">.</span><span class="na">render</span><span class="o">(</span><span class="n">model</span><span class="o">,</span> <span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span> <span class="c1">// controller 내부의 model 사용</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>하지만 V4의 단점은. ConrollerV4에만 한정되어 있음. 즉, 내가 어떤 url에 대해서 V3를 쓰고 싶은데 현재는 V4로만 고정되어 있기 때문에 <strong>유연하게 사용하지 못함</strong> → <strong>Handler 개념</strong> 도입!</p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="유연한-컨트롤러---v5">유연한 컨트롤러 - v5</h3>
+
+<aside>
+💡 <strong>현재 Spring Boot와 가장 유사한 구조를 보이고 잇는 버전</strong>
+
+</aside>
+
+<ul>
+  <li>ControllerV3와 ControllerV4를 유연하게 변경하며 사용할 수 있도록</li>
+  <li>어댑터 패턴
+    <ul>
+      <li>지금까지는 한가지 방식의 컨트롤러 인터페이스만 사용 가능 했음</li>
+      <li>but, <strong>여러가지의 컨트롤러 인터페이스</strong>를 사용할 수 있어야 함</li>
+      <li>따라서 이렇게 여러가지가 호활될 수 있도록 <strong>어댑터 패턴</strong>을 적용해야 됨</li>
+    </ul>
+
+    <p><img src="/images/posts/post-220504/Untitled 5.png" alt="" /></p>
+
+    <ul>
+      <li>핸들러 어댑터 목록을 통해 현재 요청이 들어온 controller를 처리할 수 있는 어댑터를 조회</li>
+      <li>그래서 해당 요청에 대한 컨트롤러를 호출할 때, 직접 호출하는 것이 아닌 이를 <strong>호환해주는 핸들러 어댑터를 통해 호출</strong></li>
+    </ul>
+  </li>
+  <li><strong>Handler Adaptor (interface)</strong> → <code class="language-plaintext highlighter-rouge">public interface MyHandlerAdapter</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">boolean supports(Object handler);</code>
+        <ul>
+          <li>요청에 따른 컨트롤러를 다룰 수 있는지, 즉, 해당 컨트롤러를 사용하게끔 하는 어댑터가 있는지 확인</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">ModelView handle(HttpServletRequest request, HttpServletResponse response, Object handler) throws ServletException, IOException;</code>
+        <ul>
+          <li>실제 어댑터의 역할을 하는 메서드.</li>
+          <li>실제 컨트롤러를 호출하고, 그 결과로 ModelView를 반환</li>
+          <li>이전과 다르게 직접 컨트롤러를 호출하는 것이 아닌, <strong>어댑터를 통해 호출</strong></li>
+        </ul>
+      </li>
+      <li>즉, Front Controller에서 요청을 받으면, 그 요청에 맞는 Controller를 찾고 해당 Controller를 지원하는 지 Handler Adaptor를 통해 확인(<code class="language-plaintext highlighter-rouge">supports</code>). 만약 지원한다면 그 해당 Adaptor를 통해 Controller에 접근(조회)하여 로직을 수행하고 ModelView를 반환하는 것 (<code class="language-plaintext highlighter-rouge">handle</code>)</li>
+    </ul>
+  </li>
+  <li>ControllerV3를 지원하는 Handler → <code class="language-plaintext highlighter-rouge">public class ControllerV3HandlerAdapter implements MyHandlerAdapter</code>
+    <ul>
+      <li><strong>supports</strong>
+        <ul>
+          <li>front controller에서 받아온 handler(요청된 controller)가 ControllerV3이면 true</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">supports</span><span class="o">(</span><span class="nc">Object</span> <span class="n">handler</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="o">(</span><span class="n">handler</span> <span class="k">instanceof</span> <span class="nc">ControllerV3</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li><strong>handler</strong>
+        <ul>
+          <li>ControllerV3에 맞는 비지니스 로직 수행</li>
+          <li>frontController에서 supports로 V3인지 확인 후 가동된다고 생각하면 됨, 그래서 바로 cascade 하는 것</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">ModelView</span> <span class="nf">handle</span><span class="o">(</span><span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="nc">HttpServletResponse</span> <span class="n">response</span><span class="o">,</span> <span class="nc">Object</span> <span class="n">handler</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ServletException</span><span class="o">,</span> <span class="nc">IOException</span> <span class="o">{</span>
+  	  <span class="nc">ControllerV3</span> <span class="n">controller</span> <span class="o">=</span> <span class="o">(</span><span class="nc">ControllerV3</span><span class="o">)</span> <span class="n">handler</span><span class="o">;</span> 
+  	  <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">paramMap</span> <span class="o">=</span> <span class="n">createParamMap</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+  	  <span class="nc">ModelView</span> <span class="n">mv</span> <span class="o">=</span> <span class="n">controller</span><span class="o">.</span><span class="na">process</span><span class="o">(</span><span class="n">paramMap</span><span class="o">);</span>
+  	  <span class="k">return</span> <span class="n">mv</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li>ControllerV4를 지원하는 Handler → <code class="language-plaintext highlighter-rouge">public class ControllerV4HandlerAdapter implements MyHandlerAdapter</code>
+    <ul>
+      <li><strong>supports</strong>
+        <ul>
+          <li>front controller에서 받아온 handler(요청된 controller)가 ControllerV4이면 true</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">supports</span><span class="o">(</span><span class="nc">Object</span> <span class="n">handler</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="o">(</span><span class="n">handler</span> <span class="k">instanceof</span> <span class="nc">ControllerV4</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li><strong>handler</strong>
+        <ul>
+          <li>ControllerV4에 맞는 비지니스 로직 수행</li>
+          <li>frontController에서 supports로 V4인지 확인 후 가동된다고 생각하면 됨, 그래서 바로 cascade 하는 것</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">ModelView</span> <span class="nf">handle</span><span class="o">(</span><span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="nc">HttpServletResponse</span> <span class="n">response</span><span class="o">,</span> <span class="nc">Object</span> <span class="n">handler</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ServletException</span><span class="o">,</span> <span class="nc">IOException</span> <span class="o">{</span>
+      <span class="nc">ControllerV4</span> <span class="n">controller</span> <span class="o">=</span> <span class="o">(</span><span class="nc">ControllerV4</span><span class="o">)</span> <span class="n">handler</span><span class="o">;</span>
+      <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">paramMap</span> <span class="o">=</span> <span class="n">createParamMap</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+      <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">model</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+        
+  		<span class="c1">// adaptor가 필요한 이유 (controller의 반환값이 버전마다 다름)</span>
+      <span class="nc">String</span> <span class="n">viewName</span> <span class="o">=</span> <span class="n">controller</span><span class="o">.</span><span class="na">process</span><span class="o">(</span><span class="n">paramMap</span><span class="o">,</span><span class="n">model</span><span class="o">);</span>
+      <span class="n">mv</span><span class="o">.</span><span class="na">setModel</span><span class="o">(</span><span class="n">model</span><span class="o">);</span> <span class="c1">// 여기서 처리해주면 됨 -&gt; adpator의 역할</span>
+        		
+      <span class="k">return</span> <span class="n">mv</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <aside>
+  💡  <strong> adaptor가 꼭 필요한 이유 : V4 와 V3의 스펙이 다르면서 생기는 문제 -&gt; adaptor로 해결 가능 </strong><br />
+  <ul>
+  <li>V3는 model 과 view 정보를 담는 ModelView 객체를 사용</li>
+  <li>V4는 front controller에서 model, view 정보 setting을 다함 → V4는 ModelView를 사용하지 않기 때문 (`ModelView mv = new ModelView(viewName);`)</li>
+  </ul>
+  </aside>
+      </li>
+    </ul>
+  </li>
+  <li>FrontController
+    <ul>
+      <li>
+        <p>Mapping Info 초기화</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nf">FrontControllerServletV5</span><span class="o">()</span> <span class="o">{</span>
+      <span class="n">initHandlerMappingMap</span><span class="o">();</span>
+      <span class="n">initHandlerAdapters</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>이전과 다르게 Controller Mapping Map에 ControllerV4 뿐만 아니라 ControllerV3까지 mapping이 가능해야 됨 (ControllverV4 → Object) → <code class="language-plaintext highlighter-rouge">private final Map&lt;String, Object&gt; handlerMappingMap = new HashMap&lt;&gt;();</code> , v3,v4 매핑 정보를 넣어줌 ()</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">initHandlerMappingMap</span><span class="o">()</span> <span class="o">{</span>
+      <span class="n">handlerMappingMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"front-controller/v5/v3/members/new-form"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">MemberFormControllerV3</span><span class="o">());</span>
+      <span class="n">handlerMappingMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"front-controller/v5/v3/members/save"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">MemberSaveControllerV3</span><span class="o">());</span>
+      <span class="n">handlerMappingMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"front-controller/v5/v3/members/members"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">MemberListControllerV3</span><span class="o">());</span>
+        
+      <span class="c1">// V4 추가</span>
+      <span class="n">handlerMappingMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"front-controller/v5/v4/members/new-form"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">MemberFormControllerV4</span><span class="o">());</span>
+      <span class="n">handlerMappingMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"front-controller/v5/v4/members/save"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">MemberSaveControllerV4</span><span class="o">());</span>
+      <span class="n">handlerMappingMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"front-controller/v5/v4/members/members"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">MemberListControllerV4</span><span class="o">());</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>또한 어댑터들에 대한 정보들을 넣어줘야 함. (ControllerV3, ControllerV4 를 지원하는 adapter들의 정보를 List로 저장) →  <code class="language-plaintext highlighter-rouge">private final List&lt;MyHandlerAdapter&gt; handlerAdapters = new ArrayList&lt;&gt;();</code></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">initHandlerAdapters</span><span class="o">()</span> <span class="o">{</span>
+      <span class="n">handlerAdapters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">ControllerV3HandlerAdapter</span><span class="o">());</span>
+      <span class="n">handlerAdapters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">ControllerV4HandlerAdapter</span><span class="o">());</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p><strong>service</strong></p>
+        <ul>
+          <li>
+            <p>요청된 URL에 맞는 Controller(Handler) 조회 (Mapping 된 Map 이용)</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">String</span> <span class="n">requestURI</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getRequestURI</span><span class="o">();</span> <span class="c1">// 요청된 URL의 정보를 얻어 올 수 있음</span>
+  <span class="k">return</span> <span class="n">handlerMappingMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">requestURI</span><span class="o">);</span> <span class="c1">// 요청된 URL에 따른 Controller 사용. (이 부분 때문에 Interface를 사용한 것 -&gt; 다형성)</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p>해당 Controller(handler)를 지원하는 Adaptor 조회 (Adaptor 목록을 돌리면서 support를 통해 지원 여부 확인)</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">for</span> <span class="o">(</span><span class="nc">MyHandlerAdapter</span> <span class="n">adapter</span> <span class="o">:</span> <span class="n">handlerAdapters</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">adapter</span><span class="o">.</span><span class="na">supports</span><span class="o">(</span><span class="n">handler</span><span class="o">))</span> <span class="o">{</span>
+          <span class="k">return</span> <span class="n">adapter</span><span class="o">;</span>
+      <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p>지원 가능한 Adaptor를 통해 요청된 Controller(handler) 조회 및 로직 수행 후 ModelView 반환, 해당 ModelView의 정보를 통해 view forward 수행</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">ModelView</span> <span class="n">mv</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="na">handle</span><span class="o">(</span><span class="n">request</span><span class="o">,</span><span class="n">response</span><span class="o">,</span><span class="n">handler</span><span class="o">);</span>
+  <span class="nc">String</span> <span class="n">viewName</span> <span class="o">=</span> <span class="n">mv</span><span class="o">.</span><span class="na">getViewName</span><span class="o">();</span> <span class="c1">// 논리 이름 (ex. new-form)</span>
+  <span class="nc">MyView</span> <span class="n">view</span> <span class="o">=</span> <span class="n">viewResolver</span><span class="o">(</span><span class="n">viewName</span><span class="o">);</span>
+            
+  <span class="n">view</span><span class="o">.</span><span class="na">render</span><span class="o">(</span><span class="n">mv</span><span class="o">.</span><span class="na">getModel</span><span class="o">(),</span> <span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+
+    <aside>
+  💡 <strong> V3에서 V4까지 지원하게 끔 확장할 때, main 코드를 거의 건들이지 않고, init 부분에 해당 버전에 대한 정보들(Mapping)만 넣어줌 → OCP를 지킬 수 있음! </strong>
+    
+  </aside>
+
+    <aside>
+  💡 <strong>이 구조가 결국 Spring MVC에서 구축된 구조!!! Spring MVC는 이 구조를 Annotation 기반으로 훨씬 더 쉽게 이용할 수 있게 설정해 둠</strong>
+    
+  </aside>
+  </li>
+</ul>
+:ET

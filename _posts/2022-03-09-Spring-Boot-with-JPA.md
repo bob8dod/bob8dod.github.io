@@ -1,12 +1,12 @@
 ---
 layout: post
-title:  "Spring Boot + JPA Basic [part 1]"
+title:  "Spring Boot와 JPA 기본 설정 및 도메인 분석, 설계"
 date:   2022-03-09
-image:  /posts/jpa2.jpeg
+image:  /posts/springBoot+Jpa.png
 tags:   SpringBoot JPA
 ---
 
-## Chapter 1
+## Spring Boot와 JPA 기본 설정
 
 ![]({{site.baseurl}}/images/posts/post-220309/Untitled 0.png)
 
@@ -139,7 +139,7 @@ tags:   SpringBoot JPA
  
     - Build and run using 과 Run tests using 을 IntelliJ IDEA로 변경하기
 
-## Chapter 2 [도메인 분석 및 설계]
+## 도메인 분석 및 설계
 
 - 도메인 모델
   ![]({{site.baseurl}}/images/posts/post-220309/Untitled 3.png)

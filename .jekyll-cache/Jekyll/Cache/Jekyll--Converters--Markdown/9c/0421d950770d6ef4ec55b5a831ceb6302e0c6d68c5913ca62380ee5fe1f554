@@ -1,0 +1,548 @@
+I"��<h2 id="git의-혁신-branch--merge">Git의 혁신 (branch &amp; merge)</h2>
+
+<p><img src="/images/posts/post3/Untitled 17.png" alt="" /></p>
+
+<ul>
+  <li><strong>branch</strong> : 작업을 진행하다 필요에 의해 <strong>작업을 분기</strong>하는 현상
+    <ul>
+      <li>보통 어떤 이슈가 발생했을 때, 그 이슈를 처리하기 위해 branch를 사용하기도 하고, 어떤 실험이 필요할 때 branch를 사용하기도 함</li>
+      <li>새로운 branch (<strong>new_feature</strong>): 용도에 맞게 분기되어 변형된 작업물</li>
+      <li>기존 branch (<strong>master</strong>): 분기된 작업물의 근간이 되는 작업물의 변형</li>
+      <li>% 만약 분기되지 않고 하나의 작업물이 쭉 변형되는 것 → 하나의 branch만을 가지고 있는 것</li>
+    </ul>
+  </li>
+  <li><strong>branch</strong> 만들고 사용해보기
+    <ul>
+      <li>
+        <p><strong>master</strong> : 근간이 되는 branch. git을 사용하는 그 순간부터 주어지는 기본 branch
+<img src="/images/posts/post3/Untitled 18.png" alt="" /></p>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">git branch “브랜치 이름”</code> : 새로운 branch 생성</li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">git branch</code> : 현재 존재하고 있는 branch들 확인</p>
+
+        <p><img src="/images/posts/post3/Untitled 19.png" alt="" /></p>
+
+        <ul>
+          <li>현재 사용하고 있는 branch에 <strong>* 표시</strong>가 있음.</li>
+        </ul>
+      </li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">git checkout ‘브랜치 이름’</code> : 다른 branch로 이동하기 ( <code class="language-plaintext highlighter-rouge">git checkout -b new_feature</code> : branch <strong>생성 및 이동을 한번에</strong> 하기 )</p>
+
+        <p><img src="/images/posts/post3/Untitled 20.png" alt="" /></p>
+
+        <p><img src="/images/posts/post3/Untitled 21.png" alt="" /></p>
+
+        <ul>
+          <li>이때, 존재하는 파일을 확인하거나 commit log들을 확인하면 master와 동일. 즉, 현재 branch를 이동했을 뿐이지, 이동해서 어떠한 작업도 해주지 않았기 때문에 <strong>master와 동일</strong>한 상태. 즉, <strong>분기가 시작되는 시점</strong>인 것.</li>
+          <li>만약 new_feature에서 파일을 추가하거나 수정하거나 삭제한 후 branch를 master로 checkout한 후 master branch의 commit log, 파일들을 확인한다면, new_feature에서 했던 활동들이 반영이 안되는 것을 확인할 수 있음 → <strong>이게 바로 분기되어 작업을 진행하는 것</strong>. → <strong>branch의 이점!</strong></li>
+          <li>추가로 <code class="language-plaintext highlighter-rouge">git checkout ‘commit주소’</code> 를 명령한다면, 해당 commit의 상태로 이동하는 것이 가능! (reset이 아님!) → 그 commit 시점의 코드들을 확인 및 현재 commit과 비교할 수 있음. (<strong>코드리뷰</strong>에서 유용한 기능)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>branch</strong> 정보 확인
+    <ul>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">git log --branches --decorate</code> : 모든 branch들의 commit 확인</p>
+
+        <p><img src="/images/posts/post3/Untitled 22.png" alt="" /></p>
+
+        <ul>
+          <li>현재 branch의 최신 commit은 <strong>HEAD</strong> → 를 통해 표시. (즉, 현 시점의 위치를 알려주는 것)</li>
+          <li>오른쪽 <strong>decorate</strong>을 통해 어떤 branch에서 commit이 이루어졌는지 확인 가능 (branch의 최신 commit을 표시)</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">git log --branches --decorate --graph</code> : branch들의 흐름을 graph로 보이게 끔 해주는 기능
+        <ul>
+          <li>
+            <p>이는 분기가 일어나고 각 branch가 뻗어 나갔을 때 더 시각적으로 확인이 가능</p>
+
+            <p><img src="/images/posts/post3/Untitled 23.png" alt="" /></p>
+
+            <ul>
+              <li>
+                <ul>
+                  <li>
+                    <p><code class="language-plaintext highlighter-rouge">--oneline</code></p>
+
+                    <p><img src="/images/posts/post3/Untitled 24.png" alt="" /></p>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">git log master..new_feature</code> : 두 <strong>branch의 commit 차이</strong> 확인
+        <ul>
+          <li><strong>B..A</strong> : A에는 있고 B에는 없는 commit 차이</li>
+          <li><strong>git log -p B..A</strong> : 더 자세한 차이 확인 가능 (변경 사항 확인 가능)</li>
+          <li><strong>git diff B..A</strong> : diff 와 동일하지만, branch를 대상으로 진행하는 것</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>merge</strong> : 분기된 branch들을 병합시키는 것
+    <ul>
+      <li>master에 병합하기. (<strong>master가 기준</strong>이 되는 것)
+        <ul>
+          <li>new_feature의 내용이 master에 병합되는 것!</li>
+        </ul>
+
+        <p><img src="/images/posts/post3/Untitled 25.png" alt="" /></p>
+
+        <ul>
+          <li>merge를 진행하면 각 branch가 <strong>통합되는 하나의 새로운 commit</strong>이 생기게 됨. 즉, 이 <strong>commit은 2개의 parent</strong>를 가지게 되는 것!</li>
+        </ul>
+      </li>
+      <li>
+        <p>new_feature에 병합하기 (<strong>new_feature가 기준</strong>이 되는 것)</p>
+
+        <p><img src="/images/posts/post3/Untitled 26.png" alt="" /></p>
+
+        <ul>
+          <li>master와 완전히 동일한 내용을 담도록 설정.</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">git branch -d new_feature</code> : 필요 없는 new_feature branch 삭제하기</li>
+      <li>merge가 발생했을 때 만날 수 있는 경우들 <strong>(Branch &amp; Merge Senario)</strong>
+        <ol>
+          <li><strong>fast-forward</strong> : 빨리 감기
+            <ul>
+              <li>master에서 다른 branch로 분기가 된 후 master는 어떠한 commit도 이루어지지 않은 상태에서 master에 해당 branch를 merge시킬 때, <strong>master가 해당 branch가 가리키는 commit으로 빨리감겨</strong>지기 때문에 fast-forward 라고 지칭.</li>
+              <li><strong>!!! 별도의 commit을 생성하지 않음 !!!</strong> (기존의 case에서는 merge를 하면 별도의 commit이 생성되었었음)</li>
+              <li>master가 가리키는 commit을 바꾸기만 해서 빨리감기, fast-forward라고 지칭</li>
+            </ul>
+
+            <p><img src="/images/posts/post3/Untitled 27.png" alt="" /></p>
+
+            <p><img src="/images/posts/post3/Untitled 28.png" alt="" /></p>
+
+            <ul>
+              <li>이제 hofix는 쓸모없는 branch이므로 hotfix를 지워줌!</li>
+            </ul>
+          </li>
+          <li><strong>recursive : 재귀적 방법</strong>
+            <ul>
+              <li>master가 <strong>분기된 후 새로운 commit</strong>을 한 상황. 즉, master와 분기된 branch의 공통 조상이 있는 상황!!</li>
+              <li>이 상황에서는 재귀적으로 <strong>공통조상</strong>을 찾아 <strong>새로운 commit</strong>과 동시에 merge를 진행! (이 둘을 합쳤다 라는 정보를 가지고 있는 별도의 commit!)</li>
+              <li>
+                <p><strong>!!! 즉, 새로운 commit이 생기는 것 !!!</strong></p>
+
+                <p><img src="/images/posts/post3/Untitled 29.png" alt="" /></p>
+
+                <p><img src="/images/posts/post3/Untitled 30.png" alt="" /></p>
+              </li>
+            </ul>
+          </li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+  <li><strong>branch 충돌 해결 (merge 할 때의 conflict)</strong>
+    <ul>
+      <li>두 branch이 동일한 파일이 없는 상태에서 병합을 하게 되면 충돌은 일어나지 않음.</li>
+      <li>하지만 <strong>두 branch에 같은 파일이 있는 상태라면 충돌이 일어날 수 있음</strong></li>
+      <li>예를 들어 두 branch가 공통으로 가지고 있는 common.txt가 있는 상태에서 분기가 되었다고 가정했을 때, 분기 된 후 <strong>하나의 branch에서만 해당 common.txt 를 수정</strong>하고 다시 병합한다면 (즉, 두 branch들 중에서 하나의 branch에서만 수정이 진행되고 merge한다면) , 충돌은 발생하지 않고 <strong>해당 파일에 대한 변경사항을 자동으로 적용하여 merge</strong> 해줌.</li>
+      <li>
+        <p>하지만,  <strong>두 branch 모두에서 common.txt를 수정(both modified)</strong>했다 하고 병합을 진행하면. <strong>충돌 발생!</strong></p>
+
+        <p><img src="/images/posts/post3/Untitled 31.png" alt="" /></p>
+
+        <p>→ 이렇게 되면 내가 <strong>직접 자동 병합된 부분을 수정</strong>해주고 <strong>따로 commit</strong>을 진행해 주어야됨!</p>
+
+        <p><img src="/images/posts/post3/Untitled 32.png" alt="" /></p>
+
+        <p>→ <strong>두 branch 모두에서 변경되었기에 conflict 발생!</strong> → 자동 파일 merge 실패! → 직접 변경사항을 처리 및 수정하고 add, commit 해주어야 됨!</p>
+
+        <p><img src="/images/posts/post3/Untitled 33.png" alt="" /></p>
+
+        <p>→ 또한, 충돌이 발생하면 해결되기 전까지 해당 branch 옆에 <strong>merging</strong>이라는 표시가 뜸! (병합 중!)</p>
+
+        <p><img src="/images/posts/post3/Untitled 34.png" alt="" /></p>
+
+        <p>→ common.txt 파일의 conflict가 난 상태. ==== 라는 구분자를 기준으로 위의 HEAD까지가 현재 branch(병합의 기준)에서 수정한 부분, 구분자 기준 아래 exp 까지가 외부 branch(병합을 하는)에서 수정한 부분. 즉 이를 통해 <strong>충돌이 난 부분을 알려주고, 이 부분에 대해서 직접 처리하고 사용자에게 맡기는 것.</strong></p>
+
+        <p>→ <strong>수정을 한 후 add, commit을 진행하면 conflict는 해결!</strong></p>
+
+        <p>→ 이런 게 가능한 이유는, 병합이 진행 될 때의 index파일은 둘의 공통이였던 원본 파일(1, Base), 병합이 진행되는 branch의 변경된 파일(2, Local), 병합을 하는 branch의 변경된 파일(3, Remote) <strong>모두를 저장하고 있기에</strong> 이렇게 자동 병합 및 conflict 인지가 가능한 것!  <strong>(3 way merge 기법)</strong></p>
+
+        <p>→ 이런 merge와 conflict를 중점적으로 다뤄주는 Tool들도 있음</p>
+      </li>
+      <li>
+        <p>2 way merge VS 3 way merge</p>
+
+        <p><img src="/images/posts/post3/Untitled 35.png" alt="" /></p>
+      </li>
+    </ul>
+  </li>
+  <li><strong>stash</strong> : 해당 branch에서 작업이 끝나지 않은 상황에서 다른 branch로 이동하고 싶을 때 (즉, commit하기도 애매하고 commit을 안하기에는 이동이 불가능할 때) <strong>stash를 통해 작업을 숨겨놓고 이동이 가능!</strong>
+    <ul>
+      <li>
+        <p>branch에서 commit하지 않고 다른 branch로 넘어가게 되면 이전 branch에서 commit하지 않은 그 파일이 다른 branch에 영향을 미치게 됨.</p>
+
+        <p><img src="/images/posts/post3/Untitled 36.png" alt="" /></p>
+
+        <p>다른 branch에서 f4라는 파일을 생성하고 commit하지 않은 상태에서 master로 이동한 상황. → f4.txt 가 master에게 까지 영향을 미침!</p>
+      </li>
+      <li>
+        <p>이런 상황에서 stash를 사용해야 되는 것!</p>
+        <ul>
+          <li>여기서 주의할 점은 stash는 적어도 <strong>버전관리를 하는 상태인 놈들</strong>, 즉 add를 한번 했던 애들에 대해서만 적용이 가능함!</li>
+          <li><code class="language-plaintext highlighter-rouge">git stash [save]</code> : 현재 작업중인 것을 일단 저장해주고 다른 branch에 영향을 미치지 않도록 숨겨줌.</li>
+          <li><code class="language-plaintext highlighter-rouge">git stash apply</code> : 숨겨놓은 작업을 <strong>다시 사용</strong>할 수 있도록 하는 것
+            <ul>
+              <li>하지만, apply 해준다 해도 해당 stash는 계속 남아 있음. (<strong>git stash list</strong>를 통해 stash 목록을 확인할 수 있음) → 명시적으로 삭제가 필요</li>
+            </ul>
+          </li>
+          <li><code class="language-plaintext highlighter-rouge">git stash drop</code> : 가장 최신 statsh를 삭제해 주는 것.</li>
+          <li><code class="language-plaintext highlighter-rouge">git stash pop</code> : apply 와 drop을 동시에 진행해 주는 것.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>branch의 원리</strong>
+    <ul>
+      <li><strong>HEAD</strong> : git 을 처음 생성하면 반드시 생기는 파일
+        <ul>
+          <li>이 head는 master라는 파일을 가리킴</li>
+          <li>이 master라는 파일은 가장 최신 commit을 가리킴</li>
+          <li>즉 HEAD를 통해 <strong>가장 최신 commit이 무엇인지 알려주는 것</strong></li>
+          <li>여기서 새로운 branch를 생성하게 되면 <strong>ref/heads/new_feature</strong> 라는 새로운 파일이 생김.</li>
+          <li>즉, <strong>branch</strong>들은 이 refs/heads 하위로 생성 되는 것.</li>
+          <li>여기서 만약 새로운 branch로 이동하게 된다면 HEAD 파일은 해당 branch 파일을 가리키게 되고, 그 branch파일은 해당 branch에서 이루어진 가장 최신 commit을 가리키는 것</li>
+          <li>이 HEAD를 통해서 <strong>내가 현재 가리키고 있는 branch의 위치를 알 수 있는 것!</strong> (이 HEAD가 있기에 위의 senario가 가능한 것!)</li>
+          <li>또한 graph를 통해 branch들의 commit log들을 확인할 때, HEAD는 결국 현재 위치를 알려주는 것</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>reset의 원리</strong>
+    <ul>
+      <li>reset의 원리 또한 HEAD와 관련됨.</li>
+      <li>reset은 이전의 commit으로 돌아가며 그 commit의 이후는 숨겨버리는 기능, HEAD는 현재 branch의 최신 commit이 어디인지 가리키는 파일.</li>
+      <li>즉, reset을 진행하면 <strong>HEAD가 현재 branch의 최신 commit을 reset에서 설정한 commit으로 가리키게 끔 변경하여 돌아가는 것!</strong></li>
+      <li>
+        <p>또한, 이런 reset이 진행 되었을 때, 해당 commit으로 돌아가고, 그 이후의 commit은 삭제되는 것이 아닌 숨겨지는 것. 그렇기에 reset을 취소할 수 있는 것! 그 <strong>취소된 commit 중 가장 최신 commit이 저장된 것이 바로 ORIG_HEAD</strong> <strong>(origin head, 원래의 head!)</strong> . 이를 이용해서 reset을 취소할 수 있음! (병합 또한 ORIG_HEAD로 병합 이전으로 복구가 가능!)</p>
+
+        <p><img src="/images/posts/post3/Untitled 37.png" alt="" /></p>
+      </li>
+      <li>
+        <p><strong>reset</strong> 취소하기! → 똑같이 reset을 이용해서 ORIG_HEAD로 복구하면 됨!</p>
+
+        <p><img src="/images/posts/post3/Untitled 13.png" alt="" /></p>
+      </li>
+      <li>
+        <p>혹은 현재 branch에서 했던 모든 작업들이 담긴 log를 통해서도 복구가 가능!!</p>
+
+        <p><img src="/images/posts/post3/Untitled 38.png" alt="" /></p>
+
+        <p>→ git reflog 를 통해 확인 가능</p>
+
+        <p><img src="/images/posts/post3/Untitled 39.png" alt="" /></p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="원격-저장소">원격 저장소</h2>
+
+<ul>
+  <li><strong>원격 저장소 (Remote Repository)</strong>
+    <ul>
+      <li>현재 사용 중인 local 저장소가 아닌 따로 연결되어 있는 다른 저장소</li>
+      <li>진행 중인 작업을 <strong>백업</strong>하거나 다른 사람들과 <strong>협업</strong>을 하기 위해 사용</li>
+      <li><strong>협업</strong>은 다른 개발자들과 할 수 있는 것이지만, 사실 나 혼자서도 협업이 가능 → 집에서 개발을 진행하다가 회사에 가서 회사 컴퓨터로 이어서 개발을 진행하는 상황 등</li>
+    </ul>
+  </li>
+  <li><strong>백업</strong> → 원격 저장소<strong>(Github)</strong> 연결 (<strong>clone</strong> with <strong>HTTPS</strong>)
+    <ol>
+      <li>원격 저장소에 있는 코드를 받아 오기 (<strong>clone</strong>) OR 원격 저장소에 Repository 생성 후 연결, 연결된 상태에서 작업
+        <ul>
+          <li>github에 새로운 repository를 생성</li>
+          <li><code class="language-plaintext highlighter-rouge">git clone “원격 저장소 주소” [‘저장하고 싶은 directory’]</code>
+            <ul>
+              <li><strong>git clone https://github.com/git/git.git .</strong> : ‘.’ 은 현재 경로</li>
+            </ul>
+          </li>
+          <li>후, git이 존재하는 파일로 경로 이동.</li>
+          <li>받아 온 후 추가로 remote 할 필요 없이 자동으로 해당 경로를 origin이라는 별명으로 remote 함.</li>
+        </ul>
+      </li>
+      <li>이미 작업이 이루어진 상태에서 원격 저장소에 Repository 생성 후 연결
+        <ul>
+          <li>github에 새로운 repository를 생성</li>
+          <li><strong>remote</strong>를 통해 현재 local 저장소에 원격저장소 연결하기
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">git remote add origin ‘원격저장소 주소’</code>
+                <ul>
+                  <li><strong>remote add</strong> : 원격저장소를 연결하겠다.</li>
+                  <li><strong>orgin ‘원격저장소 주소’</strong> : 해당 주소에. 근데 주소가 기니 앞으로는 이 주소를 <strong>origin</strong> 이라고 부르겠다.</li>
+                </ul>
+              </li>
+              <li>remote를 통해 하나의 local 저장소에 여러 원격 저장소에 연결 가능</li>
+            </ul>
+          </li>
+          <li><strong>remove</strong>를 통해 연결 해제
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">git remote remove origin</code>
+                <ul>
+                  <li><strong>remote remove</strong> : 원격저장소를 제거하겠다. (연결 해제하겠다)</li>
+                  <li><strong>origin</strong> : 해당 별명을 가지고 있는 원격저장소를!</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li><strong>push</strong>를 통해 local 저장소의 변경사항을 원격저장소에 저장하기 <strong>(백업)</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">git push -u origin master</code>
+                <ul>
+                  <li><strong>push</strong> : 넣겠다</li>
+                  <li><strong>-u origin master</strong> : origin이라는 별명을 가지고 있는 원격저장소의 master branch에 (<strong>-u</strong> 는 가장 처음 push를 진행할 때, 혹은 추후에 다른 branch나 다른 원격저장소에 push할 때 처음에만 사용하면 됨)</li>
+                  <li>추후에는 <strong>git push</strong> 만 적어주어도 해당 origin 저장소의 master branch에 저장됨.</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+  <li><strong>백업</strong> → <strong>ssh</strong>를 통한 원격 저장소 연결 (<strong>clone</strong> with <strong>SSH</strong>)
+    <ul>
+      <li><strong>secure shell(ssh)</strong>
+        <ul>
+          <li>연결(remote), push, pull 을 할 때 따로 로그인을 하지 않아도 된다는 장점이 있음. 즉, 자동으로 로그인해주는 것.</li>
+          <li>HTTPs 와 아예 다른 방법이라기 보다는 <strong>대등한 관계의 서로 다른 통신</strong>이라고 생각하면 됨.</li>
+        </ul>
+      </li>
+      <li>연결 방법
+        <ul>
+          <li>
+            <p>사용자 경로에 <strong>ssh-keygen</strong> 을 통해 다른 컴퓨터(원격 저장소)로 접속할 수 있는 하나의 비밀번호가 생성됨. (기계적으로 굉장히 복잡한 비밀번호)</p>
+
+            <p><img src="/images/posts/post3/Untitled 40.png" alt="" /></p>
+          </li>
+          <li><code class="language-plaintext highlighter-rouge">git checkout -b new_feature</code> : branch <strong>생성 및 이동을 한번에</strong> 하기</li>
+          <li>
+            <p>자신의 사용자(User) 경로에 .ssh 에 해당 비밀번호 파일이 생성됨</p>
+
+            <p><img src="/images/posts/post3/Untitled 41.png" alt="" /></p>
+
+            <ul>
+              <li><strong>id_rsa</strong> : 기밀의 정보가 들어 있는 것 → <strong>나의 컴퓨터에 저장</strong>하는 것</li>
+              <li><strong>id_rsa.pub</strong> : 기밀이 아닌 공개된 정보가 들어 있는 것 → <strong>원격 저장소에 저장</strong>하여, 나의 컴퓨터와 접속할 때 인증되도록 하는 것.
+                <ul>
+                  <li>즉, 내가 원하는 <strong>원격저장소의 적당한 파일에 해당 id_rsa.pub를 저장</strong>해두면, 따로 로그인없이 접속이 가능한 것</li>
+                </ul>
+
+                <p><img src="/images/posts/post3/Untitled 42.png" alt="" /></p>
+              </li>
+            </ul>
+          </li>
+          <li><strong>Github(원격저장소)에 ssh로 연결</strong>하기
+            <ul>
+              <li>방금 생성된 id_rsa.pub(public key)의 내용(인증키)을 Github에 넣어주기만 하면 됨.
+                <ol>
+                  <li>.ssh/id_ras.pub 의 내용(인증키)를 복사</li>
+                  <li>자신의 Github에서 ‘Settings’로 들어간 후 ‘SSH and GPG Keys’ 항목으로 이동</li>
+                  <li>New SSH key 를 통해 Key값에 자신의 id_ras.pub 내용을 입력.</li>
+                </ol>
+              </li>
+            </ul>
+
+            <p>→ 원격저장소인 Github에 자신의 ssh public key(id_ras.pub)를 등록한 것!</p>
+
+            <p>→ 즉, ssh private key(id_ras) 를 가지고 있는 컴퓨터는 별다른 인증없이 바로 원격저장소에 접속 가능!</p>
+          </li>
+          <li>연결된 Github(원격 저장소) 사용하기
+            <ul>
+              <li>
+                <p>repository의 HTTPS 링크가 아닌 <strong>SSH 링크로 clone</strong></p>
+
+                <p><img src="/images/posts/post3/Untitled 43.png" alt="" /></p>
+
+                <ul>
+                  <li>이제 add commit, push 를 해주면 잘 되는 것을 확인 가능</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>협업</strong>
+    <ul>
+      <li>하나의 Github(원격저장소) repository를 git_home(집) 과 git_office(회사)에 clone하여 집에서 작업하던 것들을 회사에서 <strong>이어 작업</strong>할 수 있도록 <strong>협업을 진행하는 시나리오</strong>. [home : 집에 있는 컴퓨터, office : 회사에 있는 컴퓨터라고 가정하고 진행]</li>
+      <li><strong>git clone</strong>을 통해 원격저장소 연결. (home, office 둘다.)</li>
+      <li>방법
+        <ol>
+          <li>먼저 두 컴퓨터(directory)에 <strong>clone</strong>을 통해 github repository를 받아옴</li>
+          <li>집에서 코드를 작성해서 repo에 올린 후 이 코드를 받아 office에서 이어 받아서 개발하는 상황
+            <ul>
+              <li><strong>home</strong>
+                <ul>
+                  <li>파일을 하나 생성하여 해당 home local repo에 올린 후 <strong>(add, commit)</strong></li>
+                  <li>이를 <strong>push</strong>를 통해 원격저장소(github)에 올려줌 [clone 으로 원격저장소를 연결했다면, 자동으로 origin이라는 별명으로 remote되기에 이를 그냥 push 하면 됨 (master라는 branch에 자동 연결)]</li>
+                </ul>
+              </li>
+              <li><strong>office</strong>
+                <ul>
+                  <li>clone을 한 상태이기에 <strong>pull</strong>을 통해 현재 원격 repository에 변경되어 있는 파일들을 가져옴. (home을 통해 변경하고 push된 파일들)</li>
+                  <li>가져온 후 이를 수정한 후 local repository에 <strong>add 및 commit</strong> 후 다시 <strong>push</strong>하여 원격 저장소(Github)에 저장.</li>
+                </ul>
+              </li>
+              <li>% 이런 식으로 다른 개발자들과도 협업을 할 수 있고, 나 자신이 이동해서 개발 진행 가능.</li>
+            </ul>
+          </li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+  <li><strong>pull VS fetch</strong>
+    <ul>
+      <li><strong>pull</strong> : 원격저장소의 현상태를 그대로 다운로드 받고, 원격저장소의 최신 commit이 어느 위치에 있는지 기록하며, <strong>지역저장소까지 그 최신 commit의 위치로 설정</strong>함. (즉, 지역 저장소는 pull을 하면 원격저장소와 동일한 상태가 되는 것) → 즉, pull은 <strong>원격저장소의 branch(origin/master)를 그대로 받아와 병합까지 진행한 것!</strong></li>
+      <li><strong>fetch</strong> : 원격저장소의 현상태를 그대로 다운로드 받고, 원격저장소의 최신 commit이 어느 위치에 있는지 기록은 하지만, <strong>지역저장소에는 영향을 주지 않는 것.</strong> (즉, 지역 저장소는 fecth를 해도 이전과 동일한 상태) → 즉, <strong>fetch는 원격저장소의 branch(origin/master) 를 받아와 병합하지 않은 상태로 둔 것!</strong>
+        <ul>
+          <li>이는, 원격저장소의 내용과 지역저장소의 내용의 차이점을 비교할 수 있음. → <strong>git diff HEAD origin/master</strong> ( HEAD : 지역 저장소의 현 commit, origin/master : 원격 저장소의 현 commit)</li>
+          <li>차이를 확인한 후 그냥 받아와도 되겠다 판단이 들면 원격저장소의 내용을 현 branch에 병합시키면 됨→ <strong>git merge origin/master</strong></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Tag</strong>
+    <ul>
+      <li>branch와 유사하면서 다른 기능</li>
+      <li>branch는 항상 그 branch에 해당 하는 최신 commit을 가리킴. 즉, 언제나 다른 commit (최신 commit)을 가리킴</li>
+      <li>tag는 tag 한 시점의 commit을 가리킴. 즉, <strong>한번 tag를 지정하면 언제나 똑같은 commit을 가리킴 (release의 version개념)</strong></li>
+      <li>그래서 보통 사용자들에게 배포할 때 사용</li>
+      <li>Tag 달기
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">git tag 1.0.0 main → light version</code>
+            <ul>
+              <li><strong>tag</strong> : 태그를 달겠다.</li>
+              <li><strong>1.0.0</strong> : 해당 이름으로</li>
+              <li><strong>main</strong> : 현재 main branch가 가리키고 있는 commit에. (commit의 주소를 직접 지정하여 이전 commit에도 tag를 달 수 있음)</li>
+            </ul>
+
+            <p><img src="/images/posts/post3/Untitled 44.png" alt="" /></p>
+
+            <p>그럼 이런식으로 해당 commit에 tag가 붙게됨.</p>
+          </li>
+          <li><code class="language-plaintext highlighter-rouge">git tag -a 1.0.1 -m ‘bug fix’ main</code> → annotation version
+            <ul>
+              <li><strong>tag</strong> : tag를 달겠다.</li>
+              <li><strong>-a</strong> : annotation version 으로! → 해당 태그에 대한 설명을 <strong>주석</strong>으로 달 수 있음.</li>
+              <li><strong>-m</strong> : 주석의 내용은</li>
+              <li><strong>‘message’</strong> : 해당 message로 주석을 달겠다</li>
+              <li><strong>main</strong> : main branch가 가리키는 commit에</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>Tag 원격 저장소에 올리기
+        <ul>
+          <li>기본적인 push를 하면 올라가지 않고 <strong>–tag를 붙여줘야지 올라감</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">git push -u origin main --tag</code>
+                <ul>
+                  <li><strong>push</strong> : 원격저장소에 올리겠다.</li>
+                  <li><strong>-u origin main</strong> : origin repository의 main branch에</li>
+                  <li><strong>–tag</strong> : 태그를 포함해서!</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>Tag 삭제하기
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">git tag -d 1.1.1</code>
+            <ul>
+              <li><strong>-d</strong> : 삭제한다</li>
+              <li><strong>1.1.1</strong> : 해당 이름을 가진 tag를</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Rebase</strong>
+    <ul>
+      <li>
+        <p>merge와의 차이</p>
+
+        <p>% m을 f로 병합한다 가정</p>
+
+        <p><img src="/images/posts/post3/Untitled 45.png" alt="" /></p>
+
+        <p><strong>merge</strong>같은 경우 새로운 commit을 생성하고 둘을 병합.</p>
+
+        <p><strong>rebase</strong>같은 경우 <strong>base</strong>(m과 f의 공통 조상인 commit)를 기준으로 그 base이후의 f에서 이루어진 commit을 따로 임시저장소(patch)에 저장 후 이들을 없애주고 f의 위치를 m으로 이동시킴.</p>
+
+        <p><img src="/images/posts/post3/Untitled 46.png" alt="" /></p>
+
+        <p>그 후 patch에 있는 f의 commit들을 현 branch에 하나 하나 병합 시켜주며 f를 해당 commit으로 이동시켜줌. 이걸 patch에 있는 모든 commit에 대해 진행</p>
+
+        <p><img src="/images/posts/post3/Untitled 47.png" alt="" /></p>
+
+        <p>결론적으로, <strong>merge와 rebase의 f가 가리키는 최신 commit은 같은 commit.</strong> (즉, 둘 다 같은 내용을 가지고 있다는 것)</p>
+
+        <p>차이점은 <strong>merge</strong>는 history가 병렬적으로 나열되어 있어서 history 확인이 까다롭지만, 사용하는 것이 쉽고 간결하고 <strong>rebase</strong>는 history가 직렬적으로 있어 history 확인이 용이하지만, 사용하는 것이 까다롭다는 점</p>
+      </li>
+      <li>사용
+        <ul>
+          <li>
+            <p><code class="language-plaintext highlighter-rouge">git rebase master</code> <strong>(checkout rb) → rb에 master 병합 (using rb)</strong></p>
+
+            <p><img src="/images/posts/post3/Untitled 48.png" alt="" /></p>
+          </li>
+          <li>
+            <p><code class="language-plaintext highlighter-rouge">git merge rb</code> (checkout master) - fast-foward를 통해 master를 rb의 위치로 오게끔 하기</p>
+
+            <p><img src="/images/posts/post3/Untitled 49.png" alt="" /></p>
+          </li>
+        </ul>
+      </li>
+      <li><strong>충돌 해결하기</strong>
+        <ul>
+          <li>merge는 위에서 봤듯이 충돌이 발생하면 그 지점에서 생긴 통합적인 충돌만 해결하면 됐었음. (병렬적으로 진행하기에)</li>
+          <li>하지만 rebase는 <strong>직렬적으로 진행</strong>하기에, <strong>병합 과정에서의 그 직렬의 history에 발생하는 모든 conflict를 처리</strong>해줘야됨.
+  또한, 이 모든 순차적인 conflict를 처리해줘야지 마지막으로 병합 되는 것을 확인할 수 있음.</li>
+        </ul>
+      </li>
+      <li>% rebase 같은 경우 까다롭기에 공유하는 repository에서는 가급적이면 그냥 merge를 사용하는 것이 좋음</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="총-정리">총 정리</h2>
+
+<p><img src="/images/posts/post3/Untitled 50.png" alt="" /></p>
+
+<p><strong>% 지금까지 배운 모든 개념을 한번에 정리한 그림. 굉장히 유용하고 직관적임</strong></p>
+
+<h2 id="git-flow">GIt Flow</h2>
+
+<p><img src="/images/posts/post3/Untitled 51.png" alt="" /></p>
+
+<ul>
+  <li>가장 중요한 branch는 <strong>master</strong>와 <strong>develop</strong>.</li>
+  <li>실제로 개발이 진행되는 branch는 <strong>develop branch</strong></li>
+  <li>특정한 기능(좀 큰 기능)을 추가하거나 수정할 때는 <strong>별도의 feature</strong>라는 branch를 생성하고 그 branch에서 개발 진행. 기능에 대해 개발하고 그 기능을 적용하기 위해 <strong>develop branch에 병합</strong>.</li>
+  <li>버그나 작은 기능의 수정 등은 develop에서 진행.</li>
+  <li>작업을 마무리하고 사용자들에게 <strong>배포하는 시점</strong>이 오면 (웹 서비스라 하면, 그 서버에 해당 작업을 반영하는 순간의 직전) release라는 branch를 만들어 <strong>그 branch를 통해 release 진행</strong>.</li>
+  <li>release 후 여러가지 버그 수정, 문서 업데이트 등은 그 release branch 안에서 진행. 이 작업들은 develop에 반영하기 위해 <strong>지속적으로 develop에 merge</strong> 시킴 (나중에 한번에 merge하면 conflict 가 자주 발생하므로)</li>
+  <li><strong>실제로 배포</strong>를 하려고 할 때는 해당 <strong>release의 작업을 master에 병합하여 실제 배포</strong>를 진행. <strong>(Tag도 함께 사용.→ 기록)</strong></li>
+  <li>즉, master는 사용자에게 제공되었던 그 버전들만을 모아놓는 branch임</li>
+  <li>사용자에게 버전을 제공하고 있는 도중 긴급하고 사소한 버그에 대해선 <strong>hotfix branch</strong>에서 빠르게 처리하고 다시 master로 release 진행.</li>
+  <li>
+    <p><strong>GitFlow를 진행한 결과 log</strong> (원격저장소에서 pull request, merge 까지 진행)</p>
+
+    <p><img src="/images/posts/post3/Untitled 52.png" alt="" /></p>
+  </li>
+</ul>
+:ET

@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "Spring Boot + API (JPA 최적화) [part 1]"
+title:  "JPA를 이용한 API 개발 최적화 (Version 1)"
 date:   2022-03-20
-image:  /posts/jpa2.jpeg
+image:  /posts/JPA+API.png
 tags:   SpringBoot JPA
 ---
 
@@ -14,7 +14,7 @@ tags:   SpringBoot JPA
 </ul>
 </aside>
 
-## Chapter 1 [API 개발 기본]
+## API 개발 기본
 
 - 회원 API
     - RestAPI 사용 → @RestController 
@@ -121,7 +121,7 @@ tags:   SpringBoot JPA
         - 굳이 postconstruct에 넣지 않고 service를 통해 em관리를 하는 이유 : postconstruct에서 직접적으로 transactional을 먹일 수 없기에.
         - TIP! ctrl + alt + M → method 추출
 
-## Chapter 2 [API 개발 고급 (1)]
+## API 개발 고급 (Version 1)
 
 - **FethType.LAZY (지연로딩)일 때의 조회 성능 최적화! (xToOne)**
 - 주문 조회 API

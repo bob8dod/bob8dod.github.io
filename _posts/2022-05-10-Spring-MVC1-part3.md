@@ -1,12 +1,12 @@
 ---
 layout: post
-title:  "Spring MVC #1 part3 "
+title:  "Spring MVC"
 date:   2022-05-10
-image:  /posts/springMVC.jpg
+image:  /posts/spring-mvc.png
 tags:   SpringBoot MVC
 ---
 
-## Chapter 5 [Spring MVC - 구조 이해]
+## Spring MVC - 구조 이해
 
 ### 스프링 MVC 전체 구조
 
@@ -141,7 +141,7 @@ tags:   SpringBoot MVC
     ```
     
 
-## Chapter 6 [Spring MVC - 기본 기능]
+## Spring MVC - 기본 기능
 
 ### 프로젝트 생성
 

@@ -1,11 +1,11 @@
 ---
 layout: post
-title:  "Spring Boot + API (JPA 최적화) [part 2]"
+title:  "JPA를 이용한 API, OSIV 개발 최적화 (Version 2)"
 date:   2022-03-24
-image:  /posts/jpa2.jpeg
+image:  /posts/JPA+API.png
 tags:   SpringBoot JPA
 ---
-## Chapter 3 [API 개발 고급(2)]
+## API 개발 고급 (Version 2)
 
 - **컬렉션 조회 최적화! (xToMany)**
 - 주문 조회 API (Collection 조회)
@@ -239,7 +239,7 @@ tags:   SpringBoot JPA
     </aside>
 
 
-# Chapter 4 [OSIV와 성능 최적화]
+## OSIV와 성능 최적화
 
 - OSIV : Open Session In View (하이버네이트), Open EntityManager In View (JPA)
 - spring.jpa.open-in-view: false (OSIV 종료, default: true)
