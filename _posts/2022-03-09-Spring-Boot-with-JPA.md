@@ -2,7 +2,7 @@
 layout: post
 title:  "Spring Boot와 JPA 기본 설정 및 도메인 분석, 설계"
 date:   2022-03-09
-image:  /posts/springBoot+Jpa.png
+image:  /posts/SpringBoot+JPA.png
 tags:   SpringBoot JPA
 ---
 

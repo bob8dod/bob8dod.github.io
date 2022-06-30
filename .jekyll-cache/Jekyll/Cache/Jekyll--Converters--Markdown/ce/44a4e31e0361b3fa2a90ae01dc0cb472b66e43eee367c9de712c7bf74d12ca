@@ -1,0 +1,650 @@
+I"��<h2 id="project-description">Project Description</h2>
+
+<p><a href="/images/posts/post-220617/description.pdf">Description.pdf</a></p>
+
+<p><img src="/images/posts/post-220617/Untitled.png" alt="" /></p>
+
+<p><img src="/images/posts/post-220617/Untitled 1.png" alt="" /></p>
+
+<h2 id="project-setting">Project Setting</h2>
+
+<p><img src="/images/posts/post-220617/Untitled 2.png" alt="" /></p>
+
+<ul>
+  <li>Gradle Project, Java(ver 11), Spring Boot(ver 2.7.0)</li>
+  <li>Spring MVC - Spring Web</li>
+  <li>Annotation library - Lombok</li>
+  <li>View Template - Thymeleaf</li>
+  <li>
+    <p>DataBase - H2 Database (SQL), Spring Data JPA, AWS RDS (SQL)</p>
+  </li>
+  <li>스프링 부트 라이브러리
+    <ul>
+      <li>spring-boot-starter-web
+        <ul>
+          <li>spring-boot-starter-tomcat: 톰캣 (웹서버)</li>
+          <li>spring-webmvc: 스프링 웹 MVC</li>
+        </ul>
+      </li>
+      <li>spring-boot-starter-thymeleaf: 타임리프 템플릿 엔진(View)</li>
+      <li>spring-boot-starter(공통): 스프링 부트 + 스프링 코어 + 로깅</li>
+      <li>spring-boot
+        <ul>
+          <li>spring-core</li>
+        </ul>
+      </li>
+      <li>spring-boot-starter-logging
+  logback, slf4j</li>
+    </ul>
+  </li>
+  <li>테스트 라이브러리
+    <ul>
+      <li>spring-boot-starter-test
+        <ul>
+          <li>junit : 테스트 프레임워크</li>
+          <li>mockito : 목 라이브러리</li>
+          <li>aseertj : : 테스트 코드를 좀 더 편하게 작성하게 도와주는 라이브러리</li>
+          <li>spring-test : 스프링 통합 테스트 지원</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>Gradle (build.gradle)</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">plugins</span> <span class="o">{</span>
+  	<span class="n">id</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="err">'</span> <span class="n">version</span> <span class="err">'</span><span class="mf">2.6</span><span class="o">.</span><span class="mi">4</span><span class="err">'</span>
+  	<span class="n">id</span> <span class="err">'</span><span class="n">io</span><span class="o">.</span><span class="na">spring</span><span class="o">.</span><span class="na">dependency</span><span class="o">-</span><span class="n">management</span><span class="err">'</span> <span class="n">version</span> <span class="err">'</span><span class="mf">1.0</span><span class="o">.</span><span class="mi">11</span><span class="o">.</span><span class="na">RELEASE</span><span class="err">'</span>
+  	<span class="n">id</span> <span class="err">'</span><span class="n">java</span><span class="err">'</span>
+  <span class="o">}</span>
+    
+  <span class="n">group</span> <span class="o">=</span> <span class="err">'</span><span class="n">Talk_with</span><span class="err">'</span>
+  <span class="n">version</span> <span class="o">=</span> <span class="err">'</span><span class="mf">0.0</span><span class="o">.</span><span class="mi">1</span><span class="o">-</span><span class="no">SNAPSHOT</span><span class="err">'</span>
+  <span class="n">sourceCompatibility</span> <span class="o">=</span> <span class="err">'</span><span class="mi">11</span><span class="err">'</span>
+    
+  <span class="n">configurations</span> <span class="o">{</span>
+  	<span class="n">compileOnly</span> <span class="o">{</span>
+  		<span class="n">extendsFrom</span> <span class="n">annotationProcessor</span>
+  	<span class="o">}</span>
+  <span class="o">}</span>
+    
+  <span class="n">repositories</span> <span class="o">{</span>
+  	<span class="n">mavenCentral</span><span class="o">()</span>
+  <span class="o">}</span>
+    
+  <span class="n">dependencies</span> <span class="o">{</span>
+  	<span class="n">implementation</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="o">:</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="n">starter</span><span class="o">-</span><span class="n">data</span><span class="o">-</span><span class="n">jpa</span><span class="err">'</span> <span class="c1">//spring-data-jpa</span>
+  	<span class="n">implementation</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="o">:</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="n">starter</span><span class="o">-</span><span class="n">thymeleaf</span><span class="err">'</span> <span class="c1">//veiw template</span>
+  	<span class="n">implementation</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="o">:</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="n">starter</span><span class="o">-</span><span class="n">web</span><span class="err">'</span> <span class="c1">// spring-web</span>
+  	<span class="n">implementation</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="o">:</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="n">devtools</span><span class="err">'</span> <span class="c1">// for easy rebuilding</span>
+  	<span class="n">implementation</span> <span class="err">'</span><span class="n">com</span><span class="o">.</span><span class="na">github</span><span class="o">.</span><span class="na">gavlyukovskiy</span><span class="o">:</span><span class="n">p6spy</span><span class="o">-</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="nl">starter:</span><span class="mf">1.8</span><span class="o">.</span><span class="mi">0</span><span class="err">'</span> <span class="c1">//for tracking sql query</span>
+  	<span class="n">runtimeOnly</span> <span class="err">'</span><span class="nl">mysql:</span><span class="n">mysql</span><span class="o">-</span><span class="n">connector</span><span class="o">-</span><span class="n">java</span><span class="err">'</span> <span class="c1">// for AWS RDS</span>
+  	<span class="c1">// implementation 'com.h2database:h2' // for Test _ in Local DB</span>
+  	<span class="n">annotationProcessor</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">projectlombok</span><span class="o">:</span><span class="n">lombok</span><span class="err">'</span> <span class="c1">// for annotation</span>
+  	<span class="n">testImplementation</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="o">:</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="n">starter</span><span class="o">-</span><span class="n">test</span><span class="err">'</span> <span class="c1">// spring-test</span>
+    
+  	<span class="c1">// AWS SDK (Using S3)</span>
+  	<span class="n">implementation</span> <span class="nf">platform</span><span class="o">(</span><span class="err">'</span><span class="n">com</span><span class="o">.</span><span class="na">amazonaws</span><span class="o">:</span><span class="n">aws</span><span class="o">-</span><span class="n">java</span><span class="o">-</span><span class="n">sdk</span><span class="o">-</span><span class="nl">bom:</span><span class="mf">1.11</span><span class="o">.</span><span class="mi">1000</span><span class="err">'</span><span class="o">)</span>
+  	<span class="n">implementation</span> <span class="err">'</span><span class="n">com</span><span class="o">.</span><span class="na">amazonaws</span><span class="o">:</span><span class="n">aws</span><span class="o">-</span><span class="n">java</span><span class="o">-</span><span class="n">sdk</span><span class="o">-</span><span class="n">s3</span><span class="err">'</span>
+  <span class="o">}</span>
+    
+  <span class="n">tasks</span><span class="o">.</span><span class="na">named</span><span class="o">(</span><span class="err">'</span><span class="n">test</span><span class="err">'</span><span class="o">)</span> <span class="o">{</span>
+  	<span class="n">useJUnitPlatform</span><span class="o">()</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>application.yml</p>
+
+    <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="na">spring</span><span class="pi">:</span>
+    <span class="na">datasource</span><span class="pi">:</span>
+      <span class="na">url</span><span class="pi">:</span>  <span class="s">jdbc:mysql://${DB_URL}:3306/capstone</span> <span class="c1"># jdbc:h2:tcp://localhost/~/capstone</span>
+      <span class="na">username</span><span class="pi">:</span> <span class="s">${DB_NAME}</span> <span class="c1"># park</span>
+      <span class="na">password</span><span class="pi">:</span> <span class="s">${DB_PASSWORD}</span> <span class="c1"># </span>
+      <span class="na">driver-class-name</span><span class="pi">:</span> <span class="s">com.mysql.cj.jdbc.Driver</span> <span class="c1"># org.h2.Driver</span>
+    
+    <span class="na">jpa</span><span class="pi">:</span>
+      <span class="na">hibernate</span><span class="pi">:</span>
+        <span class="na">ddl-auto </span><span class="pi">:</span> <span class="s">update</span>
+      <span class="na">properties</span><span class="pi">:</span>
+        <span class="na">hibernate</span><span class="pi">:</span>
+          <span class="na">format_sql </span><span class="pi">:</span> <span class="no">true</span>
+    
+  <span class="na">logging</span><span class="pi">:</span>
+    <span class="na">level</span><span class="pi">:</span>
+      <span class="na">org.hibernate.SQL</span><span class="pi">:</span> <span class="s">debug</span>
+  <span class="c1">#    org.hibernate.type: trace # p6spy로 대체</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h2 id="domain-analysis">Domain Analysis</h2>
+
+<h3 id="요구사항-분석">요구사항 분석</h3>
+
+<ul>
+  <li>기능 목록
+    <ol>
+      <li>라이브 지도 기능
+        <ul>
+          <li>실시간 인원 측정 및 혼잡도</li>
+          <li>실시간 드론 측정 위치 알림</li>
+          <li>좌표에 따른 장소 정보 제공</li>
+        </ul>
+      </li>
+      <li>라이브 통계 기능
+        <ul>
+          <li>실시간 인원 변화량 제공</li>
+          <li>누적 데이터 통계량 제공</li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+</ul>
+
+<h3 id="도메인-모델과-테이블-설계-및-분석">도메인 모델과 테이블 설계 및 분석</h3>
+
+<ul>
+  <li>
+    <p>도메인 모델 설계 및 분석</p>
+
+    <p><img src="/images/posts/post-220617/Untitled 3png" alt="" /></p>
+
+    <p>“장소”와 “검출 객체”의 관계</p>
+
+    <ul>
+      <li>하나의 장소에 여러 검출 객체가 Mapping 됨</li>
+      <li>검출 객체의 좌표(위도, 경도)에 따라 장소에 Mapping</li>
+    </ul>
+  </li>
+  <li>
+    <p>엔티티 설계 및 분석</p>
+
+    <p><img src="/images/posts/post-220617/Untitled 4.png" alt="" /></p>
+
+    <ul>
+      <li>장소(Point)
+        <ul>
+          <li>장소 정보 : id(식별자), place(장소 명), percentage(혼잡도), count(실시간 인원), avgCount(평균 인원), imgSrc(장소 사진), latitude(위도), longitude(경도)</li>
+          <li>위치 정보 [사각형 범위] : latTopLeft(좌상단 위도), lonTopLeft(좌상단 경도), latBottRight(우하단 위도), lonBottRight(우하단 경도)</li>
+          <li>최근 관련 데이터(검출 객체) 변경 시점 : lastCommittedTime(새로 들어온 데이터를 인지하기 위함)</li>
+          <li><strong>연관 관계</strong> : infos(검출 객체 정보, <code class="language-plaintext highlighter-rouge">@OneToMany</code>)</li>
+        </ul>
+      </li>
+      <li>검출 객체(Info)
+        <ul>
+          <li>검출 객체 정보 : date(검출 시각), leftValue(객체 박스 위치), topValue(객체 박스 위치), widthValue(객체 박스 너비), heightValue(객체 박스 높이)</li>
+          <li>드론 정보: lat(위도), lon(경도), droneHeight(고도), azimuth(방위각)</li>
+          <li><strong>연관 관계</strong> : point(장소, <code class="language-plaintext highlighter-rouge">@ManyToOne</code>)</li>
+        </ul>
+      </li>
+      <li>검출 데이터(Temp)
+        <ul>
+          <li>Info와 동일한 field를 가지고 있는 Entity지만, 연관관계가 설정되어 있지 않은 Entity</li>
+          <li>드론에서 실시간으로 저장된 데이터</li>
+          <li>해당 데이터를 Spring에서 분석 후 JPA를 통해 장소(Point)와 매핑시켜 새로운 Info를 만드는 것</li>
+          <li>즉, Info를 만들기 위한 일시적인 데이터</li>
+        </ul>
+
+        <p><img src="/images/posts/post-220617/Untitled 5.png" alt="" /></p>
+
+        <blockquote>
+          <p>최대한 단순한 구조로 Entity 생성</p>
+        </blockquote>
+      </li>
+    </ul>
+
+    <aside>
+  ⚠️ <strong> 굳이 Temp 와 Info 2개의 검출 객체,데이터 Entity를 만든 이유 </strong>
+  <ul>
+      <li>먼저 Temp는 실시간으로 드론에서 검출된 객체의 정보를 DB에 저장. 이때, 저장되는 순간에 연관관계를 판단하고 매핑을 진행하기에는 어려움이 있다 판단하여, 일단 저장한 후 클라이언트가 서버에 정보를 요청할 경우 Temp의 정보를 이용해서 Point(장소)와 연관관계를 생성한 후에 Info를 새로 저장하는 로직으로 구현. 즉, Info는 Temp에 Point의 연관관계가 들어간 데이터</li>
+      <li>또한, 실시간으로 제공해야 되는 데이터(Temp)와 누적되어 제공되는 데이터(Info)의 차이가 있으므로 구분함</li>
+  </ul>
+  </aside>
+  </li>
+  <li>
+    <p>테이블 설계 및 분석</p>
+
+    <p><img src="/images/posts/post-220617/Untitled 6.png" alt="" /></p>
+
+    <ul>
+      <li>INFO: point의 point_id를 forigen key로 설정하여 연결</li>
+      <li>TEMP에 POINT와의 연관관계 생성하여 만든 것이 INFO</li>
+    </ul>
+  </li>
+  <li>
+    <p>엔티티 클래스 속 주요 메서드</p>
+
+    <blockquote>
+      <p>Entity 생성 및 수정은 되도록이면 Entity안에서 이루어지도록 설정
+Setter는 되도록이면 열어두지 않도록 설정 (변경이나 저장 자체를 추후에 추적하기 편하게 만들기 위함. [유지 보수])</p>
+    </blockquote>
+
+    <ol>
+      <li>Point(장소)
+        <ul>
+          <li>
+            <p>생성 메서드</p>
+
+            <p>생성할 때 필요한 값들만을 가지고 생성 
+  (Point는 미리 생성해두는 값이므로 initDB를 통해 DB에 저장 후 새로 생성할때만 사용. 즉, Client에 의해서 생성되지 않음)</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">static</span> <span class="nc">Point</span> <span class="nf">createPoint</span><span class="o">(</span><span class="nc">String</span> <span class="n">place</span><span class="o">,</span> <span class="kt">int</span> <span class="n">percentage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">count</span><span class="o">,</span> <span class="kt">int</span> <span class="n">avgCount</span><span class="o">,</span> <span class="kt">double</span> <span class="n">latitude</span><span class="o">,</span> <span class="kt">double</span> <span class="n">longitude</span><span class="o">,</span> <span class="nc">String</span> <span class="n">imgSrc</span><span class="o">,</span>
+                                  <span class="kt">double</span> <span class="n">lonTopLeft</span><span class="o">,</span> <span class="kt">double</span> <span class="n">latTopLeft</span><span class="o">,</span> <span class="kt">double</span> <span class="n">lonBottRight</span><span class="o">,</span> <span class="kt">double</span> <span class="n">latBottRight</span><span class="o">,</span> <span class="nc">LocalDateTime</span> <span class="n">lastCommittedTime</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Point</span> <span class="n">point</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Point</span><span class="o">();</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">place</span> <span class="o">=</span> <span class="n">place</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">percentage</span> <span class="o">=</span> <span class="n">percentage</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">count</span> <span class="o">=</span> <span class="n">count</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">avgCount</span> <span class="o">=</span> <span class="n">avgCount</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">latitude</span> <span class="o">=</span> <span class="n">latitude</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">longitude</span> <span class="o">=</span> <span class="n">longitude</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">imgSrc</span> <span class="o">=</span> <span class="n">imgSrc</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">lonTopLeft</span> <span class="o">=</span> <span class="n">lonTopLeft</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">latTopLeft</span> <span class="o">=</span> <span class="n">latTopLeft</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">lonBottRight</span> <span class="o">=</span> <span class="n">lonBottRight</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">latBottRight</span> <span class="o">=</span> <span class="n">latBottRight</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">lastCommittedTime</span> <span class="o">=</span> <span class="n">lastCommittedTime</span><span class="o">;</span>
+      <span class="k">return</span> <span class="n">point</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p>수정 메서드</p>
+
+            <p>수정에 사용되는 상황에 따른 값들만을 가지고 생성</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">changeCount</span><span class="o">(</span><span class="kt">int</span> <span class="n">cnt</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">count</span> <span class="o">=</span> <span class="n">cnt</span><span class="o">;</span>
+  <span class="o">}</span>
+            
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">changePercentage</span><span class="o">(</span><span class="kt">int</span> <span class="n">percentage</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">percentage</span> <span class="o">=</span> <span class="n">percentage</span><span class="o">;</span>
+  <span class="o">}</span>
+            
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">changeLastCommittedTime</span><span class="o">(</span><span class="nc">LocalDateTime</span> <span class="n">lastCommittedTime</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">lastCommittedTime</span> <span class="o">=</span> <span class="n">lastCommittedTime</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">changeCount</code> : Map에서의 각 Point의 실시간 측정 인원 수의 변화를 위한 수정 메서드</li>
+              <li><code class="language-plaintext highlighter-rouge">changePercentage</code> : Map에서의 각 Point의 실시간 혼잡도 변화를 위한 수정 메서드</li>
+              <li><code class="language-plaintext highlighter-rouge">changeLastCommittedTime</code> : 가장 최근 접근 시간 → 해당 시간 이후의 데이터를 인지하기 위함</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>Info(검출 객체)
+        <ul>
+          <li>
+            <p>연관관계 메서드</p>
+
+            <p>Point와 양방향 연관 관계 : Info가 생성되면 Point의 post list에 더해줄 필요가 있음(→ 해당 검출된 객체(Info)가 어느 장소(Point)의 검출 결과인지 매핑하기 위함). 연관관계 메서드는 생성메서드 안에서만 사용되도록 private으로 설정</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">setPoint</span><span class="o">(</span><span class="nc">Point</span> <span class="n">point</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">point</span> <span class="o">=</span> <span class="n">point</span><span class="o">;</span>
+      <span class="n">point</span><span class="o">.</span><span class="na">getInfos</span><span class="o">().</span><span class="na">add</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p>생성 메서드</p>
+
+            <p>연관관계를 이용하며 생성할 필요가 있음 (Point와의 연관관계)</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">static</span> <span class="nc">Info</span> <span class="nf">createInfo</span><span class="o">(</span><span class="nc">Point</span> <span class="n">point</span><span class="o">,</span> <span class="nc">Temp</span> <span class="n">temp</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Info</span> <span class="n">info</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Info</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">date</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="na">getDate</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">leftValue</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="na">getLeftValue</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">topValue</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="na">getTopValue</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">widthValue</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="na">getWidthValue</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">heightValue</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="na">getHeightValue</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">lon</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="na">getLon</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">lat</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="na">getLat</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">droneHeight</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="na">getDroneHeight</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">azimuth</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="na">getAzimuth</span><span class="o">();</span>
+      <span class="n">info</span><span class="o">.</span><span class="na">setPoint</span><span class="o">(</span><span class="n">point</span><span class="o">);</span>
+      <span class="k">return</span> <span class="n">info</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>연관관계를 위해 point를 인자로 받아, 해당 point의 Info List에 현재 생성되는 info 추가. point는 해당 temp의 위치정보를 통해 정해진 장소(위치)</li>
+              <li>temp는 info의 모든 정보를 가지고 있는 객체. 해당 객체의 정보를 받아와 위치정보를 따라 point와의 연관관계를 설정.</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+</ul>
+
+<h2 id="application-implementation">Application Implementation</h2>
+
+<h3 id="구현-요구사항">구현 요구사항</h3>
+
+<ul>
+  <li>기능 목록
+    <ol>
+      <li>공통 관심사 처리 (Interceptor)
+        <ul>
+          <li>검출 객체와 장소 매핑</li>
+        </ul>
+      </li>
+      <li>Map 기능 (지도)
+        <ul>
+          <li>모든 장소 Floating</li>
+          <li>장소 정보 제공 ( 실시간 변경 → 측정 인원, 혼잡도)</li>
+          <li>장소 검색</li>
+        </ul>
+      </li>
+      <li>Statics 기능 (분석)
+        <ul>
+          <li>실시간 측정 인원 및 변경 인원 제공</li>
+          <li>누적 데이터 분석 제공</li>
+          <li>장소 검색</li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+</ul>
+
+<h3 id="아키텍쳐-구성">아키텍쳐 구성</h3>
+
+<p><img src="/images/posts/post-220617/Untitled 7.png" alt="" /></p>
+
+<ul>
+  <li>계층형 구조 사용
+    <ul>
+      <li>controller, web: 웹 계층</li>
+      <li>service: 비즈니스 로직, 트랜잭션 처리</li>
+      <li>repository: JPA를 직접 사용하는 계층, 엔티티 매니저 사용</li>
+      <li>domain: 엔티티가 모여 있는 계층, 모든 계층에서 사용</li>
+    </ul>
+  </li>
+  <li>
+    <p>패키지 구조</p>
+
+    <p>Group6.capstone</p>
+
+    <ul>
+      <li>config : Interceptor관련 설정</li>
+      <li>Interceptor : custom Interceptor 구현</li>
+      <li>controller : web 계층 관련 구현</li>
+      <li>service : Business Logic, Transaction 정의 및 구현</li>
+      <li>repository :  EM(JPA), DB connect 정의 및 구현</li>
+      <li>domain : Entity 정의 및 구현</li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+💡 **개발 순서**: 서비스, 리포지토리 계층을 개발하고, 테스트 케이스를 작성해서 검증(테스트 코드는 생략), 마지막에 웹 계층 적용
+
+</aside>
+
+<h3 id="장소-로직-개발-point">장소 로직 개발 (Point)</h3>
+
+<blockquote>
+  <p>구현 순서</p>
+  <ul>
+    <li>장소 레포지토리 개발</li>
+    <li>장소 서비스 개발</li>
+  </ul>
+
+</blockquote>
+
+<p>Point (Repository, Service)</p>
+
+<ul>
+  <li>장소 레포지토리 (PointRepository)
+    <ul>
+      <li>JPA를 직접 사용하여 Point Entity와 관련된 Table에 접근하는 계층</li>
+      <li>DI(Dependency Injection) : EntityManager(JPA)</li>
+      <li><code class="language-plaintext highlighter-rouge">public List&lt;Point&gt; findAll()</code> : 모든 장소 조회. jpql(<code class="language-plaintext highlighter-rouge">em.createQuery</code>) 사용</li>
+      <li><code class="language-plaintext highlighter-rouge">public Point findOne(Long id)</code> : id를 통해 하나의 장소 조회. <code class="language-plaintext highlighter-rouge">em.find</code> 사용</li>
+      <li><code class="language-plaintext highlighter-rouge">public Point findByName(String name)</code> : 이름을 통해 하나의 회원 조회.  jpql(<code class="language-plaintext highlighter-rouge">em.createQuery</code>), where문 사용</li>
+    </ul>
+  </li>
+  <li>장소서비스 (PointService)
+    <ul>
+      <li>Business Logic, Transaction 정의 및 구현</li>
+      <li>DI(Dependency Injection) : 장소 레포지토리(PointRepository)</li>
+      <li><strong>@Transactional(readOnly = true)</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">public List&lt;Point&gt; findAll()</code> : 리포지토리 단순 위임</li>
+          <li><code class="language-plaintext highlighter-rouge">public Point findOne(Long id)</code> : 리포지토리 단순 위임</li>
+          <li><code class="language-plaintext highlighter-rouge">public Point findByName(String name)</code> : 리포지토리 단순 위임</li>
+          <li><code class="language-plaintext highlighter-rouge">public List&lt;Integer&gt; getStaticsData(String name)</code>
+            <ul>
+              <li>분석 화면에 제공될 누적 데이터 생성 및 반환</li>
+              <li><code class="language-plaintext highlighter-rouge">findByName()</code> 을 통해 해당 name을 가지는 point에 대해서 ‘5일 간의 데이터’, ‘해당 날짜의 3시간간의 데이터’ 를 가져와 제공</li>
+              <li>5일 간의 데이터 : 5일간의 측정 인원 수를 List에 추가(+5)</li>
+              <li>3시간의 데이터 : 3시간동안(1,2,3)의 측정 인원수를 List에 추가(+3)</li>
+              <li>반환 : List<Integer> statics → size : 8, `[1일전, 2일전, ... , 5일전, 1시간전, 2시간전, 3시간전]`</Integer></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li><strong>@Transactional</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">public void updatePoint(Long id)</code>
+            <ul>
+              <li>Point, Info 연관관계 매핑이 이루어진 마지막 시각 → 추후 해당 시각 이후의 데이터만을 불러와 매핑 해주기 위함</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="검출-데이터-로직-개발-temp">검출 데이터 로직 개발 (Temp)</h3>
+
+<blockquote>
+  <p>구현 순서</p>
+  <ul>
+    <li>검출데이터 레포지토리 개발</li>
+    <li>검출데이터 서비스 개발</li>
+  </ul>
+
+</blockquote>
+
+<p>Temp (Repository, Service)</p>
+
+<ul>
+  <li>라이브로 받아올 때 쓰는 데이터, Info로 변환하기 위한 임시 데이터</li>
+  <li>검출데이터 레포지토리 (TempRepository)
+    <ul>
+      <li>해당 데이터는 드론에 의해 이미 DB에 있는 Entity</li>
+      <li>navtive query를 사용해야 하므로 Spring Data JPA를 사용하여 Temp Entity와 관련된 Table에 접근하는 계층→ <code class="language-plaintext highlighter-rouge">public interface TempRepository extends JpaRepository&lt;Temp, Long&gt;</code></li>
+      <li><code class="language-plaintext highlighter-rouge">List&lt;Temp&gt; getLiveData()</code> : 요청된 시점에서의 10초전부터 현재까지의 검출 객체 조회.  <code class="language-plaintext highlighter-rouge">@Query(value= *query*, nativeQuery = true)</code> 사용</li>
+      <li><code class="language-plaintext highlighter-rouge">List&lt;Temp&gt; getLastData(@Param(value = "last_commit") LocalDateTime lastCommittedTime);</code> : lastCommitedTime 이후의 검출 객체 조회.
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@Param</code> : nativeQuery에서 변수로 사용하기 위한 파라미터 설정</li>
+          <li><code class="language-plaintext highlighter-rouge">@Query(value= *query*, nativeQuery = true)</code> 사용</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>검출데이터 서비스 (TempService)
+    <ul>
+      <li>Business Logic, Transaction 정의 및 구현</li>
+      <li>DI(Dependency Injection) : 검출데이터  레포지토리(TempRepository)</li>
+      <li><strong>@Transactional(readOnly = true)</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">public List&lt;Temp&gt; getLiveData()</code> : 리포지토리 단순 위임</li>
+        </ul>
+      </li>
+      <li><strong>@Transactional</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">public int getLiveCount(Long id)</code>
+            <ul>
+              <li>실시간 데이터를 가져와 Count하는 service</li>
+              <li>id에 해당 하는 point의 영역에 맞는 실시간 데이터 temp의 개수를 count</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="검출-객체-로직-개발-info">검출 객체 로직 개발 (Info)</h3>
+
+<blockquote>
+  <p>구현 순서</p>
+  <ul>
+    <li>검출객체 레포지토리 개발</li>
+    <li>검출객체 서비스 개발</li>
+  </ul>
+
+</blockquote>
+
+<p>Info (Repository, Service)</p>
+
+<ul>
+  <li>라이브로 적재된 데이터(Temp)를 Point와 연관관계를 생성하여 저장하는 데이터</li>
+  <li>검출객체 레포지토리 (InfoRepository)
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">public void save(Info info)</code> : 연관관계를 생성한 info 저장. <code class="language-plaintext highlighter-rouge">em.persist()</code> 사용</li>
+      <li>해당 info 데이터들을 불러오는건 point의 info List통해 불러옴</li>
+    </ul>
+  </li>
+  <li>검출객체 서비스 (InfoService)
+    <ul>
+      <li>Business Logic, Transaction 정의 및 구현</li>
+      <li>DI(Dependency Injection) : 검출객체 레포지토리(InfoRepository)</li>
+      <li><strong>@Transactional</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">public void createInfo(Long id)</code>
+            <ul>
+              <li>연관관계를 생성하여 Info를 저장하는 service</li>
+              <li>id에 해당 하는 point의 영역에 맞는 실시간 데이터 temp와 연관관계를 맺은 Info를 생성하여 저장</li>
+              <li>추가로 point의 실시간 반영 데이터(count, percentage)도 변경 (변경감지를 통해 저장)</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="공통-관심사-처리-기능-개발">공통 관심사 처리 기능 개발</h3>
+
+<blockquote>
+  <p>구현 기능</p>
+  <ul>
+    <li>검출 객체와 장소 매핑
+구현 순서</li>
+    <li>Interceptor 개발</li>
+    <li>WebConfig 설정 및 개발</li>
+  </ul>
+
+  <ol>
+    <li>기능 설명
+      <ul>
+        <li>검출 객체와 장소 매핑
+          <ul>
+            <li>Interceptor 사용 (공통 관심사 처리)</li>
+            <li>Client의 서비스 도입 시점(Map, Static 서비스 요청 시)에 새로 누적된 데이터(검출 객체)들에 대해서 장소(Place)에 Mapping 하기 위함 → 연관관계 생성</li>
+            <li>드론을 통해 축적된 DB의 값을 받아와 연관관계를 만들기 위함</li>
+            <li>해당 <code class="language-plaintext highlighter-rouge">"/", "/statics", "/statics/**"</code> URI들에 대해 적용</li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li>기능 개발
+      <ul>
+        <li>custome Interceptor
+          <ul>
+            <li><code class="language-plaintext highlighter-rouge">UpdateInterceptor implements HandlerInterceptor</code>
+              <ul>
+                <li>컨트롤러를 실행하기 전에 해당 로직 실행 (preHandle)</li>
+                <li>DI(Dependency Injection) : <code class="language-plaintext highlighter-rouge">infoService</code>, <code class="language-plaintext highlighter-rouge">pointService</code></li>
+                <li><code class="language-plaintext highlighter-rouge">preHandle</code>
+                  <ul>
+                    <li>모든 point들에 대해 최근 업데이트된 시점부터 현재까지 누적된 모든 Temp(검출 데이터)와 연관관계를 생성한 Info 생성 → (누적 분석데이터에 활용)  → <code class="language-plaintext highlighter-rouge">infoService.createInfo</code></li>
+                    <li>추가로 point의 최근 업데이트 시간 변경 → <code class="language-plaintext highlighter-rouge">pointService.updatePoint</code></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>Web Configurer
+          <ul>
+            <li>생성한 Interceptor를 Web에 적용</li>
+            <li>DI(Dependency Injection) : <code class="language-plaintext highlighter-rouge">updateInterceptor</code></li>
+            <li><code class="language-plaintext highlighter-rouge">WebConfig</code>
+              <ul>
+                <li><code class="language-plaintext highlighter-rouge">public void addInterceptors(InterceptorRegistry registry)</code> : 인터셉터 등록 : <code class="language-plaintext highlighter-rouge">updateInterceptor</code> 를 첫번째 순서로, <code class="language-plaintext highlighter-rouge">"/", "/statics", "/statics/**"</code> 의 URL들에만 적용되도록 <code class="language-plaintext highlighter-rouge">registry</code>에 등록</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ol>
+</blockquote>
+
+<h3 id="웹-서비스-개발-controller">웹 서비스 개발 (controller)</h3>
+
+<blockquote>
+  <p>Map(지도) Service
+→ 구현 기능</p>
+  <ul>
+    <li>모든 장소 Floating</li>
+    <li>장소 정보 제공 ( 실시간 변경 → 측정 인원, 혼잡도)</li>
+    <li>장소 검색
+Statics(분석) Service
+→ 구현 기능</li>
+    <li>실시간 측정 인원 및 변경 인원 제공</li>
+    <li>
+      <p>누적 데이터 분석 제공</p>
+    </li>
+    <li><code class="language-plaintext highlighter-rouge">HomeController</code> →  @Controller
+      <ul>
+        <li>클라이언트와 서버의 동기식 통신을 위한 controller</li>
+        <li>DI : <code class="language-plaintext highlighter-rouge">PointService</code>, <code class="language-plaintext highlighter-rouge">TempService</code></li>
+        <li><code class="language-plaintext highlighter-rouge">@ModelAttribute("pointList")</code> : 해당 컨트롤러의 모든 method에 point List가 필요하므로 model에 기본으로 추가</li>
+        <li><code class="language-plaintext highlighter-rouge">@RequestMapping("/")</code>
+          <ul>
+            <li>home(Map) 화면 렌더링</li>
+            <li>Map 화면 및 모든 point를 Map화면 에 Floating</li>
+            <li>각 point의 상세 정보 (장소 명, 혼잡도, 실시간 측정 인원)</li>
+          </ul>
+        </li>
+        <li><code class="language-plaintext highlighter-rouge">@GetMapping(path = {"/statics/{id}", "/static"})</code>
+          <ul>
+            <li>Statics 화면 렌더링</li>
+            <li>주어진 path variable에 따른 장소의 분석화면 렌더링 (기본값 포함) → <code class="language-plaintext highlighter-rouge">pointService.findByName("세종대 정문")</code> , <code class="language-plaintext highlighter-rouge">pointService.findOne(id)</code> 사용</li>
+            <li>누적 데이터 분석 결과 렌더링 → <code class="language-plaintext highlighter-rouge">pointService.getStaticsData(point.getPlace())</code> 사용</li>
+            <li>실시간 데이터 분석 결과 렌더링 → <code class="language-plaintext highlighter-rouge">tempService.getLiveCount(id)</code> 사용</li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><code class="language-plaintext highlighter-rouge">RestHomeController</code>→ @RestController
+      <ul>
+        <li>클라이언트와 서버의 비동기식 통신을 위한 controller</li>
+        <li>실시간 데이터 변화량을 비동기식으로 제공</li>
+        <li>DI : <code class="language-plaintext highlighter-rouge">TempService</code></li>
+        <li><code class="language-plaintext highlighter-rouge">@GetMapping("/info-live/{id}")</code>
+          <ul>
+            <li>해당 point의 실시간 인원 측정량을 반환</li>
+            <li><code class="language-plaintext highlighter-rouge">tempService.getLiveCount(id)</code> 사용</li>
+          </ul>
+        </li>
+        <li><code class="language-plaintext highlighter-rouge">@GetMapping("/infos")</code>
+          <ul>
+            <li>현재 측정된 모든 검출 객체 반환</li>
+            <li><code class="language-plaintext highlighter-rouge">tempService.getLiveData()</code> 사용</li>
+            <li>Json으로 반환 ({’count’ : int , ‘data’ : list})</li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</blockquote>
+:ET
