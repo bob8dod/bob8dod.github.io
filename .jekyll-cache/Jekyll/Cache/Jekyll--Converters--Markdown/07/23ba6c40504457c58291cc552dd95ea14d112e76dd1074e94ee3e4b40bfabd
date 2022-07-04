@@ -1,0 +1,390 @@
+I"p<h2 id="thymeleaf-with-spring-개념">Thymeleaf with Spring (개념)</h2>
+
+<ul>
+  <li>타임리프는 스프링 없이도 동작. 즉, <strong>다른 프레임워크와도 사용 가능</strong>.</li>
+  <li>하지만, <strong>스프링과의 통합</strong>을 위한 <strong>다양한 기능</strong>을 편리하게 제공.</li>
+  <li>타임리프 2가지 메뉴열
+    <ul>
+      <li>기본 메뉴얼:  <a href="https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html">https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html</a></li>
+      <li><strong>스프링 통합 메뉴얼</strong>: <a href="https://www.thymeleaf.org/doc/tutorials/3.0/thymeleafspring.html">https://www.thymeleaf.org/doc/tutorials/3.0/thymeleafspring.html</a></li>
+      <li>기본 메뉴얼은 Thymeleaf의 기본 기능들에 대한 Docs</li>
+      <li>스프링 통합 메뉴얼은 <strong>Thymeleaf를 Spring과 함께 썼을 때의 추가적인 기능들</strong>에 대한 Docs</li>
+    </ul>
+  </li>
+  <li><strong>스프링 통합으로 추가되는 기능들</strong>
+    <ul>
+      <li>스프링의 <strong>SpringEL 문법 통합</strong> (property 접근법 등)</li>
+      <li><code class="language-plaintext highlighter-rouge">${@customBean.doMethod()}</code> 처럼 <strong>스프링 빈 호출</strong> 가능</li>
+      <li>편리한 <strong>Form 관리</strong>를 위한 <strong>추가 속성</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:object</code> : Form의 대상 객체(Object) 선정 가능</li>
+          <li>그에 따른 <code class="language-plaintext highlighter-rouge">th:field</code> , <code class="language-plaintext highlighter-rouge">th:errors</code> , <code class="language-plaintext highlighter-rouge">th:errorclass</code> 이용 가능</li>
+        </ul>
+      </li>
+      <li><strong>Form Component</strong> 기능
+        <ul>
+          <li>checkbox, radio button, List 등을 편리하게 사용 가능</li>
+        </ul>
+      </li>
+      <li>스프링의 <strong>Message, internationalization 통합</strong></li>
+      <li>스프링의 <strong>Validation, Error Control 통합</strong></li>
+      <li>스프링의 <strong>ConversionService 통합</strong></li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>이러한 통합 특징 때문에라도 Spring을 쓰는 백엔드 개발자는 대부분 SSR시 View Template으로 Thymeleaf를 사용</strong>
+
+</aside>
+
+<h2 id="integration-feature-thymeleaf--spring">Integration Feature (Thymeleaf &amp; Spring)</h2>
+
+<blockquote>
+  <p><strong>Spring 과 Thymeleaf를 같이 사용함</strong>으로써 이용할 수 있는 좋은 <strong>Form 기능들</strong> 소개</p>
+
+</blockquote>
+
+<h3 id="입력-폼-처리">입력 폼 처리</h3>
+
+<ul>
+  <li>Thymeleaf의 <strong>입력 Form 에서 사용</strong>할 수 있는 기능 (더 효율적으로 개선 가능)</li>
+  <li><code class="language-plaintext highlighter-rouge">th:object</code> : 커맨드 객체 지정
+    <ul>
+      <li><strong>Form에서 사용할 객체를 지정</strong>하는 것</li>
+      <li>이를 통해 <code class="language-plaintext highlighter-rouge">*{…}</code>(<strong>선택 변수 식</strong>)을 사용할 수 있음</li>
+      <li>내가 입력 Form에서 사용(입력 받고, 입력 값을 저장)할 객체를 지정함으로 써 그 객체의 <strong>property들을 입력 Form의 input 요소들과 맞추어</strong> 오류를 방지할 수 있음!</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">*{…}</code> : 선택 변수 식
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">th:object</code> 에서 선택한 <strong>객체의 property에 접근</strong></li>
+      <li>선택 변수 식을 사용하면 <code class="language-plaintext highlighter-rouge">${item.itemName}</code> → <code class="language-plaintext highlighter-rouge">*{itemName}</code> 으로 더 편리하게 사용 가능</li>
+    </ul>
+  </li>
+  <li><strong><code class="language-plaintext highlighter-rouge">th:field</code></strong> : input의 속성 자동 처리
+    <ul>
+      <li>input 태그의 중요 속성인 <code class="language-plaintext highlighter-rouge">id</code> , <code class="language-plaintext highlighter-rouge">name</code> , <code class="language-plaintext highlighter-rouge">value</code> <strong>속성을 자동으로 처리</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">value</code> 속성을 자동으로 처리함으로써, <strong>수정 시 기존의 값을 편리하게 가져올 수 있음!</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">&lt;input type="text" th:field="*{itemName}" /&gt;</code> 
+  → <code class="language-plaintext highlighter-rouge">&lt;input type="text" id="itemName" name="itemName" th:value="*{itemName}" /&gt;</code></li>
+    </ul>
+
+    <aside>
+  💡 <strong>입력 폼 처리 장점!</strong> <br />
+  원래는 일일히 <code>id</code> , <code>name</code> , <code>value</code> 를 직접 입력해야 돼서 귀찮았을 뿐만 아니라, 오류(오타로 인한) 발생이 굉장히 컸지만, <code>th:object</code>, <code>*{…}</code> , <code>th:field</code> 사용하게 되면서 <b>자동으로 해당 값들을 지정된 객체에 맞게 설정</b>해줌으로써 오류도 방지하고 편리해짐. <br />
+  이뿐만 아니라 <b>입력 폼 처리의 장점은 Validation에서 진가를 보임!!</b> 
+    
+  </aside>
+
+    <aside>
+  ⚠️ <strong>입력 폼 처리 주의점!</strong> <br />
+  <code>th:object</code> 를 사용하기 때문에 등록(수정 Form이 아닌)에서도 <code>th:object</code> 에 넣어줄 <b>빈 Object</b>를 Controller에서 지정하여 Model로 넘겨 줘야 됨! (<code>model.addAttribute(”item”, new Item())</code>)
+  </aside>
+  </li>
+</ul>
+
+<h3 id="체크-박스-처리-single">체크 박스 처리 (Single)</h3>
+
+<ul>
+  <li>체크 박스에서 사용되는 데이터 설정
+    <ul>
+      <li><strong>enum, 일반 class</strong>. 두가지로 설정 (<strong>다양한 데이터 설정</strong>을 보여주기 위함)</li>
+      <li><strong>enum</strong>
+        <ul>
+          <li>상품 종류</li>
+          <li>BOOK(도서), FOOD(식품), ETC(기타)</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">enum</span> <span class="nc">ItemType</span> <span class="o">{</span>
+        
+  	 <span class="no">BOOK</span><span class="o">(</span><span class="s">"도서"</span><span class="o">),</span> <span class="no">FOOD</span><span class="o">(</span><span class="s">"식품"</span><span class="o">),</span> <span class="no">ETC</span><span class="o">(</span><span class="s">"기타"</span><span class="o">);</span>
+        
+  	 <span class="kd">private</span> <span class="kd">final</span> <span class="nc">String</span> <span class="n">description</span><span class="o">;</span>
+        
+  	 <span class="nc">ItemType</span><span class="o">(</span><span class="nc">String</span> <span class="n">description</span><span class="o">)</span> <span class="o">{</span>
+  		 <span class="k">this</span><span class="o">.</span><span class="na">description</span> <span class="o">=</span> <span class="n">description</span><span class="o">;</span>
+  	 <span class="o">}</span>
+        
+  	 <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getDescription</span><span class="o">()</span> <span class="o">{</span>
+  		 <span class="k">return</span> <span class="n">description</span><span class="o">;</span>
+  	 <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong>생성자를 통한 설명 추가</strong> (저장은 영어코드로, 보여주는 것은 한국어로 보여주기 위함 → 자주 쓰이는 패턴)</li>
+        </ul>
+      </li>
+      <li><strong>class</strong>
+        <ul>
+          <li>배송 종류</li>
+          <li>FAST : 빠른 배송, NORMAL : 일반 배송, SLOW : 느린 배송</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Data</span> <span class="c1">// @Getter + @Setter + @ToString + ...</span>
+  <span class="nd">@AllArgsConstructor</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">DeliveryCode</span> <span class="o">{</span>
+  	 <span class="kd">private</span> <span class="nc">String</span> <span class="n">code</span><span class="o">;</span>
+  	 <span class="kd">private</span> <span class="nc">String</span> <span class="n">displayName</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>앞선 enum의 설정과 같이 code는 시스템에 영어로 전달하는 값, displayName은 한국어로 보여주는 값</li>
+          <li>종류들의 기본 값은 Controller에서 설정해서 보냄</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>단일 체크 박스 사용 <strong>(Thymeleaf 기능 사용 전)</strong>
+    <ul>
+      <li>체크 박스를 선택했을 때 (체크했을 때)
+        <ul>
+          <li>체크 박스 input의 name에 on이라는 값과 함께 HTML Form형식(쿼리파라미터 형식)으로 전달됨
+  → <code class="language-plaintext highlighter-rouge">&lt;input type="checkbox" id="open" name="open"&gt;</code> 
+  → <code class="language-plaintext highlighter-rouge">open=on</code></li>
+          <li>그럼 Spring의 <strong>TypeConverter가 on을 boolean형식에 맞게 true로 변환</strong>해줌</li>
+          <li>여기까지는 문제가 없음!</li>
+        </ul>
+      </li>
+      <li>체크 박스를 선택 해지할 때 <strong>(체크하지 않았을 때)</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">open</code> 이라는 필드 자체가 <strong>서버로 전송되지 않음</strong></li>
+          <li>즉 @ModelAttribute 로 Binding 할 때 open 이라는 값이 넘어오지 않았기에 해당 Object의 <strong>open은 null 값으로 저장</strong>됨.</li>
+          <li>null 이기 때문에  Spring의 TypeConverter가 false로 변환해주지 않음!</li>
+          <li>이렇게 되면 체크 했다가 체크를 푸는 수정 상황에서 open이 null이라는 값을 받아, 변경 감지가 진행되지 않음! → <strong>값이 유지됨!</strong></li>
+        </ul>
+      </li>
+      <li><strong>체크 해제를 인식하기 위한 히든 필드</strong>
+        <ul>
+          <li>이런 문제를 해결하기 위해 Spring MVC는 <code class="language-plaintext highlighter-rouge">_</code> 를 사용하는 <strong>히든 필드</strong>를 통해 true, false를 인지!</li>
+          <li><code class="language-plaintext highlighter-rouge">&lt;input type="hidden" name="_open" value="on"/&gt;</code></li>
+          <li>open 이 체크되어 서버로 값이 전송되면 히든 필드는 값을 넘기지 않음! → <code class="language-plaintext highlighter-rouge">open=on</code> → <code class="language-plaintext highlighter-rouge">open=true</code>로 정상적으로 저장</li>
+          <li>open이 체크되지 않았다면 <strong>히든 필드인 _open이 서버로 값이 전송</strong>되며 Spring MVC는 이를 인식하여 <strong>체크되지 않았다는 작동을 진행!</strong> → <code class="language-plaintext highlighter-rouge">_open=on</code> → <code class="language-plaintext highlighter-rouge">open=false</code> 로 정상적으로 저장</li>
+        </ul>
+      </li>
+    </ul>
+
+    <aside>
+  🚨 <strong>BUT!!</strong> <br />
+  이 동작들은 너무 귀찮음. 계속해서 히든 필드를 넣어줘야 하고, 뿐만 아니라 open의 값을 수정할 때 checked 특성상 추가적인 코드가 필요함!
+    
+  </aside>
+  </li>
+  <li><strong>단일 체크 박스 사용 (Thymeleaf 기능을 통한 개선)</strong>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">th:field</code> 를 사용하면 모든 것이 해결됨
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">&lt;input type="checkbox" id="open" name="open"&gt;</code> → <code class="language-plaintext highlighter-rouge">&lt;input type="checkbox" th:field="*{open}"&gt;</code></li>
+          <li>렌더링 후의 결과를 확인해보면 input의 히든 필드도 자동으로 들어간 것을 확인할 수 있음 → <strong>field가 자동으로 히든 필드를 넣어 동작하게 설정하는 것!</strong> (귀찮음 해결)</li>
+          <li>또한 수정 시 <strong>checked 속성에 대한 처리도 자동으로</strong> 해줌 (input 태그에 checked 라는 속성이 있으면 무조건 체크되는 특징)
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">th:field</code> 를 통해 value를 받아와 true라면 자동으로 checked 속성을 넣어주고</li>
+              <li>false라면 checked 속성을 빼줌</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+💡 <strong>결론!</strong> <br />
+체크박스 필드는 무조건 <code>th:field</code> 를 사용하자!
+
+</aside>
+
+<h3 id="체크-박스-처리-multi">체크 박스 처리 (Multi)</h3>
+
+<ul>
+  <li>참고
+    <ul>
+      <li>멀티 체크 박스에 데이터를 넘겨줘야 하는 상황</li>
+      <li>이를 <code class="language-plaintext highlighter-rouge">@ModelAttribute</code> 로 좀 더 효율적으로 진행</li>
+      <li>💡 <code class="language-plaintext highlighter-rouge">@ModelAttribute</code><strong>의 특별한 사용법</strong>
+        <ul>
+          <li>각 Controller의 Method에 데이터를 일일히 다 넣어줘야함. 즉, 각 Method에 <code class="language-plaintext highlighter-rouge">model.addAttribute</code>를 통해서 다 각각 넣어줘야함. BUT!! <code class="language-plaintext highlighter-rouge">@ModelAttribute</code> 를 통해서 <strong>하나의 Controller에 공통적으로 Model에 attribute를 넣어</strong>줄 수 있음!</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@ModelAttribute</span><span class="o">(</span><span class="s">"regions"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="nf">regions</span><span class="o">()</span> <span class="o">{</span>
+  	 <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">regions</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedHashMap</span><span class="o">&lt;&gt;();</span>
+  	 <span class="n">regions</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"SEOUL"</span><span class="o">,</span> <span class="s">"서울"</span><span class="o">);</span>
+  	 <span class="o">...</span>
+  	 <span class="k">return</span> <span class="n">regions</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>Controller 단에 이렇게 하나의 modelAttribute를 정의하는 method를 만들어 놓고 반환해주면, <strong>Controller의 각 Method에 들어가는 Model에 기본값으로 설정</strong> 됨.</li>
+          <li>즉, 각 Method에서 <code class="language-plaintext highlighter-rouge">model.addAttribute</code> 를 통해 반복적으로 넣지 않고도 사용할 수 있는 것. (Controller 단에서 넣어줬기 때문에)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>데이터는 일반적인 String + Map 활용</li>
+  <li>
+    <p>멀티 체크 박스 html</p>
+
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;div&gt;</span>
+  	 <span class="nt">&lt;div&gt;</span>등록 지역<span class="nt">&lt;/div&gt;</span>
+  	 <span class="nt">&lt;div</span> <span class="na">th:each=</span><span class="s">"region : ${regions}"</span> <span class="na">class=</span><span class="s">"form-check form-check-inline"</span><span class="nt">&gt;</span>
+  		 <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"checkbox"</span> <span class="na">th:field=</span><span class="s">"*{regions}"</span> <span class="na">th:value=</span><span class="s">"${region.key}"</span> <span class="na">class=</span><span class="s">"form-check-input"</span><span class="nt">&gt;</span>
+  		 <span class="nt">&lt;label</span> <span class="na">th:for=</span><span class="s">"${#ids.prev('regions')}"</span> <span class="na">th:text=</span><span class="s">"${region.value}"</span> <span class="na">class=</span><span class="s">"form-check-label"</span><span class="nt">&gt;</span>서울<span class="nt">&lt;/label&gt;</span>
+  	 <span class="nt">&lt;/div&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+</code></pre></div>    </div>
+
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c">&lt;!-- 렌더링 결과 --&gt;</span>
+  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"form-check form-check-inline"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"checkbox"</span> <span class="na">value=</span><span class="s">"SEOUL"</span> <span class="na">class=</span><span class="s">"form-check-input"</span> <span class="na">id=</span><span class="s">"regions1"</span> <span class="na">name=</span><span class="s">"regions"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"hidden"</span> <span class="na">name=</span><span class="s">"_regions"</span> <span class="na">value=</span><span class="s">"on"</span><span class="nt">/&gt;</span>
+  	 <span class="nt">&lt;label</span> <span class="na">for=</span><span class="s">"regions1"</span> <span class="na">class=</span><span class="s">"form-check-label"</span><span class="nt">&gt;</span>서울<span class="nt">&lt;/label&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+  ...
+</code></pre></div>    </div>
+
+    <ul>
+      <li>each 부분
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${regions}</code> : Model에 따로 넣어준 지역목록</li>
+          <li>따로 넣어준 지역 목록에 따라 반복문이 도는 것</li>
+        </ul>
+      </li>
+      <li>input 부분
+        <ul>
+          <li>each에 따라 <code class="language-plaintext highlighter-rouge">${regions}</code> 의 size 만큼 생김</li>
+        </ul>
+
+        <aside>
+  💡 <strong>그럼 그 이 size 만큼 생긴 각각의 input의 id와 name은?</strong> <br />
+  name은 그대로 regions를 가지지만, id는 동일하면 안되기 때문에 순서대로 regions1 → regions2 → … 와 같이 <b>뒤에 count를 붙여</b>주게 됨 <br />
+  ⇒ 즉, HTML의 <b>id 가 타임리프에 의해 동적으로 만들어짐</b> (<code>th:each</code> + <code>th:field</code> 특징)
+        
+  </aside>
+
+        <ul>
+          <li>추가로 <code class="language-plaintext highlighter-rouge">th:field</code> 의 checkbox 특징으로 히든필드도 넣어진 것 확인 가능</li>
+        </ul>
+      </li>
+      <li>label 부분
+        <ul>
+          <li>여기서 label 또한 클릭할 경우 그에 따른 input이 체크가 되어야 되는데 (<code class="language-plaintext highlighter-rouge">label for=”?”</code>) input의 <strong>id가 동적으로 생기기 때문에 추가적인 처리</strong> 필요 → <code class="language-plaintext highlighter-rouge">${#ids}</code>유틸리티 객체를 이용</li>
+          <li><code class="language-plaintext highlighter-rouge">&lt;label th:for="${#ids.prev('regions')}"...&gt;</code>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">#ids.prev('regions')</code> : 직전의 regions로 <strong>동적으로 생성된 id를 이어 받는다</strong>는 뜻.</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+
+    <aside>
+  ⚠️ <strong>추가 주의 점</strong>
+  <ul>
+  <li><strong>Form 안의 List의 서버 전송 값</strong></li>
+      <ul>
+      <li>`regions=SEOUL&amp;_regions=on&amp;regions=BUSAN&amp;_regions=on&amp;_regions=on`</li>
+      <li>즉, 체크된 놈들에 대해서 regions=’’ 라는 값으로 순서대로 넣어짐. 이렇게 되면 <b>서버에서는 순서대로 add</b> 한다고 생각하면 됨 → <code>regions.add(”SEOUL”);</code> , <code>regions.add(”BUSAN”)</code> </li>
+      </ul>
+  <li><strong>체크 확인 (수정 시)</strong></li>
+      <ul>
+      <li>이전과 달리 멀티 체크 박스는 true, false 값으로 인지할 수 없는 List 형식의 String 형식. </li>
+      <li>그럼 어떻게? → <b><code>th:field</code> 에 지정한 값과 <code>th:value</code> 의 값을 비교해서 체크를 자동으로 처리</b> </li>
+      <li>즉, item의 regions (<code>th:field</code>)에 현재 each로 돌고 있는 해당 region(<code>th:value</code>)의 값이 있다면 checked 속성이 들어가고 없으면 넣지 않는 것! </li>
+      </ul>
+  </ul>
+  </aside>
+  </li>
+</ul>
+
+<h3 id="라디오-버튼">라디오 버튼</h3>
+
+<ul>
+  <li>데이터는 ENUM 활용</li>
+  <li>라디오 버튼의 특징 : <strong>하나만 선택할 수 있고, 선택 해제가 불가능</strong></li>
+  <li>
+    <p>먼저 <code class="language-plaintext highlighter-rouge">@ModelAttrubute</code> 를 이용하여 Controller 단 Model에 ENUM List 추가</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@ModelAttribute</span><span class="o">(</span><span class="s">"itemTypes"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">ItemType</span><span class="o">[]</span> <span class="nf">itemTypes</span><span class="o">()</span> <span class="o">{</span>
+  	 <span class="k">return</span> <span class="nc">ItemType</span><span class="o">.</span><span class="na">values</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>라디오 버튼 사용 html</p>
+
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;div</span> <span class="na">th:each=</span><span class="s">"type : ${itemTypes}"</span> <span class="na">class=</span><span class="s">"form-check form-check-inline"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"radio"</span> <span class="na">th:field=</span><span class="s">"*{itemType}"</span> <span class="na">th:value=</span><span class="s">"${type.name()}"</span><span class="na">class=</span><span class="s">"form-check-input"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;label</span> <span class="na">th:for=</span><span class="s">"${#ids.prev('itemType')}"</span> <span class="na">th:text=</span><span class="s">"${type.description}"</span><span class="na">class=</span><span class="s">"form-check-label"</span><span class="nt">&gt;&lt;/label&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>each 부분
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@ModelAttrubute</code> 을 통해 Model에 넣은 itemsTypes를 반복 (선택될 수 있는 후보 목록들에 대한 반복)</li>
+        </ul>
+      </li>
+      <li>input, label 부분
+        <ul>
+          <li>Multi 체크박스와 동일</li>
+          <li>But input의 <strong>히든필드가 생기지 않음</strong> → 라디오 버튼은 수정 시 선택해제가 불가능 하므로, 체크 이후에 null값이 발생할 일이 없기 때문!</li>
+        </ul>
+      </li>
+    </ul>
+
+    <aside>
+  ⚠️ <strong>주의할 점</strong>
+  <ul>
+  <li><b>체크 확인 (수정 시):</b> <code>th:field</code> 에 지정한 값과 <code>th:value</code> 의 <b>값을 비교해서 체크를 자동으로 처리</b> → 라디오 버튼 같은 경우는 지정되어 있는 <code>th:field</code> 와 <code>th:value</code> 가 동일한 애만 checked 속성을 넣어줌 </li>
+  <li>라디오 버튼은 <b>하나만 체크</b>할 수 있다는 점 주의! 즉, 서버로 선택된 하나의 값만 보내짐 </li>
+  </ul>
+  </aside>
+  </li>
+</ul>
+
+<h3 id="셀렉트-박스">셀렉트 박스</h3>
+
+<ul>
+  <li>데이터는 자바 객체(Object) 를 이용</li>
+  <li>셀렉트 박스의 특징 : 하나만 선택 가능</li>
+  <li>
+    <p>먼저 <code class="language-plaintext highlighter-rouge">@ModelAttrubute</code> 를 이용하여 Controller 단 Model에 Object List추가</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@ModelAttribute</span><span class="o">(</span><span class="s">"deliveryCodes"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">DeliveryCode</span><span class="o">&gt;</span> <span class="nf">deliveryCodes</span><span class="o">()</span> <span class="o">{</span>
+  	 <span class="nc">List</span><span class="o">&lt;</span><span class="nc">DeliveryCode</span><span class="o">&gt;</span> <span class="n">deliveryCodes</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+  	 <span class="n">deliveryCodes</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">DeliveryCode</span><span class="o">(</span><span class="s">"FAST"</span><span class="o">,</span> <span class="s">"빠른 배송"</span><span class="o">));</span>
+  	 <span class="o">...</span>
+  	 <span class="k">return</span> <span class="n">deliveryCodes</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <blockquote>
+      <p><strong>참고:</strong> <code class="language-plaintext highlighter-rouge">@ModelAttrubute</code> 의 메서드는 컨트롤러가 호출 될 때 마다 사용되어 그 때마다 객체가 생성된다는 점에 유의 → <strong>Bean, Component 로 등록</strong>해서 <strong>Static</strong>하게 사용하여 객체를 미리 생성하고 불러와 사용하는 것이 더 좋음</p>
+
+    </blockquote>
+  </li>
+  <li>
+    <p>셀렉트 박스 사용 html</p>
+
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;select</span> <span class="na">th:field=</span><span class="s">"*{deliveryCode}"</span> <span class="na">class=</span><span class="s">"form-select"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">""</span><span class="nt">&gt;</span>==배송 방식 선택==<span class="nt">&lt;/option&gt;</span>
+  	 <span class="nt">&lt;option</span> <span class="na">th:each=</span><span class="s">"deliveryCode : ${deliveryCodes}"</span> 
+  					 <span class="na">th:value=</span><span class="s">"${deliveryCode.code}"</span>
+  					 <span class="na">th:text=</span><span class="s">"${deliveryCode.displayName}"</span><span class="nt">&gt;</span>FAST<span class="nt">&lt;/option&gt;</span>
+  <span class="nt">&lt;/select&gt;</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">@ModelAttrubute</code> 을 통해 Model에 넣은 deliveryCodes를 option 태그 에서 반복 (선택될 수 있는 후보 목록들에 대한 반복)</li>
+      <li>select 특성상 input과는 다르게 select에 <code class="language-plaintext highlighter-rouge">th:field</code> 가 들어감</li>
+      <li>즉, 체크 확인은 option 중 <code class="language-plaintext highlighter-rouge">th:value</code> 가 select의 <code class="language-plaintext highlighter-rouge">th:field</code> 와 동일한 애에 대해서 체크해줌. → selected=”selected” 라는 속성을 추가해줌으로써 체크 표시.</li>
+    </ul>
+  </li>
+</ul>
+:ET

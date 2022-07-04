@@ -1,0 +1,352 @@
+I"s<h2 id="bean-validation-소개">Bean Validation 소개</h2>
+
+<ul>
+  <li>지금까지 작성했던 <strong>검증 로직</strong> 관련 코드를 <strong>하나의 어노테이션으로 끝낼 수 있는 기능</strong></li>
+  <li>대상 객체에 대해서 <strong>검증 로직</strong>을 모든 프로젝트에 적용할 수 있게 <strong>공통화하고, 표준화</strong> 한 것</li>
+  <li><strong>Bean Validation</strong> 이란?
+→ 특정한 구현체가 아니라 Bean Validation 2.0(JSR-380)이라는 기술 표준. 즉, 검증 애노테이션과 여러 <strong>인터페이스의 모음</strong>. 이를 구현한 기술 중에서 일반적으로 사용하는 <strong>구현체</strong>는 <strong>하이버네이트 Validator</strong> (ORM이랑은 관련 없음!)
+    <ul>
+      <li>공식 메뉴얼: <a href="https://docs.jboss.org/hibernate/validator/6.2/reference/en-US/html_single/">https://docs.jboss.org/hibernate/validator/6.2/reference/en-US/html_single/</a></li>
+      <li>검증 애노테이션 모음: <a href="https://docs.jboss.org/hibernate/validator/6.2/reference/en-US/html_single/#validator-defineconstraints-spec">https://docs.jboss.org/hibernate/validator/6.2/reference/en-US/html_single/#validator-defineconstraints-spec</a></li>
+    </ul>
+  </li>
+  <li>Bean Validation 사용
+    <ul>
+      <li><strong>Spring 통합없이</strong>, <strong>순수 Bean Validation</strong> 사용법</li>
+      <li>Bean Validation 사용을 위한 의존관계 추가 (라이브러리 추가)
+  → <code class="language-plaintext highlighter-rouge">implementation 'org.springframework.boot:spring-boot-starter-validation'</code></li>
+      <li>
+        <p>Item 객체 (Bean Validation 적용 객체)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="o">...</span>
+   <span class="nd">@NotBlank</span> <span class="c1">// 빈 문자나 null이면 안됨</span>
+   <span class="kd">private</span> <span class="nc">String</span> <span class="n">itemName</span><span class="o">;</span>
+         
+   <span class="nd">@NotNull</span> <span class="c1">// null이면 안됨</span>
+   <span class="nd">@Range</span><span class="o">(</span><span class="n">min</span> <span class="o">=</span> <span class="mi">1000</span><span class="o">,</span> <span class="n">max</span> <span class="o">=</span> <span class="mi">1000000</span><span class="o">)</span> <span class="c1">// 1000~1000000 범위</span>
+   <span class="kd">private</span> <span class="nc">Integer</span> <span class="n">price</span><span class="o">;</span>
+         
+   <span class="nd">@NotNull</span> <span class="c1">// null이면 안됨</span>
+   <span class="nd">@Max</span><span class="o">(</span><span class="mi">9999</span><span class="o">)</span> <span class="c1">// 최댓값이 9999보다 크면 안됨</span>
+   <span class="kd">private</span> <span class="nc">Integer</span> <span class="n">quantity</span><span class="o">;</span>
+   <span class="o">...</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>검증 <strong>어노테이션</strong>으로 <strong>Validation 편리하게 적용</strong> 가능</li>
+          <li><code class="language-plaintext highlighter-rouge">@NotBlank</code> : 빈 문자나 null이면 안됨</li>
+          <li><code class="language-plaintext highlighter-rouge">@NotNull</code> : null이면 안됨</li>
+          <li><code class="language-plaintext highlighter-rouge">@Range(min = 1000, max = 1000000)</code> : 범위 안의 값이어야 됨</li>
+          <li><code class="language-plaintext highlighter-rouge">@Max(9999)</code> : 최대 범위 설정</li>
+        </ul>
+
+        <aside>
+  ⚠️ <strong>검증 어노테이션 참고</strong>
+  <code>javax.validation</code> 으로 시작하면 정해진 구현에 관계없이 <b>모든 구현체에서 사용가능한 표준 인터페이스</b> (ex_NotBlank, NotNull, Max) <br />
+  <code>org.hibernate.validator</code> 로 시작하면 <b>하이버네이트 validator 구현체</b>를 사용할 때<b>만 제공</b>하는 검증 (ex_Range)
+        
+  </aside>
+
+        <aside>
+  💡 <strong>Bean Validation 오류 메시지</strong>
+  따로 설정하지 않으면 Bean Validation 자체에서 제공하는 오류 메시지 노출. 만약 <b>default message를 수정</b>하고 싶으면 <b>어노테이션에 추가</b>해주면 됨! → <code>@NotBlank(message=”빈 값입니다!”)</code>
+  더 <b>자세한 메시지</b>는 이전 <b>오류 코드 설정</b>(errors.properties <b>메시지 파일을 이용한 오류 메시지 지정</b>)을 통해 진행하면 됨
+        
+  </aside>
+      </li>
+      <li>검증 Test
+        <ul>
+          <li>
+            <p>검증기 생성</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">ValidatorFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="nc">Validation</span><span class="o">.</span><span class="na">buildDefaultValidatorFactory</span><span class="o">();</span>
+  <span class="nc">Validator</span> <span class="n">validator</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="na">getValidator</span><span class="o">();</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p>검증 실행</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Set</span><span class="o">&lt;</span><span class="nc">ConstraintViolation</span><span class="o">&lt;</span><span class="nc">Item</span><span class="o">&gt;&gt;</span> <span class="n">violations</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="na">validate</span><span class="o">(</span><span class="n">item</span><span class="o">);</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>item에 검증에 벗어나는 값을 설정해서 넣어주면, 그에 맞는 <strong>검증 결과를 violations에 담아</strong>두는 것.</li>
+              <li>violations를 통해 어떤 검증 실패가 발생했는지 확인 가능</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="bean-validation-적용-spring">Bean Validation 적용 (Spring)</h2>
+
+<h3 id="bean-validation-with-spring">Bean Validation with Spring</h3>
+
+<ul>
+  <li>Bean Validation의 Validator 등록을 위해 사용했던 <code class="language-plaintext highlighter-rouge">@InitBinder</code> 제거! → 검증이 중복으로 적용됨!! (Bean Validation의 Validator 랑 custom Validator(ItemValidator) 가 중복으로 실행 되는 것)</li>
+  <li>
+    <p>그리고 다른 코드는 수정할 필요 없음! → <strong>Bean Validation이 자동으로 Global Validator로 등록</strong> 되고 <strong>이를 사용하고자 하는 객체에 <code class="language-plaintext highlighter-rouge">@Validated</code></strong> 를 달아주면 알아서 Validator가 적용됨! (<code class="language-plaintext highlighter-rouge">@Validated @ModelAttribute Item item</code>)</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PostMapping</span><span class="o">(</span><span class="s">"/add"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">addItem</span><span class="o">(</span><span class="nd">@Validated</span> <span class="nd">@ModelAttribute</span> <span class="nc">Item</span> <span class="n">item</span><span class="o">,</span> <span class="nc">BindingResult</span> <span class="n">bindingResult</span><span class="o">,</span> <span class="nc">RedirectAttributes</span> <span class="n">redirectAttributes</span><span class="o">)</span> <span class="o">{</span>
+    	 
+  	 <span class="c1">// 실패 시</span>
+  	 <span class="k">if</span> <span class="o">(</span><span class="n">bindingResult</span><span class="o">.</span><span class="na">hasErrors</span><span class="o">())</span> <span class="o">{</span>
+  		 <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"errors={}"</span><span class="o">,</span> <span class="n">bindingResult</span><span class="o">);</span>
+  		 <span class="k">return</span> <span class="s">"validation/v3/addForm"</span><span class="o">;</span>
+  	 <span class="o">}</span>
+  	 <span class="o">...</span> <span class="c1">// 성공 로직</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>어떻게 Bean Validator가 적용 되나?
+    <ul>
+      <li>스프링 부트는 <code class="language-plaintext highlighter-rouge">spring-boot-starter-validation</code> 라이브러리가 있으면 <strong>자동으로 Bean Validator를 인지하고 스프링에 통합</strong>시킴 (즉, <strong>Spring 내에서 사용</strong>할 수 있게 해준다는 것)</li>
+      <li>그리고, <code class="language-plaintext highlighter-rouge">LocalValidatorFactoryBean</code> 을 Global Validator (프로젝트 내의 모든 곳에서 사용할 수 있는 Validator)로 등록. ( <code class="language-plaintext highlighter-rouge">LocalValidatorFactoryBean</code> 는 <code class="language-plaintext highlighter-rouge">@NotNull</code>과 같은 애노테이션을 보고 검증을 수행. 추가로 Global Validator를 직접 등록하는 경우, 해당 Validator는 동작하지 않음 → Global은 직접 등록한 애들만 있다고 생각하기에)</li>
+      <li>이렇게 <strong>Bean Validation 기반 Global Validator가 자동으로 등록</strong>되었기 때문에 <code class="language-plaintext highlighter-rouge">@Valid</code> , <code class="language-plaintext highlighter-rouge">@Validated</code> 만 적용해주면 해당 <strong>Validator를 원하는 객체에 적용</strong>할 수 있음!</li>
+      <li>적용한 객체에서 검증 오류가 발생하면, 이전과 동일하게 <code class="language-plaintext highlighter-rouge">FieldError</code>, <code class="language-plaintext highlighter-rouge">ObjectError</code> 를 생성해서 <code class="language-plaintext highlighter-rouge">BindingResult</code>에 담아줌!</li>
+    </ul>
+  </li>
+  <li><strong>Bean Validator 검증 순서</strong>
+    <ol>
+      <li><code class="language-plaintext highlighter-rouge">@ModelAttribute</code> 각각의 필드에 <strong>Type 변환 (String to X)</strong> 시도
+        <ol>
+          <li>성공하면 2번</li>
+          <li>실패하면 <code class="language-plaintext highlighter-rouge">typeMismatch</code>로 <code class="language-plaintext highlighter-rouge">FieldError</code> 추가</li>
+        </ol>
+      </li>
+      <li><strong>어노테이션 기반 Validator 적용</strong> (Bean Validation)</li>
+    </ol>
+
+    <aside>
+  ⚠️ <strong>Binding에 성공한 필드만 Bean Validation 적용!!</strong> <br />
+  즉, <b>바인딩에 실패한 필드(typeMismatch 등)는 Bean Validation을 적용하지 않음!</b> → 적용할 이유가 없음. 예를 들어 Range를 검증하는 Field에서 숫자가 아닌 문자 타입이 들어오면 Range는 사실상 의미가 없어짐. 그러므로 <b>바인딩에 실패한 필드는 검증 가치가 없다 판단</b>하여 따로 Bean Validation을 적용하지 않음. <br />
+  ⇒ 즉, <code>@ModelAttribute</code> → 각각의 필드 타입 변환시도 →  변환에 성공한 필드만 BeanValidation 적용
+    
+  </aside>
+  </li>
+</ul>
+
+<h3 id="bean-validation-with-error-messagecode">Bean Validation with Error Message(Code)</h3>
+
+<ul>
+  <li><strong>더 자세히, 계층적</strong>으로 <strong>Bean Validation의 오류 메시지 설정</strong>하기</li>
+  <li>Bean Validation으로 인해 발생된 bindingResult의 검증 오류 코드를 확인해보면 <strong>오류 코드가 애노테이션 이름으로 등록</strong>되는 것을 확인할 수 있음. → <code class="language-plaintext highlighter-rouge">codes=[NotBlank.item.itemName, NotBlank.itemName, NotBlank.java.lang.String, NotBlank]</code></li>
+  <li>즉, Bean Validation도 이전과 동일하게 <strong>errors.propertes 메시지 소스에 해당 어노테이션을 이름으로 하는 오류 코드를 지정</strong>해주면 됨</li>
+  <li>
+    <p>errors.properties</p>
+
+    <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="s">NotBlank={0} 공백X</span>
+  <span class="s">Range={0}, {2} ~ {1} 허용</span>
+  <span class="s">Max={0}, 최대 {1}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>{0} : 필드 명. {1},{2}, … 는 각 애노테이션에서 설정한 값들</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="bean-validation-in-objecterror">Bean Validation in ObjectError</h3>
+
+<ul>
+  <li>지금까지는 Bean Validation을 FieldError에 적용하는 것을 봤음</li>
+  <li>그럼 <strong>ObjectError는 어떻게?</strong>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">@ScriptAssert()</code> 이용</li>
+      <li>기존에 사용했던, 직접 <code class="language-plaintext highlighter-rouge">ObjectError</code>를 생성해서 만들기</li>
+    </ul>
+  </li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">@ScriptAssert()</code></p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Data</span>
+  <span class="nd">@ScriptAssert</span><span class="o">(</span><span class="n">lang</span> <span class="o">=</span> <span class="s">"javascript"</span><span class="o">,</span> <span class="n">script</span> <span class="o">=</span> <span class="s">"_this.price * _this.quantity &gt;= 10000"</span><span class="o">,</span> <span class="n">message</span> <span class="o">=</span> <span class="s">"10000원 이상"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">Item</span> <span class="o">{</span>
+  	 <span class="c1">//...</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>item의 price, quantity의 값의 곱이 10000 이상인 검증 수행</li>
+      <li>message 설정 가능</li>
+      <li>But, script 언어로 사용하기도 하고 <strong>사용 방법이 단순하지 않음</strong></li>
+      <li>또한, <strong>검증 과정 자체가 복잡할 경우는 사용하기 까다로움</strong></li>
+      <li><strong>보통 많이 사용하지는 않는 방법</strong></li>
+    </ul>
+  </li>
+  <li>
+    <p><strong>[주로 사용하는 방법]</strong> 직접 검증 후 <code class="language-plaintext highlighter-rouge">ObjectError</code>를 생성해서 넣어주기 (Controller 단에서)</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">if</span> <span class="o">(</span><span class="n">item</span><span class="o">.</span><span class="na">getPrice</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">item</span><span class="o">.</span><span class="na">getQuantity</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+  	 <span class="kt">int</span> <span class="n">resultPrice</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="na">getPrice</span><span class="o">()</span> <span class="o">*</span> <span class="n">item</span><span class="o">.</span><span class="na">getQuantity</span><span class="o">();</span>
+  	 <span class="k">if</span> <span class="o">(</span><span class="n">resultPrice</span> <span class="o">&lt;</span> <span class="mi">10000</span><span class="o">)</span> <span class="o">{</span>
+  		 <span class="n">bindingResult</span><span class="o">.</span><span class="na">reject</span><span class="o">(</span><span class="s">"totalPriceMin"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="mi">10000</span><span class="o">,</span> <span class="n">resultPrice</span><span class="o">},</span> <span class="kc">null</span><span class="o">);</span>
+  	 <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><strong>직접 검증을 실행</strong>하여 검증 조건에 맞지 않다면 <strong>BindingResult의</strong> <code class="language-plaintext highlighter-rouge">reject</code><strong>를 사용</strong>하여 <code class="language-plaintext highlighter-rouge">ObjectError</code>를 생성하여 넣어줌</li>
+      <li>코드가 길어지지만, 복잡한 검증도 가능하며 원하는 형태로 구성할 수 있음</li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+💡 <strong>Bean Validation (FieldError, ObjectError)</strong>
+<ul>
+<li>`FieldError`인 경우 Bean Validation의 Field에 다는 어노테이션(@NotNull, @Max, … )을 통해서 편리하게 진행</li>
+<li>ObjectError인 경우 `@ScriptAssert` 보다는 Controller 단에서 직접 ObjectError를 추가해주는 방법을 많이 이용</li>
+</ul>
+</aside>
+
+<aside>
+🚨 **Bean Validation의 한계**
+
+- 만약 Item 객체 등록 시의 검증 요구사항과 수정 시의 검증 **요구사항이 다르면?** → Bean Validation을 사용하기 어려움 (ex_등록 시에는 Max 검증이 있었는데, 수정 시에는 Max 검증을 없애고 싶은 상황. **각각에 맞는 어노테이션 변경이 필요함!!**)
+- 즉, 각 **요구사항에 맞는 검증 설정**이 필요!!
+- 이건 기존 Bean Validation으로는 어려움!
+</aside>
+
+<h3 id="bean-validation---요구사항에-따른-검증">Bean Validation - 요구사항에 따른 검증</h3>
+
+<ul>
+  <li>요구사항에 따른 검증 2가지 방법 (with Bean Validation)
+    <ul>
+      <li>BeanValidation의 <strong>groups 기능</strong> 사용</li>
+      <li>Item을 직접 From Data로 사용하는 것이 아닌, ItemSaveForm, ItemUpdateForm 같은 <strong>DTO를 사용 (DTO : Data Transfer Object)</strong></li>
+    </ul>
+  </li>
+  <li>실무에서는 groups 보다는 <strong>DTO를 주로 사용</strong></li>
+</ul>
+
+<h3 id="beanvalidation의-groups">BeanValidation의 groups</h3>
+
+<ul>
+  <li>등록시에 검증할 기능과 수정시에 <strong>검증</strong>할 기능을 <strong>각각 그룹으로 나누어 적용</strong></li>
+  <li>group은 <strong>interface로 지정</strong>만 해주면 됨
+    <ul>
+      <li>등록용 groups interface 생성 → <code class="language-plaintext highlighter-rouge">public interface SaveCheck {}</code></li>
+      <li>수정용 groups interface 생성 → <code class="language-plaintext highlighter-rouge">public interface UpdateCheck {}</code></li>
+      <li>등록용은 SaveCheck.class로 지정, 수정용은 UpdateCheck.class로 group을 지정해주면 됨</li>
+    </ul>
+  </li>
+  <li>Item 객체에 <strong>group 지정</strong>하기
+    <ul>
+      <li>등록만 적용 : <code class="language-plaintext highlighter-rouge">@Max</code> -&gt;<code class="language-plaintext highlighter-rouge">@Max(value = 9999, groups = SaveCheck.class)</code></li>
+      <li>수정만 적용 : <code class="language-plaintext highlighter-rouge">@NotNull</code> → <code class="language-plaintext highlighter-rouge">@NotNull(groups = UpdateCheck.class)</code></li>
+      <li>둘 다 적용 : <code class="language-plaintext highlighter-rouge">@NotNull</code> → <code class="language-plaintext highlighter-rouge">@NotNull(groups = {SaveCheck.class, UpdateCheck.class})</code></li>
+    </ul>
+  </li>
+  <li>Controller의 <code class="language-plaintext highlighter-rouge">@Validated</code>에 group 지정
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">@Validated()</code> 안에 해당 group interface를 지정해주면 됨</li>
+      <li>등록 method (<code class="language-plaintext highlighter-rouge">@PostMapping(”/add”)</code>) → <code class="language-plaintext highlighter-rouge">public String addItemV2(@Validated(SaveCheck.class) @ModelAttribute Item item ...</code></li>
+      <li>수정 method (<code class="language-plaintext highlighter-rouge">@PostMapping(”/{itemId}/edit”)</code>) → <code class="language-plaintext highlighter-rouge">public String editV2(@PathVariable Long itemId, @Validated(UpdateCheck.class) @ModelAttribute Item item, …</code></li>
+    </ul>
+  </li>
+  <li>BUT, 실무에서는 groups 보다는 <strong>DTO 형식을 이용!!!</strong></li>
+</ul>
+
+<blockquote>
+  <p>참고 : <code class="language-plaintext highlighter-rouge">@Valid</code> 에서는 groups 사용 못함. 즉, groups를 사용하려면 <code class="language-plaintext highlighter-rouge">@Validated</code> 를 사용해야 됨</p>
+
+</blockquote>
+
+<h3 id="bean-validation-with-dto-form-전송-객체-분리">Bean Validation with DTO (Form 전송 객체 분리)</h3>
+
+<ul>
+  <li>실무에서 groups 를 잘 사용하지 않는 이유 → <strong>폼</strong>에서 전달하는 데이터가 <strong>서비스 도메인 객체와 정확히 딱 드러맞지 않기 때문</strong></li>
+  <li>즉, 사용자가 입력한 데이터와 실제로 저장하려 하는 도메인 객체가 딱 맞지 않음! (추가적은 정보를 넣어야할 때도 있고, 부가적으로 작업 후에 새로운 값으로 넣어주는 경우도 있기 때문)</li>
+  <li>그래서 보통 도메인으로 사용되는 객체를 Form으로 보내 직접 받아 오는 것이 아니라, 폼의 데이터를 컨트롤러까지 전달할 <strong>별도의 객체(DTO)를 만들어서 전달</strong>함. 즉, Form을 전달받는 전용 객체를 만들어 <code class="language-plaintext highlighter-rouge">@ModelAttribute</code> 로 사용하는 것. 이후 해당 데이터를 받아 컨트롤러에서 필요한 데이터만을 사용하여 서비스 도메인을 생성하는 것!</li>
+</ul>
+
+<aside>
+⚠️ **폼데이터 전달에 도메인 객체 사용 VS DTO 사용**
+
+- **도메인 객체 사용**
+    - `HTML Form -&gt; Item -&gt; Controller -&gt; Item -&gt; Repository`
+    - 장점 : 도메인 자체를 사용하기에 추가적인 설정이 필요없이 간단함
+    - 단점 : 도메인, 데이터 자체가 복잡해지는 경우 사용이 까다로움. 수정 시 검증이 중복될 가능성 높음 (groups 사용 필수)
+- **DTO 사용**
+    - `HTML Form -&gt; ItemSaveForm -&gt; Controller -&gt; Item 생성 -&gt; Repository`
+    - 장점 : 폼 데이터가 복잡해도 그 스펙에 맞춘 폼 객체를 사용하여 데이터를 전달 받을 수 있음. **요구사항(용도)에 맞는 별도의 폼 객체**를 만들어 사용하기 때문에 검증 중복 X (groups 사용X)
+    - 단점 : 컨트롤러에서 추가적인 작업(DTO → 도메인 객체 이전 작업)이 필요함
+</aside>
+
+<ul>
+  <li><strong>DTO 사용</strong>
+    <ul>
+      <li>기존 Item 도메인 객체의 Bean Validation은 모두 제거 (Form DTO를 통해 검증을 마친 후 사용되므로!)</li>
+      <li><strong>등록용 DTO (ItemSaveForm)</strong> → <code class="language-plaintext highlighter-rouge">public class ItemSaveForm</code>
+        <ul>
+          <li>등록 스펙에 맞는 property들(id는 등록시 넘어오지 않으므로 id를 제외한 item의 모든 proerty)만을 설정</li>
+          <li>등록 시 <strong>요구사항에 맞는 Bean Validation 진행</strong></li>
+        </ul>
+      </li>
+      <li><strong>수정용 DTO (ItemUpdateForm)</strong> → <code class="language-plaintext highlighter-rouge">public class ItemUpdateForm</code>
+        <ul>
+          <li>수정 스펙에 맞는 property들 (수정 시 어떤 item을 수정하는 지 알아야 하기 떄문에 id 도 포함) 만을 설정</li>
+          <li>수정 시 <strong>요구사항에 맞는 Bean Validation 진행</strong></li>
+        </ul>
+      </li>
+      <li>이제 각 등록, 수정 Controller에서 해당 하는 Form 객체(DTO)를 사용하여 <strong>데이터를 받아 온 후 도메인 객체로 값을 이전(변환)하여 저장</strong>하면 됨
+        <ul>
+          <li>등록 Controller (<code class="language-plaintext highlighter-rouge">@PostMapping("/add")</code>) → <code class="language-plaintext highlighter-rouge">public String addItem(@Validated @ModelAttribute("item") ItemSaveForm form ...</code>
+            <ul>
+              <li>ItemSaveForm 등록 DTO 사용</li>
+              <li><code class="language-plaintext highlighter-rouge">@ModelAttribute("item")</code> 를 통해 model 에 itemSaveForm의 이름이 아닌 item의 이름으로 View template에 넘겨줌 (view template에서 item의 이름으로 값에 접근하기 위함)</li>
+              <li>
+                <p>도메인 객체로 값 이전 후 repository에 저장</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Item</span> <span class="n">item</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Item</span><span class="o">();</span>
+  <span class="n">item</span><span class="o">.</span><span class="na">setItemName</span><span class="o">(</span><span class="n">form</span><span class="o">.</span><span class="na">getItemName</span><span class="o">());</span>
+  <span class="n">item</span><span class="o">.</span><span class="na">setPrice</span><span class="o">(</span><span class="n">form</span><span class="o">.</span><span class="na">getPrice</span><span class="o">());</span>
+  <span class="n">item</span><span class="o">.</span><span class="na">setQuantity</span><span class="o">(</span><span class="n">form</span><span class="o">.</span><span class="na">getQuantity</span><span class="o">());</span>
+</code></pre></div>                </div>
+              </li>
+            </ul>
+          </li>
+          <li>수정 Controller(<code class="language-plaintext highlighter-rouge">@PostMapping("/{itemId}/edit")</code>) → <code class="language-plaintext highlighter-rouge">public String edit(@PathVariable Long itemId, @Validated @ModelAttribute("item") ItemUpdateForm form, …</code>
+            <ul>
+              <li>ItemUpdateForm 수정 DTO 사용</li>
+              <li>나머지는 등록 Controlle과 유사</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>Form 전송 객체 분리해서 등록과 수정에 딱 맞는 기능을 구성하고, 검증도 명확히 분리함</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="bean-validation-in-api-requestbody-httpmessageconverter">Bean Validation in API (@RequestBody, HttpMessageConverter)</h3>
+
+<blockquote>
+  <p>참고 : <code class="language-plaintext highlighter-rouge">@ModelAttribute</code> 는 HTTP 요청 파라미터(URL 쿼리 스트링, POST Form)를 다룰 때 사용, <code class="language-plaintext highlighter-rouge">@RequestBody</code> 는 <strong>HTTP Body의 데이터를 객체로 변환할 때 사용(API JSON 요청)</strong></p>
+
+  <ul>
+    <li><code class="language-plaintext highlighter-rouge">@Validated</code> 를 통한 검증은 <code class="language-plaintext highlighter-rouge">@RequestBody</code>(<strong>HttpMessageConverter</strong>) 에도 적용 가능</li>
+    <li>API 3가지 경우
+      <ul>
+        <li>성공</li>
+        <li>실패 : JSON 객체로 <strong>생성하는 것 자체</strong>가 실패</li>
+        <li>검증 오류 : JSON 객체로 <strong>생성 후 검증</strong>에서 실패</li>
+      </ul>
+    </li>
+    <li>여기서 중요한 부분은 <strong>JSON 객체로 생성하는 것 자체가 실패한 경우</strong></li>
+    <li>JSON 객체로 생성하는 것 자체가 실패한 경우는 오류 코드(메세지)들이 반환되는 것이 아닌 “400 Bad Request” 가 반환됨</li>
+    <li>즉, price에 <strong>Integer가 아닌 String으로 값을 넣는</strong> 경우 J<strong>SON 객체 생성 자체가 안되</strong>며 Controller가 호출 자체가 안되고 검증 자체가 실행되지 않고 오류가 발생해버림!!</li>
+  </ul>
+</blockquote>
+
+<aside>
+⚠️ **`@ModelAttribute`(Post Form 형식) 에서는 TypeMismatch도 잘 잡아서 검증이 그대로 진행 되었는데 왜 `@RequestBody`(HttpMessageConverter)는 안되는거지? 똑같은 검증 로직 아닌가…?**
+
+- `@ModelAttribute` 는 **필드 단위**로 정교하게 **바인딩이 적용**됨. 고로 특정 필드가 바인딩 되지 않아도 나머지 필드는 정상 바인딩 되고, Validator를 사용한 검증도 적용. 즉, **각각에 적용되므로 오류가 발생해도 해당 부분에 대해서 오류를 추가해주고 Controller로 넘어가는 것**
+- `@RequestBody`**(HttpMessageConverter**)는 `@ModelAttribute` 와 다르게 각각의 필드 단위로 적용되는 것이 아니라, **전체 객체 단위**로 적용. 따라서 HttpMessageConverter 단계에서 JSON 데이터를 객체로 변경하지 못하면 **이후 단계 자체가 진행되지 않고 예외가 발생**. 컨트롤러도 호출되지 않고, Validator도 적용할 수 없음. 즉, 세부적으로 진행하지 못하고 **전체를 바인딩하기에 오류가 발생하면 다음으로 넘어가지 못하고 예외를 발생**시키는 것
+</aside>
+:ET

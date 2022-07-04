@@ -3,7 +3,7 @@ layout: post
 title:  "JPA를 이용한 API, OSIV 개발 최적화 (Version 2)"
 date:   2022-03-24
 image:  /posts/JPA+API.png
-tags:   SpringBoot JPA
+tags:   [SpringBoot, JPA]
 ---
 ## API 개발 고급 (Part 2, 주문 조회 API)
 

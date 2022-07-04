@@ -1,0 +1,216 @@
+I"	;<h2 id="메시지와-국제화란">메시지와 국제화란?</h2>
+
+<ul>
+  <li>메시지
+    <ul>
+      <li><strong>공통적으로 사용되는 문구</strong>에 대해서 미리 설정을 해두는 것</li>
+      <li>ex) ‘상품 이름’ 이라는 label에 붙은 문구를 전체적으로 ‘상품 명’ 으로 변경하고 싶은 상황
+  → 메시지 기능을 사용하지 않는다면, 직접 일일이 다 수정해주어야 됨 (수정해야 될 html 파일이 200개가 있다고 생각해보면 끔찍..!)
+  → 메시지 기능을 사용하면, <strong>message 설정 부분 하나만 수정</strong>해주면 <strong>공통적으로 적용</strong> 됨!</li>
+    </ul>
+  </li>
+  <li>국제화
+    <ul>
+      <li>메시지에서 한 발 더 나아간 개념</li>
+      <li><strong>요청</strong>하는 고객이 선택한 <strong>언어에 맞는 메시지</strong>를 보여주는 것!</li>
+      <li>한국, 영어 에 대한 메시지 국제화 설정이 되어 있으면, 한국에서 요청한 것이면 한국어로, 영어권에서 요청한 것이라면 영어로 각 문구들을 보여주는 것</li>
+      <li>접근 국가 인식 방법
+        <ul>
+          <li><strong>HTTP 헤더</strong>들 중 <strong><code class="language-plaintext highlighter-rouge">accept-language</code> 헤더</strong> 값 이용</li>
+          <li>사용자가 직접 선택한 언어를 <strong>쿠키에 녹여 처리</strong></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>이런 메시지와 국제화 기능은 직접 구현 가능. BUT, <strong>Spring은 기본적인 메시지와 국제화 기능 모두 제공!</strong> <strong>(Thymeleaf 또한 제공 → Thymelaef, Spring Integration)</strong></li>
+  <li>즉, 스프링에서 정해준 메시지 규약을 따르면 편리하게 메시지, 국제화 기능을 사용할 수 있음</li>
+</ul>
+
+<h2 id="메시지-국제화-in-spring">메시지, 국제화 in Spring</h2>
+
+<h3 id="스프링-메시지-소스-설정">스프링 메시지 소스 설정</h3>
+
+<ul>
+  <li>
+    <p>Spring Boot를 사용하지 않을 때 (<strong>Only Spring</strong>)</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Bean</span>
+  <span class="kd">public</span> <span class="nc">MessageSource</span> <span class="nf">messageSource</span><span class="o">()</span> <span class="o">{</span>
+  	 <span class="nc">ResourceBundleMessageSource</span> <span class="n">messageSource</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ResourceBundleMessageSource</span><span class="o">();</span>
+  	 <span class="n">messageSource</span><span class="o">.</span><span class="na">setBasenames</span><span class="o">(</span><span class="s">"messages"</span><span class="o">,</span> <span class="s">"errors"</span><span class="o">);</span>
+  	 <span class="n">messageSource</span><span class="o">.</span><span class="na">setDefaultEncoding</span><span class="o">(</span><span class="s">"utf-8"</span><span class="o">);</span>
+  	 <span class="k">return</span> <span class="n">messageSource</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">MessageSource</code> 를 <strong>스프링 빈으로 등록</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">MessageSource</code> 는 Interface 이기에 구현체인 <code class="language-plaintext highlighter-rouge">ResourceBundleMessageSource</code> 를 스프링 Bean 으로 등록</li>
+      <li><code class="language-plaintext highlighter-rouge">setBasenames</code> : <strong>메시지 설정 파일의 이름 지정</strong>
+        <ul>
+          <li>messages로 지정하면 <code class="language-plaintext highlighter-rouge">messages.properties</code> 파일을 읽어서 사용</li>
+          <li>국제화 설정 :  <code class="language-plaintext highlighter-rouge">_en</code>, <code class="language-plaintext highlighter-rouge">_ko</code> 처럼 <strong>뒤에 언어 정보</strong>를 넣어 주어 생성해주면 됨(<code class="language-plaintext highlighter-rouge">messages_en.properties</code>, …) 지정되어 있지 않은 언어에 대해선 default인 <code class="language-plaintext highlighter-rouge">messages.properties</code> 이용</li>
+          <li>메시지 설정 <strong>파일의 위치</strong>는 <code class="language-plaintext highlighter-rouge">**/resources</code> 하위**에 두면 됨</li>
+          <li>여러 파일 한번에 지정 가능 (<code class="language-plaintext highlighter-rouge">messages</code>, <code class="language-plaintext highlighter-rouge">errors</code>, …)</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">setDefaultEncoding</code> : 인코딩 정보 지정</li>
+    </ul>
+  </li>
+  <li><strong>Spring Boot</strong>에서의 메시지 소스 설정
+    <ul>
+      <li><strong>자동</strong>으로 <code class="language-plaintext highlighter-rouge">MessageSource</code>를 <strong>스프링 빈으로 등록</strong> (Spring Boot를 쓰는 이유 중 하나)</li>
+      <li>추가적인 <strong>basename, encoding 정보</strong>만 <code class="language-plaintext highlighter-rouge">application.properties</code> 에 설정해주면 됨</li>
+      <li>하지만 이것 또한 default로 basename = message, encoding=utf-8 로 되어 있음!!</li>
+      <li>만약 추가적인 메시지 파일을 사용하려면 해당 설정에 추가해주면 됨 → <code class="language-plaintext highlighter-rouge">spring.messages.basename=messages,errors</code></li>
+      <li>국제화 기능은 동일하게 메시지 파일 뒤에 <code class="language-plaintext highlighter-rouge">_en</code>, <code class="language-plaintext highlighter-rouge">_ko</code> 처럼 언어 정보를 넣어 주어 생성해주면 됨</li>
+    </ul>
+  </li>
+  <li>메시지 파일 예시
+    <ul>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">/resources/messages.properties</code></p>
+
+        <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="s">hello=안녕</span>
+  <span class="s">hello.name=안녕 {0}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">{0}</code> 은 <strong>파라미터</strong>를 넣는 공간</li>
+          <li>즉, <strong>message는 파라미터도 지원</strong>함</li>
+        </ul>
+      </li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">/resources/messages_en.properties</code></p>
+
+        <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="s">hello=hello</span>
+  <span class="s">hello.name=hello {0}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>영어로 요청이 들어오면 해당 파일의 메시지가 적용 되는 것</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="스프링-메시지-소스-사용">스프링 메시지 소스 사용</h3>
+
+<ul>
+  <li>MessageSource Interface 메서드 살펴보기
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">String getMessage(String code, @Nullable Object[] args, @Nullable String defaultMessage, Locale locale);</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">String code</code> : message code (messages.properties에 <strong>등록되어 있는 code</strong>)</li>
+          <li><code class="language-plaintext highlighter-rouge">Object[] args</code> : message code가 파라미터를 요구할 때 넣어주는 <strong>파라미터 값들</strong></li>
+          <li><code class="language-plaintext highlighter-rouge">String defaultMessage</code> : 해당 되는 message code가 없을 때 대신해서 보여주는 ‘<strong>기본 메시지</strong>’</li>
+          <li><code class="language-plaintext highlighter-rouge">Locale locale</code> : <strong>지역 정보</strong> (_en, _ko, …) 등에 맞는 언어 메시지 선택을 위함.</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">String getMessage(String code, @Nullable Object[] args, Locale locale);</code>
+        <ul>
+          <li>defaultMessage를 잘 사용하지 않기에 defaultMessage 제외된 method</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>MessageSource 사용 (위의 <code class="language-plaintext highlighter-rouge">messages.properties</code> 를 바탕으로)
+    <ul>
+      <li>messages.properties 에서 message 불러오기 (args : null, locale : null)
+  <code class="language-plaintext highlighter-rouge">ms.getMessage("hello", null, null);</code> → “안녕”</li>
+      <li>messages.properties 에 없는 message 불러오기(No deafultMessage) -&gt; <strong>예외 발생</strong>
+  <code class="language-plaintext highlighter-rouge">ms.getMessage("no_code", null, null))</code> → <code class="language-plaintext highlighter-rouge">NoSuchMessageException</code> 발생</li>
+      <li>messages.properties 에 없는 message 불러오기(<strong>기본 메시지</strong>로 출력하기)
+  <code class="language-plaintext highlighter-rouge">ms.getMessage("no_code", null,"기본 메시지", null);</code> → “기본 메시지”</li>
+      <li>message args 와 함께 사용하기
+  <code class="language-plaintext highlighter-rouge">ms.getMessage("hello.name", new Object[]{"Spring"}, null);</code> → “안녕 Spring” ( <code class="language-plaintext highlighter-rouge">hello.name = 안녕 {0}</code>)</li>
+      <li>locale에 따른 message 불러오기
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">ms.getMessage("hello", null,</code> <code class="language-plaintext highlighter-rouge">Locale.*KOREA*)</code> → “안녕” (_ko 로 설정된 메시지 파일이 없기에 <strong>기본 messages.properties에서</strong> 가져온 것)</li>
+          <li><code class="language-plaintext highlighter-rouge">ms.getMessage("hello", null, Locale.*ENGLISH</code> →* “hello” (_en 의 메시지 파일이 있기에 <strong>messages_en.properties에서</strong> 가져온 것)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>그럼 웹에서 보여줄 때는?</strong> <br />
+이렇게 항상 getMessage 를 통해서 웹에다 넘겨줘야 되는 것인가..? 
+Nope! <b>Thymeleaf와 Spring가 통합</b>되어 제공하는 기능 중 하나가 메시지, 국제화. 즉, <b>Thymleaf에서</b> 별도의 설정없이 <b>메시지 규칙에 따르면 편리하게 사용가능!!</b>
+
+</aside>
+
+<h3 id="웹-애플리케이션에-메시지-국제화-적용">웹 애플리케이션에 메시지, 국제화 적용</h3>
+
+<ul>
+  <li><strong>Thymeleaf(View Template)는 Spring과 통합</strong>되어 <strong>메시지, 국제화 기능을 제공</strong>함.</li>
+  <li>즉, 별다른 설정없이 Thymeleaf의 <strong>메시지 사용 규율</strong>만 따르면 편리하게 사용 가능</li>
+  <li><strong>Thymeleaf</strong>에서 <strong>메시지</strong> 사용하기
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">th:text="#{...}"</code>
+        <ul>
+          <li>messages.properties</li>
+        </ul>
+
+        <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="s">label.item=상품</span>
+  <span class="s">label.item.name=상품명</span>
+  <span class="s">label.item.price=상품가격</span>
+  <span class="s">label.item.param=상품 {0}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>메시지 사용 전 : <code class="language-plaintext highlighter-rouge">&lt;h2&gt; 상품명 &lt;/h2&gt;</code></li>
+          <li><strong>메시지 사용 후</strong> : <code class="language-plaintext highlighter-rouge">&lt;h2 th:text="#{label.item.name}"&gt; 상품명 &lt;/h2&gt;</code> → 렌더링 → <code class="language-plaintext highlighter-rouge">&lt;h2&gt; 상품명 &lt;/h2&gt;</code>
+            <ul>
+              <li>messages.properites에서 label.item.name 이라는 message를 가져와 text content로 사용하는 것!</li>
+            </ul>
+          </li>
+          <li>이렇게 되면 만약 “상품명” 이라는 text를 전체적으로 “상품 이름” 으로 변경하고 싶으면 그냥 <strong>messages.propertes에서 label.item.name 부분만 수정</strong>해주면 됨!! → <strong>유지 보수 효율 UP</strong></li>
+          <li><strong>파라미터</strong> <strong>사용</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">"#{...(...)}"</code></li>
+              <li><code class="language-plaintext highlighter-rouge">&lt;p th:text="#{label.item.param(${item.param})}"&gt;&lt;/p&gt;</code></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Thymeleaf</strong>에서 <strong>국제화</strong> 사용하기
+    <ul>
+      <li>사용법은 메시지와 동일!</li>
+      <li>messages_en.properties를 설정해 두었다면 <strong>Thymeleaf가 알아서 자동으로 Accept-Language 헤더의 locale 정보를 통해 국제화를 실행</strong>시켜 줌! (<code class="language-plaintext highlighter-rouge">LocaleResolver</code> interface의 구현체인 <code class="language-plaintext highlighter-rouge">AcceptHeaderLocaleResolver</code> 를 통해)</li>
+      <li>Ex)
+        <ul>
+          <li>messages_en.properties</li>
+        </ul>
+
+        <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="s">label.item=item</span>
+  <span class="s">label.item.name=item name</span>
+  <span class="s">label.item.price=item price</span>
+  <span class="s">label.item.param=item {0}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>Accept-Language : <strong>ko</strong>,en;q=0.9,…
+            <ul>
+              <li>Local : _ko</li>
+              <li>하지만 messages_ko.properties가 따로 없기에 <strong>default messages인 messages.properties 사용</strong></li>
+              <li><code class="language-plaintext highlighter-rouge">&lt;h2 th:text="#{label.item.name}"&gt; 상품명 &lt;/h2&gt;</code> → 렌더링 → <code class="language-plaintext highlighter-rouge">&lt;h2&gt; 상품명 &lt;/h2&gt;</code></li>
+            </ul>
+          </li>
+          <li>Accept-Language : <strong>en</strong>,ko;q=0.9,…
+            <ul>
+              <li>Local : _en</li>
+              <li><strong>messages_en.properties</strong>가 있기에 해당 메시지 정보를 이용</li>
+              <li><code class="language-plaintext highlighter-rouge">&lt;h2 th:text="#{label.item.name}"&gt; 상품명 &lt;/h2&gt;</code> → 렌더링 → <code class="language-plaintext highlighter-rouge">&lt;h2&gt; item name &lt;/h2&gt;</code></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+:ET

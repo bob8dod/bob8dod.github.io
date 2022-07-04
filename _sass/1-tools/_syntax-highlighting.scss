@@ -7,9 +7,11 @@
 }
 
 .highlighter-rouge {
-  background: #e1e1e1;
+  background: rgba(238, 238, 238, 0.9);
   border-radius: 0.25em;
-  color: indianred;
+  color: #c57c7c;
+  padding-left: 5px;
+  padding-right: 5px;
   //font-weight: bold;
   font-family: "Monaco", "Consolas", "Menlo", monospace !important;
 }
