@@ -1,0 +1,564 @@
+I"A�<h2 id="스프링-타입-컨버터">스프링 타입 컨버터</h2>
+
+<h3 id="타입-컨버터">타입 컨버터</h3>
+
+<ul>
+  <li>Type Converting 상황
+    <ul>
+      <li>문자를 숫자로 변환하거나 반대의 경우처럼 애플리케이션을 개발하다 보면 <strong>타입을 변환해야 하는 경우</strong>가 수없이 많음 → HTTP Body, 요청 파리미터 등으로 <strong>들어오는 데이터는 모두 String</strong>인데 해당 데이터를 Integer 등으로 사용하려면 변환은 필수!</li>
+      <li>
+        <p>TypeConverter(Spring)없이 <strong>Servlet만을 이용</strong>한 경우</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/hello-v1"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">helloV1</span><span class="o">(</span><span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>
+  	<span class="nc">String</span> <span class="n">data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"data"</span><span class="o">);</span> <span class="c1">//문자 타입 조회</span>
+  	<span class="nc">Integer</span> <span class="n">intValue</span> <span class="o">=</span> <span class="nc">Integer</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">data</span><span class="o">);</span> <span class="c1">//숫자 타입으로 변경</span>
+  	<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"intValue = "</span> <span class="o">+</span> <span class="n">intValue</span><span class="o">);</span>
+  	<span class="k">return</span> <span class="s">"ok"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>Servlet만을 이용할 경우 받아온 값을 Integer로 <strong>직접 변환해야 해당 Type으로 사용 가능</strong></li>
+        </ul>
+      </li>
+      <li>
+        <p>스프링 MVC가 제공하는 <code class="language-plaintext highlighter-rouge">@RequestParam</code> 을 사용 (TypeConverter 자동적용)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/hello-v2"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">helloV2</span><span class="o">(</span><span class="nd">@RequestParam</span> <span class="nc">Integer</span> <span class="n">data</span><span class="o">)</span> <span class="o">{</span>
+  	 <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"data = "</span> <span class="o">+</span> <span class="n">data</span><span class="o">);</span>
+  	 <span class="k">return</span> <span class="s">"ok"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>문자 10으로 값이 들어오지만 <code class="language-plaintext highlighter-rouge">@RequestParam</code>을 통해 <strong>Integer로 Type이 알아서 변환</strong>됨</li>
+          <li><strong>스프링이 중간에서 타입을 변환</strong>해주었기 때문!!!</li>
+          <li><code class="language-plaintext highlighter-rouge">@ModelAttribute</code> , <code class="language-plaintext highlighter-rouge">@PathVariable</code> 도 마찬가지</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+💡 <strong>스프링의 <b>타입 자동 변환</b> 적용 예시</strong>
+<ul>
+<li>스프링 MVC 요청 파라미터 (<code>String → ?</code>) : <code>@RequestParam</code>, <code>@ModelAttribute</code>, <code>@PathVariable</code></li>
+<li>뷰를 렌더링 할 때 (Model에 담긴 값이 렌더링 될 때 _ <code>? → String</code>)</li>
+<li><code>@Value</code> 등으로 <b>YML 정보</b> 읽기</li>
+<li>XML에 넣은 <b>스프링 빈 정보</b>를 변환</li>
+</ul>
+</aside>
+
+<ul>
+  <li>Custom Type Converter
+    <ul>
+      <li><strong>확장 가능한 Converter Interface를 제공</strong>하기에 이를를 <strong>구현</strong>하면 됨</li>
+    </ul>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kn">package</span> <span class="nn">org.springframework.core.convert.converter</span><span class="o">;</span>
+  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Converter</span><span class="o">&lt;</span><span class="no">S</span><span class="o">,</span> <span class="no">T</span><span class="o">&gt;</span> <span class="o">{</span>
+  	 <span class="no">T</span> <span class="nf">convert</span><span class="o">(</span><span class="no">S</span> <span class="n">source</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><strong>S → T</strong> 로 변환 되는 것
+        <ul>
+          <li><strong>X → Y</strong> 로 변환 되는 것을 구현하고 <strong>Y → X</strong>로 변환되는 것을 구현해주면 <strong>양방향으로 변환 가능</strong></li>
+        </ul>
+      </li>
+      <li>모든 타입에 적용 가능 (ex_ String → Boolean)</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="타입-컨버터---converter">타입 컨버터 - Converter</h3>
+
+<ul>
+  <li>Converter (<code class="language-plaintext highlighter-rouge">org.springframework.core.convert.converter.Converter</code>)</li>
+  <li><strong>컨버터를 직접 구현해서 사용</strong>해보기
+    <ul>
+      <li>String ↔ Integer
+        <ul>
+          <li>
+            <p>String to Integer</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">StringToIntegerConverter</span> <span class="kd">implements</span> <span class="nc">Converter</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;</span> <span class="o">{</span>
+  	 <span class="nd">@Override</span>
+  	 <span class="kd">public</span> <span class="nc">Integer</span> <span class="nf">convert</span><span class="o">(</span><span class="nc">String</span> <span class="n">source</span><span class="o">)</span> <span class="o">{</span>
+  			 <span class="k">return</span> <span class="nc">Integer</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">source</span><span class="o">);</span>
+  	 <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">Converter</code> <strong>Interface</strong>를 받아 <strong>convert</strong>라는 method를 구현</li>
+              <li>Integer.valueOf(source) 를 통해 <strong>String → Integer 로 반환</strong></li>
+            </ul>
+          </li>
+          <li>Integer to String
+            <ul>
+              <li>String to Integer와 S랑 T만 다르고 나머지는 동일</li>
+            </ul>
+          </li>
+          <li>테스트 코드를 통해서 <strong>직접 구현체를 불러와 변환 결과를 확인</strong>할 수 있음. (직접 구현체를 인스턴스로 만들어 사용해야되는 단점 확인)</li>
+        </ul>
+      </li>
+      <li>IpProt ↔ String (<strong>사용자 정의 타입 컨버터</strong>)
+        <ul>
+          <li>
+            <p>IpPort</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Getter</span>
+  <span class="nd">@EqualsAndHashCode</span>
+  <span class="nd">@AllArgsContructor</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">IpPort</span> <span class="o">{</span>
+  	 <span class="kd">private</span> <span class="nc">String</span> <span class="n">ip</span><span class="o">;</span>
+  	 <span class="kd">private</span> <span class="kt">int</span> <span class="n">port</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">@EqualsAndHashCode</code> : 모든 필드를 사용해서 equals() , hashcode() 를 생성</li>
+              <li>모든 필드의 값이 같다면 <code class="language-plaintext highlighter-rouge">a.equals(b)</code> 의 결과가 참</li>
+            </ul>
+          </li>
+          <li>
+            <p>IpPort to String</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">StringToIpPortConverter</span> <span class="kd">implements</span> <span class="nc">Converter</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">IpPort</span><span class="o">&gt;</span> <span class="o">{</span>
+  	 <span class="nd">@Override</span>
+  	 <span class="kd">public</span> <span class="nc">IpPort</span> <span class="nf">convert</span><span class="o">(</span><span class="nc">String</span> <span class="n">source</span><span class="o">)</span> <span class="o">{</span>
+  			 <span class="nc">String</span><span class="o">[]</span> <span class="n">split</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">":"</span><span class="o">);</span>
+  			 <span class="nc">String</span> <span class="n">ip</span> <span class="o">=</span> <span class="n">split</span><span class="o">[</span><span class="mi">0</span><span class="o">];</span>
+  			 <span class="kt">int</span> <span class="n">port</span> <span class="o">=</span> <span class="nc">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">split</span><span class="o">[</span><span class="mi">1</span><span class="o">]);</span>
+  			 <span class="k">return</span> <span class="k">new</span> <span class="nf">IpPort</span><span class="o">(</span><span class="n">ip</span><span class="o">,</span> <span class="n">port</span><span class="o">);</span>
+  	 <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>“127.0.0.1:8080” 같은 문자를 입력하면 IpPort 객체를 만들어 반환</li>
+            </ul>
+          </li>
+          <li>
+            <p>String to IpPort</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">IpPortToStringConverter</span> <span class="kd">implements</span> <span class="nc">Converter</span><span class="o">&lt;</span><span class="nc">IpPort</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="o">{</span>
+  	 <span class="nd">@Override</span>
+  	 <span class="kd">public</span> <span class="nc">String</span> <span class="nf">convert</span><span class="o">(</span><span class="nc">IpPort</span> <span class="n">source</span><span class="o">)</span> <span class="o">{</span>
+  		 <span class="k">return</span> <span class="n">source</span><span class="o">.</span><span class="na">getIp</span><span class="o">()</span> <span class="o">+</span> <span class="s">":"</span> <span class="o">+</span> <span class="n">source</span><span class="o">.</span><span class="na">getPort</span><span class="o">();</span>
+  	 <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>IpPort 객체를 입력하면 127.0.0.1:8080 같은 문자를 반환</li>
+            </ul>
+          </li>
+          <li>
+            <p>테스트 코드를 통해서 <strong>직접 구현체를 불러와 변환 결과를 확인</strong>할 수 있음. (직접 구현체를 인스턴스로 만들어 사용해야되는 단점 확인)</p>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>타입 컨버터 인터페이스를 구현해서 직접 컨버터를 구현해보았는데, <strong>직접 구현한 객체를 계속해서 불러와 사용해야 된다는 단점</strong>이 있음.</li>
+  <li>즉, 타입 컨버터를 <strong>등록하고 관리하면서 알아서 기능이 제공되게 끔 하는 역할</strong>을 가진 것이 <strong>필요</strong>! 즉, <strong>중간 매개체 역할</strong>이 필요! → <strong>Spring의 ConversionService</strong></li>
+</ul>
+
+<aside>
+💡 <strong>String이 제공하는 기본 Type Converter</strong> <br />
+스프링은 String, Integer(int), Boolean, Enum등 일반적인 타입에 대한 대부분의 컨버터를 기본으로 제공 → 해당 객체들에 대한 수 많은 컨버터들이 이미 구현체로 등록되어 있음!!
+
+</aside>
+
+<h3 id="conversionservice">ConversionService</h3>
+
+<ul>
+  <li>컨버터들을 모아두고 편리하게 사용할 수 있는 기능을 제공</li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">ConversionService</code> Interface</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">ConversionService</span> <span class="o">{</span>
+  	<span class="kt">boolean</span> <span class="nf">canConvert</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">sourceType</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">targetType</span><span class="o">);</span>
+  	<span class="kt">boolean</span> <span class="nf">canConvert</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">TypeDescriptor</span> <span class="n">sourceType</span><span class="o">,</span> <span class="nc">TypeDescriptor</span> <span class="n">targetType</span><span class="o">);</span>
+    	
+  	<span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="no">T</span> <span class="nf">convert</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">Object</span> <span class="n">source</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">targetType</span><span class="o">);</span>
+  	<span class="nc">Object</span> <span class="nf">convert</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">Object</span> <span class="n">source</span><span class="o">,</span> <span class="nd">@Nullable</span> <span class="nc">TypeDescriptor</span> <span class="n">sourceType</span><span class="o">,</span> <span class="nc">TypeDescriptor</span> <span class="n">targetType</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>컨버팅이 <strong>가능한지 확인하는 Method</strong>와 <strong>컨버팅을 수행하는 Method</strong> 제공</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">ConversionService</code> 사용 (<code class="language-plaintext highlighter-rouge">DefaultConversionService</code>)
+    <ul>
+      <li>Test Code를 통해 직접 등록하고 사용해보기</li>
+      <li><code class="language-plaintext highlighter-rouge">DefaultConversionService</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">ConversionService</code> 인터페이스 <strong>구현체</strong></li>
+          <li>추가로 <strong>컨버터를 등록하는 기능</strong>도 제공</li>
+          <li><strong>‘등록’과 ‘사용’ 의 분리</strong>로 <strong>인터페이스 분리 원칙(ISP - Interface Segregation Principal)</strong>를 지키고 있음!
+            <ul>
+              <li>ConversionService : 컨버터 <strong>사용</strong>에 초점</li>
+              <li>ConverterRegistry : 컨버터 <strong>등록</strong>에 초점</li>
+              <li>인터페이스를 분리하여 컨버터를 <strong>사용하는 곳</strong>과 <strong>등록하고 관리하는 곳</strong>의 관심사를 <strong>명확하게 분리</strong> 가능</li>
+              <li>컨버터를 사용하는 곳은 ConversionService 만 의존하면 됨 즉, 컨버터를 어떻게 등록하고 관리하는지는 몰라도 되고 해당 등록 및 관리의 방법이 변경되더라도 의존하고 있지 않기때문에 그냥 사용하면 됨 → 관심사 분리. 인터페이스 분리 (ISP)</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">DefaultConversionService</code> 를 통해 ConverterService, ConverterRegistry  이용</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">DefaultConversionService</span> <span class="n">conversionService</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DefaultConversionService</span><span class="o">();</span>
+  <span class="c1">// 등록 (ConverterRegistry에만 의존)</span>
+  <span class="n">conversionService</span><span class="o">.</span><span class="na">addConverter</span><span class="o">(</span><span class="k">new</span> <span class="nc">StringToIpPortConverter</span><span class="o">());</span>
+  <span class="n">conversionService</span><span class="o">.</span><span class="na">addConverter</span><span class="o">(</span><span class="k">new</span> <span class="nc">IpPortToStringConverter</span><span class="o">());</span>
+         
+  <span class="c1">// 사용 (ConversionService에만 의존)</span>
+  <span class="nc">IpPort</span> <span class="n">ipPort</span> <span class="o">=</span> <span class="n">conversionService</span><span class="o">.</span><span class="na">convert</span><span class="o">(</span><span class="s">"127.0.0.1:8080"</span><span class="o">,</span> <span class="nc">IpPort</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+  <span class="nc">String</span> <span class="n">ipPortString</span> <span class="o">=</span> <span class="n">conversionService</span><span class="o">.</span><span class="na">convert</span><span class="o">(</span><span class="k">new</span> <span class="nc">IpPort</span><span class="o">(</span><span class="s">"127.0.0.1"</span><span class="o">,</span> <span class="mi">8080</span><span class="o">),</span> <span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        
+  <span class="c1">// 검증</span>
+  <span class="n">assertThat</span><span class="o">(</span><span class="n">ipPort</span><span class="o">).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="k">new</span> <span class="nc">IpPort</span><span class="o">(</span><span class="s">"127.0.0.1"</span><span class="o">,</span> <span class="mi">8080</span><span class="o">));</span> <span class="c1">// 검증</span>
+  <span class="n">assertThat</span><span class="o">(</span><span class="n">ipPortString</span><span class="o">).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"127.0.0.1:8080"</span><span class="o">);</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li>스프링은 즉, 이런 <code class="language-plaintext highlighter-rouge">ConversionService</code>를 사용해서 <strong>자동으로 타입을 변환</strong>해줌. (ex_<code class="language-plaintext highlighter-rouge">@RequestParam</code> 같은 곳에서 <code class="language-plaintext highlighter-rouge">ConversionService</code>를 이용하여 <strong>Type Converting을 진행</strong>)</li>
+</ul>
+
+<h3 id="스프링에서의-converter-사용">스프링에서의 Converter 사용</h3>
+
+<ul>
+  <li><strong>웹 애플리케이션</strong>에서 자동으로 <strong>Converter가 실행</strong>되게 하기</li>
+  <li>custom Converter(<code class="language-plaintext highlighter-rouge">IpPort ↔ String</code>) 등록 후 사용하기</li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">WebConfig</code> - 컨버터 등록</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Configuration</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">WebConfig</span> <span class="kd">implements</span> <span class="nc">WebMvcConfigurer</span> <span class="o">{</span>
+  	 <span class="nd">@Override</span>
+  	 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addFormatters</span><span class="o">(</span><span class="nc">FormatterRegistry</span> <span class="n">registry</span><span class="o">)</span> <span class="o">{</span>
+  		 <span class="n">registry</span><span class="o">.</span><span class="na">addConverter</span><span class="o">(</span><span class="k">new</span> <span class="nc">StringToIpPortConverter</span><span class="o">());</span>
+  		 <span class="n">registry</span><span class="o">.</span><span class="na">addConverter</span><span class="o">(</span><span class="k">new</span> <span class="nc">IpPortToStringConverter</span><span class="o">());</span>
+  	 <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>스프링은 내부에서 ConversionService 를 제공하고 있기에 <strong>이 ConversionService에 내가 추가하고 싶은 Converter를 add</strong> 해주면 됨!</li>
+      <li>추가로, <code class="language-plaintext highlighter-rouge">Integer ↔ String</code> 과 같은 <strong>기본 타입 변환은 이미 해당 ConversionService에 추가되어 있음!</strong> → 그냥 사용하면 됨</li>
+    </ul>
+  </li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">HelloController</code> - 컨버터 적용</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/ip-port"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">ipPort</span><span class="o">(</span><span class="nd">@RequestParam</span> <span class="nc">IpPort</span> <span class="n">ipPort</span><span class="o">)</span> <span class="o">{</span>
+  	 <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"ipPort IP = "</span> <span class="o">+</span> <span class="n">ipPort</span><span class="o">.</span><span class="na">getIp</span><span class="o">());</span>
+  	 <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"ipPort PORT = "</span> <span class="o">+</span> <span class="n">ipPort</span><span class="o">.</span><span class="na">getPort</span><span class="o">());</span>
+  	 <span class="k">return</span> <span class="s">"ok"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>?ipPort=127.0.0.1:8080 쿼리 스트링을 URL을 통해 입력해주면 <strong>ipPort 객체로 Type Convert 됨!</strong> ( ”127.0.0.1:8080” → IpPort(127.0.0.1, 8080) )</li>
+      <li><code class="language-plaintext highlighter-rouge">@RequestParam</code> 은 <code class="language-plaintext highlighter-rouge">@RequestParam</code> 을 처리하는 <strong>ArgumentResolver</strong> 인
+  <strong>RequestParamMethodArgumentResolver</strong> 에서 <strong>ConversionService 를 사용</strong>해서 <strong>타입을 변환!</strong></li>
+      <li>즉, <strong>ArgumentResolver</strong>가 해당 <strong>String → ipPort</strong> 로 변환되는 <strong>Converter가 있는지 ConversionService에서 찾은 후 변환</strong>해주는 것!</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="view-templatethymeleaf-with-converter">View Template(Thymeleaf) with Converter</h3>
+
+<ul>
+  <li>타임리프는 <strong>렌더링 시에 컨버터를 적용</strong>해서 렌더링 하는 방법을 편리하게 지원</li>
+  <li>렌더링 시 <strong>모든 Object들은 String으로</strong> 바뀌게 됨. 이때의 <strong>Converting(</strong><code class="language-plaintext highlighter-rouge">Object → String</code><strong>)을 수행</strong>하는 것</li>
+  <li>타임리프에서 ConversionService 이용
+    <ul>
+      <li>일반 변수 ConversionService
+        <ul>
+          <li>기존 변수 표현식 : <code class="language-plaintext highlighter-rouge">${...}</code>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">&lt;li&gt;${ipPort}: &lt;span th:text="${ipPort}" &gt;&lt;/span&gt;&lt;/li&gt;</code> → ${ipPort}: hello.typeconverter.type.IpPort@59cb0946</li>
+              <li><strong>Object의 toString이 적용</strong>됨</li>
+            </ul>
+          </li>
+          <li><strong>컨버전 서비스 적용</strong> : <strong><code class="language-plaintext highlighter-rouge">$</code> 괄호 2개!</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">&lt;li&gt;$: &lt;span th:text="$" &gt;&lt;/span&gt;&lt;/li&gt;</code> → $: 127.0.0.1:8080</li>
+              <li><strong>ConversionService가 적용</strong>됨</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>Form 에서의 ConversionService
+        <ul>
+          <li>컨버전 서비스 적용 : <code class="language-plaintext highlighter-rouge">th:field</code> 이용</li>
+          <li>
+            <p>ipPort를 가지는 Form 객체(<code class="language-plaintext highlighter-rouge">@Data</code>)가 있다고 가정, 해당 Form객체를 통해 Form의 값을 받아오는 것</p>
+
+            <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;form</span> <span class="na">th:object=</span><span class="s">"${form}"</span> <span class="na">th:method=</span><span class="s">"post"</span><span class="nt">&gt;</span>
+  	 th:field <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">th:field=</span><span class="s">"*{ipPort}"</span><span class="nt">&gt;&lt;br/&gt;</span>
+  	 th:value <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">th:value=</span><span class="s">"*{ipPort}"</span><span class="nt">&gt;</span>(보여주기 용도)<span class="nt">&lt;br/&gt;</span>
+  	 <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/form&gt;</span>
+</code></pre></div>            </div>
+
+            <p><img src="/images/posts/post-220627/Untitled.png" alt="Untitled" /></p>
+          </li>
+          <li>컨버전 서비스를 적용한 <code class="language-plaintext highlighter-rouge">th:field</code> 는 ConversionService를 통해 직접 등록한 Converter를 통해 Convert 되어 <code class="language-plaintext highlighter-rouge">IpPort → String</code><strong>으로 잘 convert 된 것</strong>을 확인할 수 있음</li>
+          <li>컨버전 서비스를 적용하지 않은 <code class="language-plaintext highlighter-rouge">th:value</code> 는 <strong>그냥 toString이 적용</strong>된 것을 확인할 수 있음</li>
+          <li>뿐만 아니라 제출을 통해 <strong>submit 될때도</strong> String으로 받은 값을 IpPort로 변환해주는 <strong>Converting이 수행</strong>되는 것을 확인할 수 있음! <code class="language-plaintext highlighter-rouge">th:field</code> 를 통해!</li>
+          <li>타임리프의 <code class="language-plaintext highlighter-rouge">th:field</code> 는 앞서 설명했듯이 id , name 를 출력하는 등 다양한 기능이 있는데, 여기에 <strong>컨버전 서비스</strong>도 함께 적용됨!</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="스프링-포매터">스프링 포매터</h2>
+
+<h3 id="formatter">Formatter</h3>
+
+<ul>
+  <li>Converter 같은 경우 S → T 의 타입에 제한이 없음. 즉, 범용 타입 변환 기능 제공</li>
+  <li>하지만, 보통 <strong>웹 애플리케이션 환경</strong>에선 String 에서 특정 타입으로 변환( <code class="language-plaintext highlighter-rouge">String → ?</code> )하거나 특정 타입에서 String으로 변환( <code class="language-plaintext highlighter-rouge">? → String</code> )하는 상황이 대부분. ⇒ Ex) Integer 1000 → String “1,000” 형태로 <strong>Formating 해야 될 때</strong></li>
+  <li>이렇게 <strong>문자에 특화된 변환기</strong>를 <strong>Formatter</strong>라고 함. 즉, <strong>Converter의 특별한 버전</strong>이라고 생각하면 됨</li>
+  <li><strong>Converter VS Formatter</strong>
+    <ul>
+      <li><strong>Converter</strong> : 범용 타입 변환기 ( <code class="language-plaintext highlighter-rouge">? → ?</code> )</li>
+      <li><strong>Formatter</strong> : <strong>문자에 특화</strong> (<code class="language-plaintext highlighter-rouge">String → ?</code> or <code class="language-plaintext highlighter-rouge">? → String</code>) + <strong>현지화(Locale)</strong></li>
+    </ul>
+  </li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">Formatter</code> Interface</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Formatter</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="kd">extends</span> <span class="nc">Printer</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;,</span> <span class="nc">Parser</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="o">{}</span>
+    
+  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Printer</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="o">{</span>
+  	<span class="nc">String</span> <span class="nf">print</span><span class="o">(</span><span class="no">T</span> <span class="n">object</span><span class="o">,</span> <span class="nc">Locale</span> <span class="n">locale</span><span class="o">);</span>
+  <span class="o">}</span>
+    
+  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Parser</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="o">{</span>
+  	<span class="no">T</span> <span class="nf">parse</span><span class="o">(</span><span class="nc">String</span> <span class="n">text</span><span class="o">,</span> <span class="nc">Locale</span> <span class="n">locale</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ParseException</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">String print(T object, Locale locale)</code> : 객체를 문자로 변경 (<code class="language-plaintext highlighter-rouge">Object → String</code>)</li>
+      <li><code class="language-plaintext highlighter-rouge">T parse(String text, Locale locale)</code> : 문자를 객체로 변경 (<code class="language-plaintext highlighter-rouge">String → Object</code>)</li>
+    </ul>
+  </li>
+  <li>Formatter 직접 개발
+    <ul>
+      <li>숫자 1000 을 문자 “1,000” 으로 변환해주는 Formatter ⇒ 1000 단위로 쉼표가 들어가는 포맷을 적용</li>
+    </ul>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyNumberFormatter</span> <span class="kd">implements</span> <span class="nc">Formatter</span><span class="o">&lt;</span><span class="nc">Number</span><span class="o">&gt;</span> <span class="o">{</span>
+  	 <span class="nd">@Override</span>
+  	 <span class="kd">public</span> <span class="nc">Number</span> <span class="nf">parse</span><span class="o">(</span><span class="nc">String</span> <span class="n">text</span><span class="o">,</span> <span class="nc">Locale</span> <span class="n">locale</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ParseException</span> <span class="o">{</span>
+  		 <span class="nc">NumberFormat</span> <span class="n">format</span> <span class="o">=</span> <span class="nc">NumberFormat</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="n">locale</span><span class="o">);</span>
+  		 <span class="k">return</span> <span class="n">format</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+  	 <span class="o">}</span>
+  	 <span class="nd">@Override</span>
+  	 <span class="kd">public</span> <span class="nc">String</span> <span class="nf">print</span><span class="o">(</span><span class="nc">Number</span> <span class="n">object</span><span class="o">,</span> <span class="nc">Locale</span> <span class="n">locale</span><span class="o">)</span> <span class="o">{</span>
+  		 <span class="k">return</span> <span class="nc">NumberFormat</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="n">locale</span><span class="o">).</span><span class="na">format</span><span class="o">(</span><span class="n">object</span><span class="o">);</span>
+  	 <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">parse</code> : NumberFormat 을 통해 Locale 정보에 따른 단위 쉼표에 따른 숫자 반환 [”1,000” → 1000]. Long으로 반환</li>
+      <li><code class="language-plaintext highlighter-rouge">print</code> : NumberFormat 을 통해 Locale 정보에 따른 단위 쉼표 반환 [1000 → ”1,000”]</li>
+    </ul>
+  </li>
+  <li>
+    <p>개발한 Formatter Test</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">MyNumberFormatter</span> <span class="n">formatter</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">MyNumberFormatter</span><span class="o">();</span>
+    
+  <span class="nd">@Test</span>
+   <span class="kt">void</span> <span class="nf">parse</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">ParseException</span> <span class="o">{</span>
+  	 <span class="nc">Number</span> <span class="n">result</span> <span class="o">=</span> <span class="n">formatter</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="s">"1,000"</span><span class="o">,</span> <span class="nc">Locale</span><span class="o">.</span><span class="na">KOREA</span><span class="o">);</span>
+  	 <span class="n">assertThat</span><span class="o">(</span><span class="n">result</span><span class="o">).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="mi">1000L</span><span class="o">);</span> <span class="c1">//Long 타입 주의</span>
+   <span class="o">}</span>
+   <span class="nd">@Test</span>
+   <span class="kt">void</span> <span class="nf">print</span><span class="o">()</span> <span class="o">{</span>
+  	 <span class="nc">String</span> <span class="n">result</span> <span class="o">=</span> <span class="n">formatter</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="mi">1000</span><span class="o">,</span> <span class="nc">Locale</span><span class="o">.</span><span class="na">KOREA</span><span class="o">);</span>
+  	 <span class="n">assertThat</span><span class="o">(</span><span class="n">result</span><span class="o">).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"1,000"</span><span class="o">);</span>
+   <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>직접 개발한 Formatter를 불러와서 해당 Formatter를 가지고 <strong>parse, print Test</strong>.</li>
+      <li>parse() 의 결과가 Long인점 주의!</li>
+      <li>마찬가지로 <strong>사용할때마다 불러서 적용해야된다는 불편함</strong>이 있음! → Converter처럼 ConversionService같이 <strong>등록하고 관리하여 편리하게 사용할 수 있는 Service가 필요</strong>함!!</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="포맷터를-지원하는-컨버전-서비스">포맷터를 지원하는 컨버전 서비스</h3>
+
+<ul>
+  <li>기존에 등록 및 관리에서 사용했던 ConversionService는 컨버터만 등록할 수 있었고 포맷터는 등록할 수 없음. 하지만 사실 <strong>포맷터도 생각해보면 특별한 컨버터</strong>일 뿐!</li>
+  <li>즉, <strong>포맷터를 지원하는 ConversionService를 사용</strong>하면 됨. 해당 ConversionService를 사용하면 포맷터를 등록할 수 있고, 내부에서 어댑터를 이용 하여 <strong>Formatter가 Converter처럼 동작</strong>하도록 지원함 → <code class="language-plaintext highlighter-rouge">FormattingConversionService</code> interface</li>
+  <li><code class="language-plaintext highlighter-rouge">DefaultFormattingConversionService</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">FormattingConversionService</code> 의 <strong>구현체</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">FormattingConversionService</code> 에 기본적인 통화, 숫자 관련 몇가지 <strong>기본 포맷터를 추가해서 제공</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">Converter</code>, <code class="language-plaintext highlighter-rouge">Formatter</code> 모두 등록이 가능하며, 사용할 때는 <code class="language-plaintext highlighter-rouge">Converter</code>, <code class="language-plaintext highlighter-rouge">Formatter</code> <strong>구분 없이 사용 가능</strong></li>
+      <li>
+        <p>Test Code</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">DefaultFormattingConversionService</span> <span class="n">conversionService</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DefaultFormattingConversionService</span><span class="o">();</span>
+        
+  <span class="c1">//컨버터 등록</span>
+  <span class="n">conversionService</span><span class="o">.</span><span class="na">addConverter</span><span class="o">(</span><span class="k">new</span> <span class="nc">StringToIpPortConverter</span><span class="o">());</span>
+  <span class="n">conversionService</span><span class="o">.</span><span class="na">addConverter</span><span class="o">(</span><span class="k">new</span> <span class="nc">IpPortToStringConverter</span><span class="o">());</span>
+        
+  <span class="c1">//포맷터 등록</span>
+  <span class="n">conversionService</span><span class="o">.</span><span class="na">addFormatter</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyNumberFormatter</span><span class="o">());</span>
+        
+  <span class="c1">//컨버터 사용</span>
+  <span class="nc">IpPort</span> <span class="n">ipPort</span> <span class="o">=</span> <span class="n">conversionService</span><span class="o">.</span><span class="na">convert</span><span class="o">(</span><span class="s">"127.0.0.1:8080"</span><span class="o">,</span> <span class="nc">IpPort</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+  <span class="n">assertThat</span><span class="o">(</span><span class="n">ipPort</span><span class="o">).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="k">new</span> <span class="nc">IpPort</span><span class="o">(</span><span class="s">"127.0.0.1"</span><span class="o">,</span> <span class="mi">8080</span><span class="o">));</span>
+        
+  <span class="c1">//포맷터 사용</span>
+  <span class="n">assertThat</span><span class="o">(</span><span class="n">conversionService</span><span class="o">.</span><span class="na">convert</span><span class="o">(</span><span class="mi">1000</span><span class="o">,</span> <span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">)).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"1,000"</span><span class="o">);</span>
+  <span class="n">assertThat</span><span class="o">(</span><span class="n">conversionService</span><span class="o">.</span><span class="na">convert</span><span class="o">(</span><span class="s">"1,000"</span><span class="o">,</span> <span class="nc">Long</span><span class="o">.</span><span class="na">class</span><span class="o">)).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="mi">1000L</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong>등록</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">addConverter</code> : 컨버터 등록</li>
+              <li><code class="language-plaintext highlighter-rouge">addFormatter</code> : 포맷터 등록</li>
+            </ul>
+          </li>
+          <li><strong>사용</strong> : 컨버터, 포맷터 <strong>모두 <code class="language-plaintext highlighter-rouge">convert</code>를 통해 사용 가능!</strong></li>
+        </ul>
+      </li>
+      <li>스프링 부트는 웹 어플리케이션에 <code class="language-plaintext highlighter-rouge">DefaultFormattingConversionService</code> 를 상속 받은 <code class="language-plaintext highlighter-rouge">WebConversionService</code> 를 내부에서 사용하기 때문에 위와 동일하게 <strong>등록만 따로</strong> 해주면, <strong>Converter, Formatter 구분없이 사용 가능!</strong></li>
+      <li>즉, 컨버터를 사용하든, 포맷터를 사용하든 등록 방법은 다르지만, <strong>사용할 때는 컨버전 서비스를 통해서 일관성 있게 사용</strong>이 가능함! (<strong>등록 시에만 신경</strong>쓰면 됨!)</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="웹-어플리캐이션에-포맷터-적용">웹 어플리캐이션에 포맷터 적용</h3>
+
+<ul>
+  <li>WebConfig에서 Formatter를 적용하기만 하면 됨</li>
+  <li>이때 주의할 것은 항상 같은 변환에 대해선 Converter가 Formatter보다 우선순위를 가지고 있기 때문에 <strong>Converter에서 같은 변환이 이루어지는 지 확인</strong>해야 됨 [ Ex) Converter (of String ↔ Integer) <strong>»</strong> Formatter (of String ↔ Integer ) ]</li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">WebConfig</code></p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Configuration</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">WebConfig</span> <span class="kd">implements</span> <span class="nc">WebMvcConfigurer</span> <span class="o">{</span>
+  	 <span class="nd">@Override</span>
+  	 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addFormatters</span><span class="o">(</span><span class="nc">FormatterRegistry</span> <span class="n">registry</span><span class="o">)</span> <span class="o">{</span>
+  		 <span class="c1">//registry.addConverter(new StringToIntegerConverter()); </span>
+  		 <span class="c1">//registry.addConverter(new IntegerToStringConverter());</span>
+  		 <span class="n">registry</span><span class="o">.</span><span class="na">addConverter</span><span class="o">(</span><span class="k">new</span> <span class="nc">StringToIpPortConverter</span><span class="o">());</span>
+  		 <span class="n">registry</span><span class="o">.</span><span class="na">addConverter</span><span class="o">(</span><span class="k">new</span> <span class="nc">IpPortToStringConverter</span><span class="o">());</span>
+    
+  		 <span class="c1">//포매터 추가</span>
+  		 <span class="n">registry</span><span class="o">.</span><span class="na">addFormatter</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyNumberFormatter</span><span class="o">());</span>
+  	 <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">StringToIntegerConverter()</code>, <code class="language-plaintext highlighter-rouge">IntegerToStringConverter()</code> 는 <code class="language-plaintext highlighter-rouge">String ↔ Integer</code> <strong>Converter</strong> 이므로 등록되있을 경우 <code class="language-plaintext highlighter-rouge">MyNumberFormatter()</code> 보다 우선순위를 가짐. → 주석처리</li>
+      <li><code class="language-plaintext highlighter-rouge">addFormatter</code> 를 통해 <strong>포매터 등록</strong></li>
+    </ul>
+  </li>
+  <li>실행 결과
+    <ul>
+      <li>Integer → String :  <code class="language-plaintext highlighter-rouge">$</code> →  <code class="language-plaintext highlighter-rouge">10,000</code></li>
+      <li>String → Integer : <code class="language-plaintext highlighter-rouge">input=10,000</code> → <code class="language-plaintext highlighter-rouge">data = 10000</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="스프링이-제공하는-기본-포맷터">스프링이 제공하는 기본 포맷터</h3>
+
+<ul>
+  <li>스프링은 <strong>기본 타입들에 대해 수 많은 Formatter를 기본으로 제공</strong></li>
+  <li>Formatter Interface의 구현체들을 살펴보면 기본 객체들과 관련된 수 많은 구현체들이 있는 것을 확인할 수 있음</li>
+  <li>이렇게 Formatter는 기본 형식이 지정되어 있기 때문에, 각 상황(ex_컨트롤러마다 다르게 지정하고 싶은 Formatter, 객체의 각 필드마다 다르게 지정하고 싶은 Formatter)마다 <strong>다른 형식으로 포맷을 지정하기는 어려움</strong></li>
+  <li>이런 문제를 해결하기 위해 스프링은 <strong>어노테이션 기반으로 원하는 형식을 지정해서 사용</strong>할 수 있는 <strong>두가지 포맷터를 제공</strong></li>
+  <li>Annotation 기반 Formatter
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">@NumberFormat</code> : <strong>숫자</strong> 관련 형식 지정 포맷터</li>
+      <li><code class="language-plaintext highlighter-rouge">@DateTimeFormat</code> : <strong>날짜</strong> 관련 형식 지정 포맷터 사용</li>
+    </ul>
+  </li>
+  <li>
+    <p>Annotation 기반 Formatter 사용</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Controller</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">FormatterController</span> <span class="o">{</span>
+  	 <span class="o">...</span>
+    
+  	 <span class="nd">@Data</span>
+  	 <span class="kd">static</span> <span class="kd">class</span> <span class="nc">Form</span> <span class="o">{</span>
+    			
+  		 <span class="nd">@NumberFormat</span><span class="o">(</span><span class="n">pattern</span> <span class="o">=</span> <span class="s">"###,###"</span><span class="o">)</span>
+  		 <span class="kd">private</span> <span class="nc">Integer</span> <span class="n">number</span><span class="o">;</span>
+    		 
+  		 <span class="nd">@DateTimeFormat</span><span class="o">(</span><span class="n">pattern</span> <span class="o">=</span> <span class="s">"yyyy-MM-dd HH:mm:ss"</span><span class="o">)</span>
+  		 <span class="kd">private</span> <span class="nc">LocalDateTime</span> <span class="n">localDateTime</span><span class="o">;</span>
+  	 <span class="o">}</span>
+    
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>해당 컨트롤러에서의 Form 데이터 사용에 있어서 각 필드는 해당 어노테이션의 영향을 받는 것.</li>
+      <li>즉, 이 컨트롤러에서 적용되는 모든 서비스에서 사용되는 이 Form데이터의 <strong>각 필드에만 해당 Formatter가 적용</strong>되는 것 → <strong>세부적으로 원하는 상황에서만 사용 가능</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">@NumberFormat(pattern = "###,###")</code> : 10000 ↔ “10,000”</li>
+      <li><code class="language-plaintext highlighter-rouge">@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")</code> : 2022-01-01T00:00:00 ↔ “2022-01-01 00:00:00”</li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+🚨 <strong>그럼 HttpMessageConverter 에서도 ConversionService가 적용 되는 건가?</strong>
+<ul>
+<li>NOPE! HttpMessageConverter 같은 경우 <b>Jasckson 같은 라이브러리를 사용</b>. 즉, 변환 과정에 있어서 모든 동작은 Jackson 같은 라이브러리를 따른다는 것! (ConvresionService가 낄 수 없음). 결국 HttpMessageConverter 를 통해 JSON → Object의 과정에서 원하는 포맷으로 변환하고 싶으면 <b>Jackson 라이브러리가 제공하는 설정을 통해서 포맷을 지정</b>해야됨. </li>
+<li>결론</li>
+    <ul>
+    <li><b>API 의 Converting</b>(@RequestBody, @ResponseBody, HttpEntity, …) → HttpMessageConverter </li>
+    <li><b>일반 MVC의 Converting</b>(@RequestParam, @ModelAttribute, @PathVariable, Veiw Template Rendering, …) → ConversionService </li>
+    </ul>
+</ul>
+</aside>
+
+<aside>
+⚠️ <strong>@ResponseBody(HttpMessageConverter) vs @ModelAttribute(ConversionServcie)</strong>
+<ul>
+<li><strong>@ResponseBody</strong></li>
+    <ul>
+    <li>API 기반. HttpMessageConverter로 변환됨 </li>
+    <li>Jackson 라이브러리로 찍어내듯이 동작 (각 필드에 각각 대입한다기 보다는 객체를 찍어내듯이 한번에 변환) </li>
+    <li>@RequestBody, @ResponseBody, HttpEntity, …  </li>
+    </ul>
+<li><strong>@ModelAttribute</strong></li>
+    <ul>
+    <li>Client ↔ Server 기반. ConversionService로 변환 동작 </li>
+    <li>한번에 찍어내듯이 객체가 생성되는 것이 아닌, 객체의 필드에 각각 대입하면서 객체가 생성됨 </li>
+    <li>@RequestParam, @ModelAttribute, @PathVariable, Veiw Template Rendering, … </li>
+    </ul>
+</ul>
+</aside>
+:ET

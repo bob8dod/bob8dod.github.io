@@ -1,0 +1,425 @@
+I"]�<h2 id="폼-전송-방법">폼 전송 방법</h2>
+
+<ul>
+  <li>HTML Form 전송 방식
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">application/x-www-form-urlencoded</code></li>
+      <li><code class="language-plaintext highlighter-rouge">multipart/form-data</code></li>
+    </ul>
+  </li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">application/x-www-form-urlencoded</code></p>
+
+    <p><img src="/images/posts/post-220630/Untitled.png" alt="Untitled" /></p>
+
+    <ul>
+      <li><strong>Form 데이터</strong>를 서버로 전송하는 <strong>가장 기본적인 방식</strong></li>
+      <li>form 태그(&lt;form …&gt;)에 별도의 enctype 설정이 없으면 웹 브라우저는 요청 HTTP 메시지 헤더에 <code class="language-plaintext highlighter-rouge">Content-Type: application/x-www-form-urlencoded</code> 를 추가함</li>
+      <li>그 후 폼에 입력된(전송할) 것들을 <strong>HTTP Body</strong>에 문자로 <code class="language-plaintext highlighter-rouge">username=kim&amp;age=20</code> 와 같이 &amp; 로 구분해서 전송함</li>
+      <li>그렇다면 문자가 아닌 <strong>바이너리로 구성된 첨부파일</strong>도 함께 전송하고 싶다면 어떻게 할까? → <code class="language-plaintext highlighter-rouge">**multipart/form-data**</code></li>
+    </ul>
+  </li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">multipart/form-data</code></p>
+
+    <p><img src="/images/posts/post-220630/Untitled 1.png" alt="Untitled" /></p>
+
+    <ul>
+      <li><strong>다른 종류의 여러 파일과 폼의 내용 함께 전송</strong> 가능 (<strong>문자</strong>와 <strong>첨부파일</strong> 등)</li>
+      <li>각각의 항목을 구분해서, 한번에 전송하는 것</li>
+      <li>form 태그(&lt;form …&gt;)의 <strong>enctype</strong>에 별도의 설정 필요 → <code class="language-plaintext highlighter-rouge">enctype="multipart/form-data"</code> 지정</li>
+      <li>Form의 입력 결과로 생성된 요청 HTTP 메시지를 보면 알 수 있듯이 각각의 전송 항목이 “<strong>————XXX</strong>” 로 <strong>구분(Part)</strong>되어 있으며 <strong>Content-Dispositon 이라는 항목별 헤더</strong>가 추가되어 있고 <strong>부가 정보</strong> 또한 포함되어 있음.</li>
+      <li>해당 예시에서는 uesrname, age, file1이 분리되어 있고 내용에는 문자, <strong>파일의 경우</strong>는 <strong>이름과 Content-Type이 추가되고 바이너리 데이터가 전송</strong>됨</li>
+      <li>그렇다면 이렇게 구분된 데이터를 포함한 요청 HTTP 메시지를 어떻게 서버에서 사용할 수 있을까? → <strong>스프링 없이 서블릿만으로 사용 ⇒ 스프링에서 파일 받기 의 순서</strong>로 알아보자잉</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="file-upload-in-servlet-without-spring">File Upload in Servlet (without Spring)</h2>
+
+<h3 id="서블릿에서-multipart-형식의-form-데이터-받아오기">서블릿에서 Multipart 형식의 Form 데이터 받아오기</h3>
+
+<ul>
+  <li>Spring에서 제공하는 파일 업로드 기능없이 <strong>서블릿만으로 파일 업로드</strong> 구현</li>
+  <li>
+    <p>html</p>
+
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;form</span> <span class="na">th:action</span> <span class="na">method=</span><span class="s">"post"</span> <span class="na">enctype=</span><span class="s">"multipart/form-data"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;ul&gt;</span>
+  		 <span class="nt">&lt;li&gt;</span>상품명 <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">name=</span><span class="s">"itemName"</span><span class="nt">&gt;&lt;/li&gt;</span>
+  		 <span class="nt">&lt;li&gt;</span>파일<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"file"</span> <span class="na">name=</span><span class="s">"file"</span> <span class="nt">&gt;&lt;/li&gt;</span>
+  	 <span class="nt">&lt;/ul&gt;</span>
+  	 <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/form&gt;</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>multipart로 form을 받아올 때는 항상 <code class="language-plaintext highlighter-rouge">enctype="multipart/form-data"</code> 부분 추가!</li>
+      <li>multipart로 text, file 2가지 <strong>Part</strong>를 받아옴</li>
+    </ul>
+  </li>
+  <li>
+    <p>Controller</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PostMapping</span><span class="o">(</span><span class="s">"/upload"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">saveFileV1</span><span class="o">(</span><span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ServletException</span><span class="o">,</span> <span class="nc">IOException</span> <span class="o">{</span>
+  	<span class="nc">String</span> <span class="n">itemName</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"itemName"</span><span class="o">);</span>
+  	<span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"itemName={}"</span><span class="o">,</span> <span class="n">itemName</span><span class="o">);</span>
+  	<span class="nc">Collection</span><span class="o">&lt;</span><span class="nc">Part</span><span class="o">&gt;</span> <span class="n">parts</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParts</span><span class="o">();</span>
+  	<span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"parts={}"</span><span class="o">,</span> <span class="n">parts</span><span class="o">);</span>
+  	<span class="k">return</span> <span class="s">"upload-form"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">request.getParameter</code> 를 통해서 <strong>text의 값</strong>을 가져올 수는 있음. but file의 값은 가져올 수 없음! → file은 parameter형식으로 넘어오는게 아니니깐!</li>
+      <li><code class="language-plaintext highlighter-rouge">request.getParts()</code> : <code class="language-plaintext highlighter-rouge">multipart/form-data</code> 전송 방식에서 <strong>각각 나누어진 부분을 받</strong>아서 확인 가능 → <code class="language-plaintext highlighter-rouge">parts=[org.apache.catalina.core.ApplicationPart@13766755, org.apache.catalina.core.ApplicationPart@30602154]</code></li>
+      <li>
+        <p><strong>application.properties</strong> 에서 <code class="language-plaintext highlighter-rouge">logging.level.org.apache.coyote.http11=debug</code> 설정을 통해 HTTP 요청 메시지를 확인해 보면 <strong>Part로 구분되어 전달</strong>되는 것을 확인할 수 있음</p>
+
+        <p><img src="/images/posts/post-220630/Untitled 2.png" alt="Untitled" /></p>
+      </li>
+    </ul>
+  </li>
+  <li>Multipart 사용 옵션
+    <ul>
+      <li>application.properties 에서 <code class="language-plaintext highlighter-rouge">multipart</code> 옵션 설정 가능</li>
+      <li>업로드 사이즈 제한
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">spring.servlet.multipart.max-file-size=1MB</code> : 파일 하나의 최대 사이즈(default = 1MB)</li>
+          <li><code class="language-plaintext highlighter-rouge">spring.servlet.multipart.max-request-size=10MB</code> : 전체 파일(여러 파일의 합)의 최대 사이즈(default = 10MB)</li>
+        </ul>
+      </li>
+      <li>mutlipart 허용
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">spring.servlet.multipart.enabled=true</code>
+            <ul>
+              <li>defalut = true</li>
+              <li>이 옵션을 켜면 복잡한 멀티파트 요청을 처리해서 사용할 수 있게 제공</li>
+              <li>해당 옵션을 키면 기본으로 사용했던 <code class="language-plaintext highlighter-rouge">HttpServletRequest</code> 가 <code class="language-plaintext highlighter-rouge">MultipartResolver</code>를 통해서 <code class="language-plaintext highlighter-rouge">**MultipartHttpServletRequest**</code>로 변환됨</li>
+              <li><strong>MultipartHttpServletRequest</strong>
+                <ul>
+                  <li>HttpServletRequest 의 자식 인터페이스</li>
+                  <li><strong>멀티파트와 관련된 추가 기능</strong>을 제공</li>
+                  <li>이것을 사용하면 <strong>멀티파트</strong>와 관련된 여러가지 처리를 <strong>편리하게 사용</strong> 가능</li>
+                </ul>
+              </li>
+              <li>BUT 우린 HttpServletRequest 가 변환된 MultipartHttpServletRequest를 사용하지 않고 <strong><code class="language-plaintext highlighter-rouge">MultipartFile</code></strong> 이라는 <strong>스프링에서 제공하는 유용한 기능을 사용</strong>할 것!</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="서블릿에서-multipart형식의-file-업로드">서블릿에서 Multipart형식의 File 업로드</h3>
+
+<ul>
+  <li><strong>서블릿</strong>이 제공하는 <strong>Part</strong>를 이용해서 실제로 파일 업로드 구현 (Spring의 기능을 이용하지 않고 서블릿의 Part 기능만을 이용하여)</li>
+  <li>경로 설정
+    <ul>
+      <li>application.properties 에 <code class="language-plaintext highlighter-rouge">file.dir</code> 속성에 업로드 경로 설정 (ex_<code class="language-plaintext highlighter-rouge">/Users/park/servlet/file/</code>)</li>
+      <li>해당 경로 값은 <code class="language-plaintext highlighter-rouge">@Value</code> 를 통해 가져와 사용할 예정</li>
+    </ul>
+  </li>
+  <li>ServletUploadController
+    <ul>
+      <li>
+        <p>경로 불러오기</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Value</span><span class="o">(</span><span class="s">"${file.dir}"</span><span class="o">)</span>
+  <span class="kd">private</span> <span class="nc">String</span> <span class="n">fileDir</span><span class="o">;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@Value</code> 를 통해 <strong>application.propreties의 속성 값</strong>을 가져옴</li>
+        </ul>
+      </li>
+      <li>
+        <p>파일 확인 및 업로드 (<strong>Servlet의 Part 이용</strong>)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PostMapping</span><span class="o">(</span><span class="s">"/upload"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">saveFileV1</span><span class="o">(</span><span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ServletException</span><span class="o">,</span> <span class="nc">IOException</span> <span class="o">{</span>
+        
+      <span class="nc">Collection</span><span class="o">&lt;</span><span class="nc">Part</span><span class="o">&gt;</span> <span class="n">parts</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParts</span><span class="o">();</span> <span class="c1">// 각각의 부분(Part)들을 가져옴</span>
+        
+      <span class="k">for</span> <span class="o">(</span><span class="nc">Part</span> <span class="n">part</span> <span class="o">:</span> <span class="n">parts</span><span class="o">)</span> <span class="o">{</span>
+          <span class="nc">Collection</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">headerNames</span> <span class="o">=</span> <span class="n">part</span><span class="o">.</span><span class="na">getHeaderNames</span><span class="o">();</span> <span class="c1">// parts 도 header 와 body 로 구분됨!</span>
+          <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">headerName</span> <span class="o">:</span> <span class="n">headerNames</span><span class="o">)</span> <span class="o">{</span>
+              <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"header {}: {}"</span><span class="o">,</span> <span class="n">headerName</span><span class="o">,</span> <span class="n">part</span><span class="o">.</span><span class="na">getHeader</span><span class="o">(</span><span class="n">headerName</span><span class="o">));</span>
+          <span class="o">}</span>
+        
+          <span class="c1">//편의 메서드</span>
+          <span class="c1">//content-disposition 의 filename 따오기</span>
+          <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"submittedFilename={}"</span><span class="o">,</span> <span class="n">part</span><span class="o">.</span><span class="na">getSubmittedFileName</span><span class="o">());</span> <span class="c1">// 자동 파싱해주는 것</span>
+          <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"size={}"</span><span class="o">,</span> <span class="n">part</span><span class="o">.</span><span class="na">getSize</span><span class="o">());</span> <span class="c1">//part body size</span>
+        
+          <span class="c1">//데이터 읽기</span>
+          <span class="nc">InputStream</span> <span class="n">inputStream</span> <span class="o">=</span> <span class="n">part</span><span class="o">.</span><span class="na">getInputStream</span><span class="o">();</span> <span class="c1">// 실제 받아온 바이너리 값을 읽는 것</span>
+          <span class="nc">String</span> <span class="n">body</span> <span class="o">=</span> <span class="nc">StreamUtils</span><span class="o">.</span><span class="na">copyToString</span><span class="o">(</span><span class="n">inputStream</span><span class="o">,</span> <span class="nc">StandardCharsets</span><span class="o">.</span><span class="na">UTF_8</span><span class="o">);</span> <span class="c1">// 그 읽어 온 값을 String 으로 보기 편하게 변경</span>
+          <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"body={}"</span><span class="o">,</span> <span class="n">body</span><span class="o">);</span>
+        
+          <span class="c1">//파일에 저장하기</span>
+          <span class="k">if</span> <span class="o">(</span><span class="nc">StringUtils</span><span class="o">.</span><span class="na">hasText</span><span class="o">(</span><span class="n">part</span><span class="o">.</span><span class="na">getSubmittedFileName</span><span class="o">()))</span> <span class="o">{</span> <span class="c1">// 파일 제출인지 확인</span>
+              <span class="nc">String</span> <span class="n">fullPath</span> <span class="o">=</span> <span class="n">fileDir</span> <span class="o">+</span> <span class="n">part</span><span class="o">.</span><span class="na">getSubmittedFileName</span><span class="o">();</span>
+              <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"파일 저장 fullPath={}"</span><span class="o">,</span> <span class="n">fullPath</span><span class="o">);</span>
+              <span class="n">part</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">fullPath</span><span class="o">);</span> <span class="c1">// 해당 설정된 경로를 통해 저장</span>
+          <span class="o">}</span>
+      <span class="o">}</span>
+        
+      <span class="k">return</span> <span class="s">"upload-form"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong>Servlet의 Part</strong> : Multipart의 각각의 부분들 중 <strong>File과 관련된 Part에 대해</strong>서 확인하거나 업로드할 때 사용</li>
+          <li><code class="language-plaintext highlighter-rouge">part.getInputStream()</code>: Part의 전송 데이터를 읽을 수 있음</li>
+          <li>중요한 부분은 “파일에 저장하기” 부분
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">StringUtils.hasText(part.getSubmittedFileName())</code> 을 통해 현재 part가 제출된 파일인지 확인 → (<code class="language-plaintext highlighter-rouge">part.getSubmittedFileName()</code> : 클라이언트가 전달한 파일명. 파일이 없다면 <code class="language-plaintext highlighter-rouge">null</code>)</li>
+              <li><code class="language-plaintext highlighter-rouge">part.write(fullPath)</code> : 지정된 경로에 해당 파일 저장</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>이렇게 서블릿이 제공하는 <strong>Part 로도 파일을 저장할 수 있</strong>지만, 추가적으로 <strong>HttpServletRequest 를 사용</strong>해야 하기도 하고. 추가적으로 파일인지 아닌지 <strong>확인 하고 구분해야되는 여러코드를 요구</strong>함. → <strong>Spring을 사용하면 훨씬 더 편리하게 사용 가능!!</strong></li>
+</ul>
+
+<h2 id="file-upload-in-spring">File Upload in Spring</h2>
+
+<h3 id="스프링과-파일-업로드-multipartfile">스프링과 파일 업로드 (MultipartFile)</h3>
+
+<ul>
+  <li>스프링은 <strong><code class="language-plaintext highlighter-rouge">MultipartFile</code></strong> 이라는 인터페이스로 multipart의 file을 쉽게 다룰 수 있도록 지원</li>
+  <li>
+    <p>Controller</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PostMapping</span><span class="o">(</span><span class="s">"/upload"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">saveFile</span><span class="o">(</span><span class="nd">@RequestParam</span> <span class="nc">String</span> <span class="n">itemName</span><span class="o">,</span> <span class="nd">@RequestParam</span> <span class="nc">MultipartFile</span> <span class="n">file</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+    
+      <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"itemName={}"</span><span class="o">,</span> <span class="n">itemName</span><span class="o">);</span>
+      <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">"multipartFile={}"</span><span class="o">,</span> <span class="n">file</span><span class="o">);</span>
+    
+      <span class="c1">// 파일 저장</span>
+      <span class="k">if</span> <span class="o">(!</span><span class="n">file</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+          <span class="nc">String</span> <span class="n">fullPath</span> <span class="o">=</span> <span class="n">fileDir</span> <span class="o">+</span> <span class="n">file</span><span class="o">.</span><span class="na">getOriginalFilename</span><span class="o">();</span>
+          <span class="n">file</span><span class="o">.</span><span class="na">transferTo</span><span class="o">(</span><span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="n">fullPath</span><span class="o">));</span>
+      <span class="o">}</span>
+    
+      <span class="k">return</span> <span class="s">"upload-form"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">@RequestParam MultipartFile file</code> : 제출된 파일을 <strong>MultipartFile</strong>로 받아옴 → 서블릿의 복잡한 과정이 <strong>어노테이션과 Spring에서 지원하는 인터페이스로 한번에 해결</strong>되는 것 (HTML Form의 name에 맞추어 <code class="language-plaintext highlighter-rouge">@RequestParam</code> 을 적용. <code class="language-plaintext highlighter-rouge">@ModelAttribute</code> 도 가능!)</li>
+      <li><code class="language-plaintext highlighter-rouge">file.getOriginalFilename()</code> : 업로드 파일 명</li>
+      <li><code class="language-plaintext highlighter-rouge">file.transferTo(new File(fullPath));</code> : 해당 경로로 파일 저장</li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ **ArgumentResolver, ConversionService in @RequestParam MultipartFile file**
+먼저 ArguementResolver 가 @RequestParam과 MultipartFile 을 지원하는지 확인한 후, ConversionService를 통해 String → MultipartFile Converter가 있는지 확인한 후 Type Converting을 진행. 그 후 생성된 객체(MultipartFile)를 ArgumentResolver가 마련해줌
+⇒ 즉, **서블릿만으로 파일을 확인하는 과정 자체를 MultipartFile을 만들어주는 ArgumentResolver가 다 자동으로** 해주는 것!
+
+</aside>
+
+<h3 id="파일-업로드-및-확인-다운로드-실전">파일 업로드 및 확인, 다운로드 (실전)</h3>
+
+<ul>
+  <li>실제 파일,이미지 업로드 및 확인, 다운로드에서는 고려해야할 점들이 있음. 그런 사항들을 확인</li>
+  <li>상품 객체 및 DTO
+    <ul>
+      <li>상품 이름, 첨부파일 하나, 이미지 파일 여러개(multiple)</li>
+      <li>
+        <p>업로드 파일 정보 보관</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Data</span>
+  <span class="nd">@AllArgsConstructor</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">UploadFile</span> <span class="o">{</span>
+  	 <span class="kd">private</span> <span class="nc">String</span> <span class="n">uploadFileName</span><span class="o">;</span>
+  	 <span class="kd">private</span> <span class="nc">String</span> <span class="n">storeFileName</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">uploadFileName</code> 은 파일의 원본명</li>
+          <li><code class="language-plaintext highlighter-rouge">storeFileName</code> 은 Repository에 저장되는 파일의 이름 → UUID 사용 (똑같은 이름으로 저장되면 안됨! <strong>충돌 예방</strong>)</li>
+        </ul>
+      </li>
+      <li>
+        <p>Repository에 저장되는 상품 객체</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Data</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">Item</span> <span class="o">{</span>
+  		<span class="kd">private</span> <span class="nc">Long</span> <span class="n">id</span><span class="o">;</span>
+  		<span class="kd">private</span> <span class="nc">String</span> <span class="n">itemName</span><span class="o">;</span>
+  		<span class="kd">private</span> <span class="nc">UploadFile</span> <span class="n">attachFile</span><span class="o">;</span> <span class="c1">// 단일 파일</span>
+  		<span class="kd">private</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">UploadFile</span><span class="o">&gt;</span> <span class="n">imageFiles</span><span class="o">;</span> <span class="c1">// 파일 여러개</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>Item 객체의 DTO</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Data</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">ItemForm</span> <span class="o">{</span>
+  	 <span class="kd">private</span> <span class="nc">Long</span> <span class="n">itemId</span><span class="o">;</span>
+  	 <span class="kd">private</span> <span class="nc">String</span> <span class="n">itemName</span><span class="o">;</span>
+  	 <span class="kd">private</span> <span class="nc">MultipartFile</span> <span class="n">attachFile</span><span class="o">;</span>
+  	 <span class="kd">private</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MultipartFile</span><span class="o">&gt;</span> <span class="n">imageFiles</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>Form 태그로 받아올 때 사용되는 <strong>Item DTO</strong> (상품 저장용 폼)</li>
+          <li>Form 에서 받아올 때의 <strong>단일 파일은 MultipartFile</strong>로, **여러 파일은 List<MultipartFile>**로 받아올 수 있음</MultipartFile></li>
+        </ul>
+
+        <aside>
+  ⚠️ <strong>DTO를 사용하는 이유!</strong> <br />
+  <code>@ModelAttribute</code>로 Form 의 입력 값들을 받아오는데, 이때 <b>파일을 받아오기 위해선 MultipartFile 을 사용</b>해야됨. 하지만 저장소에는 이 그대로 저장하면 안되고 해당 파일을 <b>저장한 경로를 저장</b>해야됨. 그러기 때문에 <b>DTO를 사용해서 MultipartFile로 받아오고</b> 이를 Storage에 저장 후 <b>저장 경로를 가지고 있는 실제 Item 객체를 Repository에 저장</b>해야 됨
+        
+  </aside>
+      </li>
+      <li>상품은 업로드 및 확인, 다운로드 가능</li>
+    </ul>
+  </li>
+  <li>업로드
+    <ul>
+      <li>Repository는 이전과 동일하므로 생략 (이전 파트 참고)</li>
+      <li>
+        <p>업로드 Form</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/items/new"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">newItem</span><span class="o">(</span><span class="nd">@ModelAttribute</span> <span class="nc">ItemForm</span> <span class="n">form</span><span class="o">)</span> <span class="o">{</span>
+  	<span class="k">return</span> <span class="s">"item-form"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>빈 itemDTO를 보내주어 form의 object를 맞춰 줌</li>
+        </ul>
+      </li>
+      <li>
+        <p>업로드 진행</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;form</span> <span class="na">th:action</span> <span class="na">method=</span><span class="s">"post"</span> <span class="na">enctype=</span><span class="s">"multipart/form-data"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;ul&gt;</span>
+  		 <span class="nt">&lt;li&gt;</span>상품명 <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">name=</span><span class="s">"itemName"</span><span class="nt">&gt;&lt;/li&gt;</span>
+  		 <span class="nt">&lt;li&gt;</span>첨부파일<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"file"</span> <span class="na">name=</span><span class="s">"attachFile"</span> <span class="nt">&gt;&lt;/li&gt;</span>
+  		 <span class="nt">&lt;li&gt;</span>이미지 파일들<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"file"</span> <span class="na">multiple=</span><span class="s">"multiple"</span> <span class="na">name=</span><span class="s">"imageFiles"</span> <span class="nt">&gt;&lt;/li&gt;</span>
+  	 <span class="nt">&lt;/ul&gt;</span>
+  	 <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/form&gt;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>단일 파일은 그냥 file을 통해서 받아와 주면 됨 → Controller에서 <code class="language-plaintext highlighter-rouge">MultipartFile</code> 로 받음</li>
+          <li>여러 파일의 input은 multiple 설정을 통해 받아와야 됨! → Controller에서 <code class="language-plaintext highlighter-rouge">List&lt;MultipartFile&gt;</code> 로 받음</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PostMapping</span><span class="o">(</span><span class="s">"/items/new"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">saveItem</span><span class="o">(</span><span class="nd">@ModelAttribute</span> <span class="nc">ItemForm</span> <span class="n">form</span><span class="o">,</span> <span class="nc">RedirectAttributes</span> <span class="n">redirectAttributes</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+      <span class="nc">UploadFile</span> <span class="n">attachFile</span> <span class="o">=</span> <span class="n">fileStore</span><span class="o">.</span><span class="na">storeFile</span><span class="o">(</span><span class="n">form</span><span class="o">.</span><span class="na">getAttachFile</span><span class="o">());</span>
+      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">UploadFile</span><span class="o">&gt;</span> <span class="n">storeImageFiles</span> <span class="o">=</span> <span class="n">fileStore</span><span class="o">.</span><span class="na">storeFiles</span><span class="o">(</span><span class="n">form</span><span class="o">.</span><span class="na">getImageFiles</span><span class="o">());</span>
+        
+  		<span class="c1">// DTO → Item</span>
+      <span class="nc">Item</span> <span class="n">item</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Item</span><span class="o">();</span>
+  		<span class="n">item</span><span class="o">.</span><span class="na">setItemName</span><span class="o">(</span><span class="n">form</span><span class="o">.</span><span class="na">getItemName</span><span class="o">());</span>
+      <span class="n">item</span><span class="o">.</span><span class="na">setAttachFile</span><span class="o">(</span><span class="n">attachFile</span><span class="o">);</span>
+  		<span class="n">item</span><span class="o">.</span><span class="na">setImageFiles</span><span class="o">(</span><span class="n">storeImageFiles</span><span class="o">);</span>
+      <span class="n">itemRepository</span><span class="o">.</span><span class="na">save</span><span class="o">(</span><span class="n">item</span><span class="o">);</span> <span class="c1">//데이터베이스에 저장</span>
+        
+      <span class="n">redirectAttributes</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">"itemId"</span><span class="o">,</span> <span class="n">item</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+      <span class="k">return</span> <span class="s">"redirect:/items/{itemId}"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@ModelAttribute</code> 를 통해서 Form의 입력 값들(text, file, multiple files)을 받아옴</li>
+          <li><strong>DTO → Item</strong> : 받아온 <strong>MutlipartFile 을 UploadFile로 변경</strong>함으로써 실제 파일이 아닌 원본 <strong>파일 명과 파일 저장 경로만을 Item에 저장</strong></li>
+          <li><strong>PRG</strong> : Post 후 Redircet를 통해 Get 요청 실행</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>조회 및 다운로드
+    <ul>
+      <li>
+        <p>Item 조회</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/items/{id}"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">items</span><span class="o">(</span><span class="nd">@PathVariable</span> <span class="nc">Long</span> <span class="n">id</span><span class="o">,</span> <span class="nc">Model</span> <span class="n">model</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Item</span> <span class="n">item</span> <span class="o">=</span> <span class="n">itemRepository</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+      <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">"item"</span><span class="o">,</span> <span class="n">item</span><span class="o">);</span>
+      <span class="k">return</span> <span class="s">"item-view"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>Item의 첨부파일, 이미지 파일 조회 및 다운로드</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  상품명: <span class="nt">&lt;span</span> <span class="na">th:text=</span><span class="s">"${item.itemName}"</span><span class="nt">&gt;</span>상품명<span class="nt">&lt;/span&gt;&lt;br/&gt;</span>
+  첨부파일: <span class="nt">&lt;a</span> <span class="na">th:if=</span><span class="s">"${item.attachFile}"</span> <span class="na">th:href=</span><span class="s">"|/attach/${item.id}|"</span>
+  						 <span class="na">th:text=</span><span class="s">"${item.getAttachFile().getUploadFileName()}"</span> <span class="nt">/&gt;&lt;br/&gt;</span>
+  <span class="nt">&lt;img</span> <span class="na">th:each=</span><span class="s">"imageFile : ${item.imageFiles}"</span> 
+  		 <span class="na">th:src=</span><span class="s">"|/images/${imageFile.getStoreFileName()}|"</span> 
+  		<span class="na">width=</span><span class="s">"300"</span> <span class="na">height=</span><span class="s">"300"</span><span class="nt">/&gt;</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p><strong>이미지 조회</strong> (각 이미지들을 보여주기 위함) → <code class="language-plaintext highlighter-rouge">th:src="|/images/${imageFile.getStoreFileName()}|"</code></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@ResponseBody</span>
+  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/images/{filename}"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">Resource</span> <span class="nf">imgViewer</span><span class="o">(</span><span class="nd">@PathVariable</span> <span class="nc">String</span> <span class="n">filename</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">MalformedURLException</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="k">new</span> <span class="nf">UrlResource</span><span class="o">(</span><span class="s">"file:"</span> <span class="o">+</span> <span class="n">fileStore</span><span class="o">.</span><span class="na">getFullPath</span><span class="o">(</span><span class="n">filename</span><span class="o">));</span> <span class="c1">// 직접 경로를 따라 가서 파일을 찾아와서 아웃풋스트림으로 반환</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@ResponseBody</code> : 반환된 <strong>아웃풋 스트림 그대로 HTTP Body에</strong> 담기위함 (View Resolver가 아닌 HttpMessageConverter 동작) → img 태그가 이를 받아서 이미지를 띄워주는 것</li>
+          <li><strong>Resource, UrlResource</strong> : 해당 경로에 대한 파일을 <strong>아웃풋스트림으로 변환하여 전달</strong></li>
+        </ul>
+      </li>
+      <li>
+        <p>첨부파일 다운로드 (클릭 시 다운로드) → <code class="language-plaintext highlighter-rouge">th:href="|/attach/${item.id}|"</code></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/attach/{itemId}"</span><span class="o">)</span>
+      <span class="kd">public</span> <span class="nc">ResponseEntity</span><span class="o">&lt;</span><span class="nc">Resource</span><span class="o">&gt;</span> <span class="nf">downloadAttach</span><span class="o">(</span><span class="nd">@PathVariable</span> <span class="nc">Long</span> <span class="n">itemId</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">MalformedURLException</span> <span class="o">{</span>
+          <span class="nc">Item</span> <span class="n">item</span> <span class="o">=</span> <span class="n">itemRepository</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="n">itemId</span><span class="o">);</span>
+          <span class="nc">String</span> <span class="n">storeFileName</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="na">getAttachFile</span><span class="o">().</span><span class="na">getStoreFileName</span><span class="o">();</span>
+          <span class="nc">String</span> <span class="n">uploadFileName</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="na">getAttachFile</span><span class="o">().</span><span class="na">getUploadFileName</span><span class="o">();</span>
+        
+          <span class="nc">UrlResource</span> <span class="n">resource</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">UrlResource</span><span class="o">(</span><span class="s">"file:"</span> <span class="o">+</span> <span class="n">fileStore</span><span class="o">.</span><span class="na">getFullPath</span><span class="o">(</span><span class="n">storeFileName</span><span class="o">));</span>
+        
+          <span class="nc">String</span> <span class="n">encodedUploadFileName</span> <span class="o">=</span> <span class="nc">UriUtils</span><span class="o">.</span><span class="na">encode</span><span class="o">(</span><span class="n">uploadFileName</span><span class="o">,</span> <span class="nc">StandardCharsets</span><span class="o">.</span><span class="na">UTF_8</span><span class="o">);</span> <span class="c1">// 인코딩 (한글을 위함)</span>
+          <span class="nc">String</span> <span class="n">contentDisposition</span> <span class="o">=</span> <span class="s">"attachment; filename=\""</span> <span class="o">+</span> <span class="n">encodedUploadFileName</span> <span class="o">+</span> <span class="s">"\""</span><span class="o">;</span> <span class="c1">// 다운로드하기 위한 규약</span>
+        
+          <span class="k">return</span> <span class="nc">ResponseEntity</span><span class="o">.</span><span class="na">ok</span><span class="o">()</span>
+                  <span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="nc">HttpHeaders</span><span class="o">.</span><span class="na">CONTENT_DISPOSITION</span><span class="o">,</span> <span class="n">contentDisposition</span><span class="o">)</span> <span class="c1">// 다운로드를 위한 헤더</span>
+                  <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="n">resource</span><span class="o">);</span>
+      <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>일반적인 <code class="language-plaintext highlighter-rouge">@ResponseBody</code> 로 UrlResource를 반환하면 그냥 조회만 됨.</li>
+          <li>다운로드를 위해선 <strong>response Http Header 값을 변경</strong>해줘야 됨 → <strong>ResponseEntity 사용</strong></li>
+          <li>body에는 조회의 방식 그대로 UrlResource로 채워줌 (아웃풋스트림)</li>
+          <li><code class="language-plaintext highlighter-rouge">ResponseEntity.ok().header(...).body(resource)</code>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">ResponseEntity.ok()</code> : <code class="language-plaintext highlighter-rouge">ResponseEntity</code> 의 status를 200으로 설정</li>
+              <li><code class="language-plaintext highlighter-rouge">.header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)</code> : 다운르도를 위해 header의 <strong>content-disposition 이라는 항목을 따로 설정</strong>해줌(한글을 포함한 제대로된 경로를 위해 인코딩 설정 필수) → <strong>다운로드 규약!</strong></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+:ET

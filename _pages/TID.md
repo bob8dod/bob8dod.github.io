@@ -21,6 +21,19 @@ image:
     - `Front` : Front-End Engineer 만을 위한 이슈
     - `Enhancement` : 새로운 기능이 필요한 경우, front back 모두가 손봐야할 이슈
 
+<hr>
+
+### <220618> ~ <220630>
+- **Spring MVC 집중 공부! (강의 및 개인 학습으로 인해 따로 개발은 진행하지 않음)**
+- 추후 해당 공부한 내용을 바탕으로 **Semogong Project를 Upgrade 시킬 예정**
+
+### <220601> ~ <220617>
+- Capstone
+
+### <2205010> ~ <220530>
+- **Spring MVC 집중 공부! (강의 및 개인 학습으로 인해 따로 개발은 진행하지 않음)**
+- 추후 해당 공부한 내용을 바탕으로 **Semogong Project를 Upgrade 시킬 예정**
+
 ### <220508>
 
 > **Tag : version 1.0.11** <br>
