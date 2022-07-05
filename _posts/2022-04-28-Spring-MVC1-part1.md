@@ -3,7 +3,7 @@ layout: post
 title:  "Servlet"
 date:   2022-04-28
 image:  /posts/servlet.png
-tags:   SpringBoot MVC
+tags:   Servlet MVC SpringBoot
 ---
 
 

@@ -1,0 +1,315 @@
+I"qd<h2 id="서블릿-예외처리">서블릿 예외처리</h2>
+
+<blockquote>
+  <p>스프링이 아닌 순수 서블릿 컨테이너의 예외 처리</p>
+
+</blockquote>
+
+<h3 id="서블릿-예외-처리-기본-흐름">서블릿 예외 처리 기본 흐름</h3>
+
+<ul>
+  <li><strong>서블릿</strong>은 2가지 방식<strong>[<code class="language-plaintext highlighter-rouge">Exception</code>, <code class="language-plaintext highlighter-rouge">response.sendError()</code>]</strong> 로 <strong>예외처리</strong> 가능</li>
+  <li><code class="language-plaintext highlighter-rouge">Exception</code>
+    <ul>
+      <li><strong>In JAVA</strong> : main 이라는 이름의 쓰레드로 실행되며 예외를 따로 잡지(try, catch) 못하여 main() 메서드를 넘어서 예외가 던져지면, <strong>예외 정보를 남기고 쓰레드 종료</strong></li>
+      <li><strong>WAS</strong>
+        <ul>
+          <li>사용자 요청별로 별도의 쓰레드가 활성되며 서블릿 컨테이너 안에서 실행됨. 어플리케이션안에서 예외를 잡지 못하고, 서블릿 밖으로 까지 예외가 전달되면 <strong>WAS까지 예외가 전달</strong>됨</li>
+          <li>예외 전파 흐름 : <code class="language-plaintext highlighter-rouge">WAS &lt;- 필터 &lt;- 서블릿 &lt;- 인터셉터 &lt;- 컨트롤러(예외발생)</code></li>
+        </ul>
+      </li>
+      <li>WAS의 예외 처리
+        <ul>
+          <li>
+            <p>예외가 발생하여 WAS까지 전파되면 <strong>tomcat이 기본으로 제공하는 오류 화면</strong>을 보여줌 (<code class="language-plaintext highlighter-rouge">HTTP Status 500 – Internal Server Error</code>)</p>
+
+            <p><img src="/images/posts/post-220621/Untitled.png" alt="Untitled" /></p>
+          </li>
+          <li>WAS에서 발생한 Exception의 경우, <strong>서버 내부에서 처리할 수 없는 오류가 발생한 것으로 생각해서</strong> <strong>항상 HTTP 상태 코드 500</strong>을 반환</li>
+          <li>
+            <p>지정되어 있지 않은 URL일 경우는 <code class="language-plaintext highlighter-rouge">HTTP Status 404 – Not Found</code> (서버 내부에서 발생한 Exception이 아니므로 404 반환)</p>
+
+            <p><img src="/images/posts/post-220621/Untitled 1.png" alt="Untitled1" /></p>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">response.sendError(HTTP status code, error msg)</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">HttpServletResponse</code> 가 제공하는 <code class="language-plaintext highlighter-rouge">sendError</code> 메서드 (<strong>오류를 끼워서 response를 보내는 것</strong>)</li>
+      <li>호출하자마자 오류가 처리되는 것은 아니고 <strong>WAS까지 response가 전달 된 후</strong> 해당 error를 띄워주는 것 (즉, <strong>모든 흐름은 정상적일 때와 동일하게 흘러감</strong>)</li>
+      <li>해당 메서드를 통해 <strong>직접 HTTP 상태 코드와 오류 메시지를 추가</strong>할 수 있음 (Exception과 다른 점)</li>
+      <li><strong>sendError</strong> 전파 흐름 :  <code class="language-plaintext highlighter-rouge">WAS(response의 sendError 호출 기록 확인) &lt;- 필터 &lt;- 서블릿 &lt;- 인터셉터 &lt;- 컨트롤러(response.sendError() 실행)</code></li>
+      <li>500 에러 코드 발생 → <code class="language-plaintext highlighter-rouge">response.sendError(500, "500 오류!");</code> (서블릿 기본 500 오류 화면 발생)</li>
+      <li>404 에러 코드 발생 → <code class="language-plaintext highlighter-rouge">response.sendError(404, "404 오류!");</code> (서블릿 기본 404 오류 화면 발생)</li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+🚨 <strong>개선 점!</strong> <br />
+서블릿 컨테이너가 제공하는 기본 예외 처리 화면은 사용자 친화적이지 않음! → <b>의미 있는 오류 화면 제공 필요!!</b>
+
+</aside>
+
+<h3 id="오류-화면-제공">오류 화면 제공</h3>
+
+<ul>
+  <li>Exception이 발생하여 서블릿 밖으로 전달되거나 response.sendError() 가 호출되었을 때, 각각의 상황에 맞춘 오류처리( <strong>→ 오류 화면 제공</strong>)</li>
+  <li>과거에는 xml 파일을 통해 오류화면을 등록</li>
+  <li>여기서는 <strong>스프링부트가 제공하는 기능을 통해 서블릿 오류 페이지를 등록</strong></li>
+  <li>서블릿 오류 페이지 등록 (<code class="language-plaintext highlighter-rouge">WebServerFactoryCustomizer</code> interface 이용)
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">WebServerFactoryCustomizer&lt;ConfigurableWebServerFactory&gt;</code> : web 오류에 따른 오류 화면 처리 기능을 이용할 떄 사용하는 설정같은 느낌 (Spring Boot에서 지정한 설정 Interface). <code class="language-plaintext highlighter-rouge">**customize</code> method overriding 필요**</li>
+    </ul>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Component</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">WebServerCustomizer</span> <span class="kd">implements</span> <span class="nc">WebServerFactoryCustomizer</span><span class="o">&lt;</span><span class="nc">ConfigurableWebServerFactory</span><span class="o">&gt;</span> <span class="o">{</span>
+    
+      <span class="nd">@Override</span>
+      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">customize</span><span class="o">(</span><span class="nc">ConfigurableWebServerFactory</span> <span class="n">factory</span><span class="o">)</span> <span class="o">{</span>
+          <span class="nc">ErrorPage</span> <span class="n">errorPage404</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ErrorPage</span><span class="o">(</span><span class="nc">HttpStatus</span><span class="o">.</span><span class="na">NOT_FOUND</span><span class="o">,</span> <span class="s">"/error-page/404"</span><span class="o">);</span> <span class="c1">// 오류가 발생하면 path에 Mapping된 Controller를 호출하는 것</span>
+          <span class="nc">ErrorPage</span> <span class="n">errorPage500</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ErrorPage</span><span class="o">(</span><span class="nc">HttpStatus</span><span class="o">.</span><span class="na">INTERNAL_SERVER_ERROR</span><span class="o">,</span> <span class="s">"/error-page/500"</span><span class="o">);</span>
+          <span class="nc">ErrorPage</span> <span class="n">errorPageEx</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ErrorPage</span><span class="o">(</span><span class="nc">RuntimeException</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="s">"/error-page/500"</span><span class="o">);</span> <span class="c1">// runtime 자식 예외까지 처리</span>
+          <span class="n">factory</span><span class="o">.</span><span class="na">addErrorPages</span><span class="o">(</span><span class="n">errorPage404</span><span class="o">,</span> <span class="n">errorPage500</span><span class="o">,</span> <span class="n">errorPageEx</span><span class="o">);</span> <span class="c1">// 등록</span>
+      <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">new ErrorPage(Http Status Code, path)</code> : <strong>오류 처리 Controller를 호출</strong>하는 것. <strong>path</strong>가 Controller(오류 페이지 View를 연결해주는)에 <strong>매핑된 주소</strong>. 즉, 해당 오류코드가 발생하면 path에 매핑된 Controller가 호출됨.</li>
+      <li><code class="language-plaintext highlighter-rouge">factory.addErrorPages</code> : 설정한 오류 처리 class들 추가하여 Spring이 알 수 있도록 해주는 것</li>
+      <li><code class="language-plaintext highlighter-rouge">Exception</code>, <code class="language-plaintext highlighter-rouge">response.sendError</code> 에 따른 호출
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">response.sendError(404)</code> : errorPage404 호출 (HttpStatus.NOT_FOUND) → “/error-page/404” path에 매핑된 Controller 호출</li>
+          <li><code class="language-plaintext highlighter-rouge">response.sendError(500)</code> : errorPage500 호출 (HttpStatus.INTERNAL_SERVER_ERROR) → “/error-page/500” path에 매핑된 Controller 호출</li>
+          <li><code class="language-plaintext highlighter-rouge">RuntimeException</code> (Exception) 또는 그 자식 타입의 예외: errorPageEx 호출 (RuntimeException.class) → “/error-page/500” path에 매핑된 Controller 호출</li>
+        </ul>
+
+        <aside>
+  🚨 **ErrorPage의 path**
+  path는 view path (html path)가 아닌, **Controller의 path!**
+  즉, 바로 html을 랜더링해줘 보여주는 것이 아닌, **해당 path에 매핑된 Controller를 호출**하는 것!! (오류페이지 작동 원리 part에서 자세히..)
+        
+  </aside>
+      </li>
+      <li>
+        <p>해당 오류 화면 설정을 처리해주는 Controller (<code class="language-plaintext highlighter-rouge">ErrorPageController</code>)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">"/error-page/404"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">errorPage404</span><span class="o">()</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="s">"error-page/404"</span><span class="o">;</span>
+  <span class="o">}</span>
+        
+  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">"/error-page/500"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">errorPage500</span><span class="o">()</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="s">"error-page/500"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>해당 veiw path(resources/templates/error-page/404, …)에 맞는 <strong>custom html을 만들어서 사용자 친화적인 오류 화면을 생성</strong>하면 됨!</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="오류-페이지-작동-원리">오류 페이지 작동 원리</h3>
+
+<ul>
+  <li>오류 페이지가 어떤 흐름을 가지고 호출되는지에 대해 알아보기</li>
+  <li>예외, sendError 발생 흐름
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">Exception</code> (서버 내부 예외 발생) : <code class="language-plaintext highlighter-rouge">WAS(여기까지 전파) &lt;- 필터 &lt;- 서블릿 &lt;- 인터셉터 &lt;- 컨트롤러(예외발생)</code></li>
+      <li><code class="language-plaintext highlighter-rouge">response.sendError()</code> : <code class="language-plaintext highlighter-rouge">WAS(sendError 호출 기록 확인) &lt;- 필터 &lt;- 서블릿 &lt;- 인터셉터 &lt;- 컨트롤러(response.sendError())</code></li>
+      <li><strong>둘 다 WAS까지 전달</strong>되는 것을 알 수 있음</li>
+      <li>즉, 오류 발생 후 <strong>WAS</strong>가 그 <strong>오류를 확인</strong>한 후 <strong>해당 예외를 처리하는 오류 페이지 정보를 확인</strong>(오류 페이지 Config 부분(new ErrorPage())을 통해). 이제 <strong>이 정보를 통해 다시 요청!</strong></li>
+    </ul>
+  </li>
+  <li>오류 페이지 요청 흐름
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">WAS "/error-page/500(404)" 다시 요청 -&gt; 필터 -&gt; 서블릿 -&gt; 인터셉터 -&gt; 컨트롤러(/error-page/500(404)) -&gt; View</code></li>
+      <li><strong>ErrorPage의 path의 URI</strong>로 다시 요청! → 해당 URI를 가진 Controller가 동작!</li>
+      <li>즉, <strong>서버 내부</strong>에서 오류 페이지를 찾기 위해 <strong>추가적인 호출</strong>이 일어나는 것! (<strong>서버 외부_Client 는 알 수 없음!)</strong></li>
+    </ul>
+  </li>
+  <li>오류 정보 확인
+    <ul>
+      <li>WAS는 오류 페이지를 단순히 다시 요청만 하는 것이 아니라, <strong>오류 정보를 request 의 attribute 에 추가해서 넘겨줌</strong></li>
+      <li>해당 정보를 Controller에서 request를 통해 사용할 수 있는 것! (필요하다면)</li>
+      <li><code class="language-plaintext highlighter-rouge">request.getAttribute(정보 이름)</code></li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+💡 <strong>예외 처리(오류 화면 제공) 전체 흐름</strong>
+<ol>
+<li>예외가 발생해서 WAS까지 전파됨 : <code>WAS(여기까지 전파) &lt;- 필터 &lt;- 서블릿 &lt;- 인터셉터 &lt;- 컨트롤러(예외발생)</code> </li>
+<li>WAS는 오류 페이지 경로(path)를 찾아서 내부에서 오류 페이지를 호출 (정상 호출과 동일하게 동작) : <code>WAS "/error-page/500(400)" 다시 요청 -&gt; 필터 -&gt; 서블릿 -&gt; 인터셉터 -&gt; 컨트롤러(/errorpage/500(400)) -&gt; View</code></li>
+</ol>
+</aside>
+
+<h3 id="예외-처리---필터-인터셉터">예외 처리 - 필터, 인터셉터</h3>
+
+<aside>
+⚠️ <strong>예외 처리(오류 화면 제공) 전체 흐름의 옥에티</strong> <br />
+예외 처리 전체 흐름을 통해, <b>오류가 발생했을 때의 흐름</b>이 <b>정상호출과 동일</b>한 흐름을 가지는 것을 알 수 있음. 즉, <b>필터와 인터셉터</b> 모두 한번의 클라이언트의 요청에 <b>예외 발생 시 두번 작동</b>하게 됨. (즉, 로그인 인증같은 필터가 적용되어 있다면, 예외가 발생하면 인증이 쓸데없이 두번 동작하는 것!) <br />
+-&gt; 서블릿은 이런 것들을 어떻게 처리하는 지 확인해보자!
+
+</aside>
+
+<ul>
+  <li>서블릿이 제공하는 <strong><code class="language-plaintext highlighter-rouge">DispatchType</code></strong> 을 통해 예외 처리에 따른 필터, 인터셉터 이해하기</li>
+  <li><strong>Exception with Servlet Filter</strong>
+    <ul>
+      <li>DispatcherType
+        <ul>
+          <li>필터의 쓸데없는 중복 적용을 막기 위한 기능</li>
+          <li><strong>요청에 따른 Type을 구분</strong>할 수 있게 해주는 것 (사용자의 처음 요청 → <code class="language-plaintext highlighter-rouge">dispatcherType=REQUEST</code>, 오류로 인한 서버 내부 요청 → <code class="language-plaintext highlighter-rouge">dispatchType=ERROR</code>)</li>
+          <li>즉, 실제 고객이 요청한 것인지, <strong>서버가 내부에서 오류 페이지를 요청하는 것</strong>인지 <code class="language-plaintext highlighter-rouge">DispatcherType</code> 으로 구분 가능!</li>
+          <li><strong>Type</strong>
+            <ul>
+              <li><strong>REQUEST</strong> : 클라이언트 요청</li>
+              <li><strong>ERROR</strong> : 오류 요청</li>
+              <li><strong>FORWARD</strong> : MVC에서 배웠던 서블릿에서 다른 서블릿이나 JSP를 호출할 때 [RequestDispatcher.forward(request, response);]</li>
+              <li><strong>INCLUDE</strong> : 서블릿에서 다른 서블릿이나 JSP의 결과를 포함할 때 [RequestDispatcher.include(request, response);]</li>
+              <li><strong>ASYNC</strong> : 서블릿 비동기 호출</li>
+            </ul>
+          </li>
+          <li>기존의 필터 설정(<code class="language-plaintext highlighter-rouge">WebConfig</code> 의 <code class="language-plaintext highlighter-rouge">logFilter</code>)에서 Dispatcher에 대한 설정을 다루면 됨 → <code class="language-plaintext highlighter-rouge">filterRegistrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ERROR);</code>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">setDispatcherTypes</code></li>
+              <li>default는 REQUEST. 즉, 기본으로 사용자의 요청에 대해서만 필터가 적용되도록 자동 설정되어 있음</li>
+              <li>만약, ERROR에만 필터를 적용하고 싶다. 혹은 REQUEST에 더해 ERROR에도 필터를 적용하고 싶다면 해당 기능 이용!!</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Exception with Spring Interceptor</strong>
+    <ul>
+      <li>Interceptor는 Filter와는 다르게 DispatcherType Setting (Type에 따른 Filter 동작) 같은 역할을 하는 기능이 없음!  → <strong>제외 경로 설정(<code class="language-plaintext highlighter-rouge">.excludePathPatterns(...)</code>)를 통해 해결!</strong></li>
+      <li>또한 setDispatcherType 과 같이 default가 없으므로 <strong>꼭 제외 경로에 추가</strong>해줘야됨!</li>
+      <li><code class="language-plaintext highlighter-rouge">.excludePathPatterns(...)</code>
+        <ul>
+          <li>제외 요청 경로 설정</li>
+          <li>여기다 해당 <code class="language-plaintext highlighter-rouge">new ErrorPage(Status, path)</code> 에서 설정한 <strong>path에 대해서 <code class="language-plaintext highlighter-rouge">excludePathPatterns</code>에 추가</strong>해주면 됨 → 해당 경로에 대한 요청(예외 처리 요청)에 대해서는 인터셉터가 동작하지 않게 됨!</li>
+          <li><code class="language-plaintext highlighter-rouge">.excludePathPatterns(..., "/error-page/**");</code>
+            <ul>
+              <li>예외 처리 요청에 대한 <strong>URI 패턴을 동일하게 설정</strong>해줘야 적용하기 편함 (ex_ <code class="language-plaintext highlighter-rouge">/error-page/**</code> → /error-page 하위에 대해선 모두 예외처리 요청으로 설정한 것)</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>정리
+    <ul>
+      <li><strong>정상 요청</strong>
+        <ul>
+          <li>오류가 발생하지 않는 “/hello” URI로 요청이 들어온 경우</li>
+          <li><code class="language-plaintext highlighter-rouge">WAS(/hello, dispatchType=REQUEST) -&gt; 필터 -&gt; 서블릿 -&gt; 인터셉터 -&gt; 컨트롤러 -&gt; View</code></li>
+          <li><code class="language-plaintext highlighter-rouge">dispatchType=REQUEST</code> 로 들어오고 해당 <code class="language-plaintext highlighter-rouge">URI</code> 는 exclude에 포함되지 않기 떄문에 필터, 인터셉터 모두 정상 동작</li>
+        </ul>
+      </li>
+      <li><strong>오류 요청</strong>
+        <ul>
+          <li>오류가 발생하는 “/error-ex” URI로 요청이 들어온 경우</li>
+          <li>흐름
+            <ol>
+              <li><code class="language-plaintext highlighter-rouge">WAS(/error-ex, dispatchType=REQUEST) -&gt; 필터 -&gt; 서블릿 -&gt; 인터셉터 -&gt; 컨트롤러</code></li>
+              <li><code class="language-plaintext highlighter-rouge">WAS(여기까지 전파) &lt;- 필터 &lt;- 서블릿 &lt;- 인터셉터 &lt;- 컨트롤러(예외발생)</code></li>
+              <li><code class="language-plaintext highlighter-rouge">WAS 오류 페이지 확인</code> ( <code class="language-plaintext highlighter-rouge">new ErrorPage(HTTP Status, path)</code> 를 통해 )</li>
+              <li><code class="language-plaintext highlighter-rouge">WAS(/error-page/500, dispatchType=ERROR) -&gt; 필터(x) -&gt; 서블릿 -&gt; 인터셉터(x) -&gt; 컨트롤러(/error-page/500) -&gt; View</code></li>
+            </ol>
+          </li>
+          <li><code class="language-plaintext highlighter-rouge">dispatchType=ERROR</code> , <code class="language-plaintext highlighter-rouge">/error-page/**</code> 로 인해 필터, 인터셉터가 모두 한번만 동작하게 됨</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="스프링-예외-처리">스프링 예외 처리</h2>
+
+<aside>
+⚠️ <strong>서블릿의 복잡한 예외 처리 페이지 적용 과정</strong> <br />
+<code>WebServerCustomizer(Config)</code> 생성 → 예외 종류에 따른 <code>ErrorPage</code> 추가 → 해당 예외 처리용 <code>Controller</code> 생성 → 각 <code>Path</code>에 맞는 <code>View</code> 연결
+
+</aside>
+
+<ul>
+  <li>하지만 스프링 부트를 사용하여 예외 처리 페이지를 적용하면 위와 같은 과정을 모두 자동으로 처리해주기 때문에 아주 간단히 처리가 가능!! <strong>(규칙에 따라</strong> <strong>View만 만들어주면 됨!)</strong></li>
+</ul>
+
+<h3 id="오류-페이지-처리-with-spring-boot">오류 페이지 처리 with Spring Boot</h3>
+
+<ul>
+  <li>Spring Boot가 자동으로 처리하는 기능들
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">**ErrorPage</code> 자동으로 등록** ( “/error” 라는 경로로 기본 오류 페이지를 설정. path = “/error”) →  서블릿 밖으로 <strong>예외가 발생(<code class="language-plaintext highlighter-rouge">Exception</code>)</strong>하거나, <code class="language-plaintext highlighter-rouge">**response.sendError(...)</code> 가 호출**되면 모든 오류는 “/error” 라는 path를 가진 Controller 를 호출하게 됨</li>
+      <li><code class="language-plaintext highlighter-rouge">BasicErrorController</code> 라는 예외 처리용 Controller 자동 등록 (<code class="language-plaintext highlighter-rouge">ErrorPage</code>를 통해 등록한 “/error” 를 매핑해서 처리하는 컨트롤러)</li>
+    </ul>
+  </li>
+  <li>즉, <strong>개발자는 오류 페이지만 등록</strong> 하면 됨!! (Spring Boot에서 지정한 <strong>경로 규칙을 따라서</strong>)</li>
+  <li>경로 규칙
+    <ul>
+      <li>View Template (<code class="language-plaintext highlighter-rouge">resources/templates/error/…</code>)
+        <ul>
+          <li>resources/templates/error/500.html : 500 처리</li>
+          <li>resources/templates/error/5xx.html : 505,503,… 등을 모두 처리</li>
+        </ul>
+      </li>
+      <li>정적 html (<code class="language-plaintext highlighter-rouge">resources/static/error/…</code>)
+        <ul>
+          <li>resources/static/error/400.html : 400 처리</li>
+          <li>resources/static/error/404.html : 404 처리</li>
+          <li>resources/static/error/4xx.html : 405, 440, … 등을 모두 처리</li>
+        </ul>
+      </li>
+      <li>적용 대상이 없을 때
+        <ul>
+          <li>resources/templates/error.html</li>
+          <li>발생된 오류 Status에 대한 html이 설정되어 있지 않을 때</li>
+        </ul>
+      </li>
+      <li>정해진 경로, 정해진 이름 규칙을 따라야 함. 추가로 더 상세하게 설정되어 있으면 그 상세 html이 우선순위를 갖게 됨</li>
+      <li><strong>해당 규칙에 따라서 html 파일만 만들어주면 알아서 예외 오류 페이지 처리를 해주는 것!</strong></li>
+    </ul>
+  </li>
+  <li>오류 정보 렌더링
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">BasicErrorController</code>는 다음 정보를 <code class="language-plaintext highlighter-rouge">Model</code>에 담아서 <code class="language-plaintext highlighter-rouge">View</code>에 전달</li>
+      <li>View Template은 이를 이용하여 <code class="language-plaintext highlighter-rouge">View</code>에 렌더링 가능 (but, 자주 쓰이는 건 아님 → 오류 정보를 사용자에게 보여주는 건 고려해봐야될 상황이므로)</li>
+      <li><strong>오류 정보</strong>
+        <ul>
+          <li>timestamp: 시간 (Fri Feb 05 00:00:00 KST 2021)</li>
+          <li>status: 상태 코드 (400)</li>
+          <li>error: 에러 이름 (Bad Request)</li>
+          <li>exception: 예외 발생 파트 (org.springframework.validation.BindException)</li>
+          <li>trace: 예외 trace</li>
+          <li>message: 예외 메시지 (Validation failed for object=’data’. Error count: 1)</li>
+          <li>errors: 예외들 (Errors(BindingResult))</li>
+          <li>path: 클라이언트 요청 경로 (<code class="language-plaintext highlighter-rouge">/hello</code>)</li>
+        </ul>
+      </li>
+      <li>물론 해당 정보들은 보안상의 문제가 있으므로 <code class="language-plaintext highlighter-rouge">BasicErrorController</code>에서 다음 오류 정보를 <code class="language-plaintext highlighter-rouge">model</code> 에 포함할지 여부 선택할 수 있음 (Spring Boot 설정 - application.properties에서 가능!)</li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">application.properties</code></p>
+
+        <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="s">server.error.include-exception=true</span> <span class="c1"># 항상</span>
+  <span class="s">server.error.include-message=on_param</span> <span class="c1"># 쿼리 파라미터로 들어올 때만</span>
+  <span class="s">server.error.include-stacktrace=on_param</span>
+  <span class="s">server.error.include-binding-errors=on_param</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>true, false</li>
+          <li>never, always, on_param(개발 서버에서 디버그 시 이용 가능)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+:ET

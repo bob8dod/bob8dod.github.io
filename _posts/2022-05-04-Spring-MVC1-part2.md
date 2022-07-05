@@ -3,7 +3,7 @@ layout: post
 title:  "Servlet with MVC Pattern, View Template(JSP)"
 date:   2022-05-04
 image:  /posts/servlet+mvc.png
-tags:   SpringBoot MVC
+tags:   Servlet MVC SpringBoot
 ---
 
 
