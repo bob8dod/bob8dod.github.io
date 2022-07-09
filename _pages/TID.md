@@ -27,8 +27,206 @@ image:
 - **Spring MVC 집중 공부! (강의 및 개인 학습으로 인해 따로 개발은 진행하지 않음)**
 - 추후 해당 공부한 내용을 바탕으로 **Semogong Project를 Upgrade 시킬 예정**
 
-### <220601> ~ <220617>
-- Capstone
+
+### <220615>
+
+> `Front` : 사용자 편의를 위한 애니메이션 추가
+>
+
+- 현재 문제점
+    - Home 화면에서 데이터가 변경되고 있는 Point가 어딘지 확인 불가
+    - Static 화면에서 현재 인원이 변경되고 있는지 확인 불가
+- 해결
+    - Home 화면은 해당 Point에 물결 애니메이션을 추가하여 현재 데이터가 변하고 있는 지점에 대해 Focus할 수 있도록 설정
+    - Static 화면은 Live 버튼에 현재 데이터를 불러오고 있으면 초록색 깜빡임을 주어 데이터가 반영되고 있다는 사실을 사용자에게 인지할 수 있도록 설정
+
+### <220614>
+
+> `Back` : 인터셉터를 통한 최적화
+>
+
+- 현재 문제점
+    - 현재 Temp → Info로 바꾸는 로직은 한 서비스가 시작될 때 모든 Temp를 Info로 바꾸는 식의 방식으로 진행 중
+    - 하지만 현재 방식은 사실상 비효율적임. 모든 DB를 가져오는 것보다, 최근 요청시점을 기억하고 그 이후로 새로 들어온 Temp들만을 Info로 바꾸는 방법이 필요
+- 해결
+    - Point에 최근 Info의 변경시점을 기록하여
+    - 해당 변경시점 이후에 새로운 Temp가 있는지 확인하여 해당 Temp를 Info로 변경하는 방식으로 진행
+    - 또한 이는 어떤 서비스든 시작될때 적용이 되어야 하므로 **인터셉터** 개념 도입
+- UpdateInterceptor
+
+    ```java
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        List<Point> pointList = pointService.findAll(); // find all Point
+        for (Point point : pointList) { // each point
+            infoService.createInfo(point.getId()); // make 연관관계 with Point (새로 생성된 Temp들에 대해서 새로운 Info 생성)
+            pointService.updatePoint(point.getId()); // point의 lastCommittedTime update (최근 Info update 시간 update)
+        }
+        return true;
+    }
+    ```
+
+    - CheckPoint 이후 새로 생성된 Temp들에 대해서 새로운 Info 생성
+    - CheckPoint Update
+    - 마지막으로 WebConfig를 통해 Interceptor 등록
+
+### <220612>
+
+> `Enhancement` : 누적 통계 정보 조회 개발
+>
+
+- Static에서 보여줄 누적 통계 정보에 대한 개발 진행
+- 통계 로직
+    - 해당 Point에 대한 모든 Info를 조회
+    - 조회한 후 날짜별로 Info를 나누고 해당 날짜에 대한 Info 개수의 평균치를 model에 담아 rendering
+    - 일주일간의 데이터, 시간별 데이터 모두 한곳에 저장
+    - 해당 데이터를 Pie,Arial Chart 를 구성하는 js 에 할당 (탬플릿 이용)
+
+<aside>
+💡 <strong> JavaScript에서 model의 attribute(model에 담겨져 넘겨온 값) 사용하기!</strong> <br>
+<code>[[ ]]</code> 사용!(HTML 테그의 속성이 아니라 <b>HTML 콘텐츠 영역안에서 직접</b> 데이터를 출력하고 싶을 때 사용) → <code>var temp = [[ ${temp} ]]</code>
+
+</aside>
+
+### <220610>
+
+> `Back` : Temp, Info Repository, Service 재정의
+>
+
+- Temp, Info Repository, Service  재정의
+    - 기존에 사용했던 Info의 Domain, Service, Repository를 모두 Temp로 이전, 그 후 Info Repository, Service 새로 정의
+    - 핵심은 Temp로 받아온 라이브 데이터를 Info로 바꾸어 저장하는 것. 즉, Temp의 데이터를 그대로 받아와 연관관계를 정의하고 Entity로써 관리되게 만드는 것
+- Info Repository
+    - 저장만 하면 됨 (조회는 연관관계를 맺은 Point로 진행) → `em.persist(info)`
+- Info Service
+    - Info 생성 메서드만 존재 → (매핑 로직: ) 해당 구역에 따라 Point와 매핑시켜준 후 저장.  그 결과로 측정된 수치들을 바탕으로 Point를 수정
+
+### <220609>
+
+> `Back` : 이전 Info 데이터와 Point의 연관관계 생성 필요
+`Back` : Temp, Info Domain 재정의
+>
+
+- 발견된 문제점
+    - 실시간 데이터로 받아오는 Info를 그 즉시 Floating 해주는 기능은 가능하나, Info의 과거 데이터를 가져올 때 이미 한번 매핑되었던 Point와 다시 판단 로직을 통해 매핑이 필요함
+    - 또한 Info가 Entity로써 **저장**되지 않았기에 발생하는 불편함 해결 필요
+- 해결법
+    - 기존의 데이터를 가져와서 새로 Entity로 관리되는 데이터를 생성 → Temp라는 Object로 기존의 데이터 받아옴
+    - 추가로 Info를 가져올 때 point와 연관관계를 맺어 서로 참조할 수 있도록 설정
+
+        ```jsx
+        //==연관관계 메서드==//
+        private void setPoint(Point point) {
+            this.point = point;
+            point.getInfos().add(this);
+        }
+        ```
+
+    - 기존에 사용했던 Info의 Domain, Service, Repository를 모두 Temp로 이전, 그 후 Info 새로 정의
+
+### <220608>
+
+> `Front` : Home, Static 화면 수정
+`Back` : HomeRestController 개발
+>
+
+- Home, Static 화면 수정
+    - Home
+        - Kakao Map API를 이용한 지도에 Point의 좌표를 매핑시켜 floating
+        - 각 Point들에 대한 실시간 변동량 표시를 위한 개발 → ajax 비동기 통신, REST API 이용 → REST API 를 위한 Controller 개발 필요
+
+        ```jsx
+        $( document ).ready(function detection_change() {
+            interval = setInterval(function () {
+                $.ajax({
+                    url: '/infos',
+                    type: "GET"
+                })
+                    .done(function (response) { ... //로직 }
+        })
+        ```
+
+    - Static
+        - 실시간 인원 측정량 표시 (버튼을 누르면 볼 수 있고, 아니면 안보여주는 느낌으로 진행 → 버튼을 누르면 interval 함수를 사용하여 3초마다 데이터를 요청, JSON으로 값을 받아옴)
+        - 이 또한 ajax 비동기 통신, REST API 이용 → REST API 를 위한 Controller 개발 필요
+- HomeRestController 개발
+    - REST API 를 위한 Controller 개발 (`@RestController`)
+    - Home화면과 Static 화면에 뿌려줄 JSON 데이터 생성 및 반환
+    - JSON 데이터는 실시간으로 측정된 인원의 수를 보여주는 count와 이 데이터 리스트를 반환 (`Result<T>` 사용)
+
+### <220606>
+
+> `Back` : HomeController 개발
+>
+
+- 공통
+    - Home 화면이든 Static 화면이든 모든 Point들에 대한 정보가 필요하기 때문에 point list를 기본적으로 Model에 추가해줌. (`@ModelAttribute` 사용)
+- Home
+    - API를 이용하기 때문에 따로 Model에 추가해줄 것들이 없음.
+    - Point List는 미리 추가된 상태의 model 사용
+- Statics
+    - 검색해서 들어오는 상황과, 기본 static 화면 분리 (데이터 분리)
+    - 그에 대한 추가적인 정보(Live Count) 등 추가
+    - 추가적으로 필요한 부분 : 데이터가 추가되면 누적통계 데이터에 대한 처리 필요.
+    
+### <220605>
+
+> `Back` : Info Service, Repository 개발
+>
+
+- Info 도메인의 주의점
+    - 이미 실시간으로 저장되어 있는 데이터를 가져와서 floating하는 역할
+    - 그러므로 따로 저장할 필요는 없고, 데이터를 가져오는 역할만 하면 됨
+    - 여기서 기존의 데이터를 가져오기 위해선 JpaRepository, NativeQuery 를 사용해야 됨
+- 개발
+    - 10초~현재 의 데이터를 받아오는 method → static 화면에서 사용
+
+        ```java
+        @Query(value = "SELECT * " +
+                    "FROM temp t " +
+                    "where t.date >= DATE_SUB(CONVERT_TZ(NOW(),'SYSTEM','Asia/Seoul'), INTERVAL 10 SECOND);", nativeQuery = true)
+            List<Temp> getLiveData();
+        ```
+
+        - 해당 Entity로 저장된 데이터를 가져오는 것이 아닌 기존에 있는 데이터를 가져오기 위해서 JpaRepository, NativeQuery 사용
+        - 10초 전~현재의 누적 데이터를 가져옴 → DATE_SUB() sql문 사용
+    - 저장은 따로 필요없음
+
+### <220604>
+
+> `Back` : Basic Point Service, Repository 개발
+>
+
+- Repository 단
+    - 정해진 지점에 대해서 저장하기 때문에 `@PostConstruct`를 통해 미리 DB 저장. (1회성 initDB)
+    - 다건조회, 단건조회, 이름으로 조회. 3가지 method 생성
+- Service 단
+    - 리포지토리의 역할을 단순 위임
+- 추가할 점
+    - 현재는 누적된 데이터가 없기에 누적통계량을 위한 데이터에 대한 Repository나 Service가 정의되어 있지않음 → 데이터가 어느정도 누적된 이후 개발 필요 
+
+### <220602>
+
+> `Back` : Domain 개발
+>
+
+- 필요성
+    - 현재 필요한 부분은 장소(검출 지점)를 연결할 Point와 실시간으로 DB에 적재되는 검출객체정보를 연결할 Info가 필요
+- 개발 과정
+    - Point 도메인 개발
+        - field 설정, 생성 및 수정 메서드 생성
+    - Info 도메인 개발
+        - 기존의 DB와 연결
+        - field 설정, 생성 및 수정 메서드 생성
+
+### <220601>
+
+> `Front` : 탬플릿 커스텀 (home, static)
+>
+
+- 프론트를 전문적으로 하는 인원이 없어, 무료로 제공되는 템플릿을 사용하기로 결정. 우리가 하고자 하는 서비스에 맞는 대시보드 탬플릿을 받아와 커스텀.
+- 여러 html 파일 중 home 화면과 static 화면만 살리고 이들에 대해 커스텀 진행.
+
 
 ### <2205010> ~ <220530>
 - **Spring MVC 집중 공부! (강의 및 개인 학습으로 인해 따로 개발은 진행하지 않음)**
@@ -71,7 +269,7 @@ image:
             }, false);
         }
         ```
-
+    
 ### <220507>
 
 > **#39** `Front` : 실시간 학습 시간 reload 기능 추가 <br>
