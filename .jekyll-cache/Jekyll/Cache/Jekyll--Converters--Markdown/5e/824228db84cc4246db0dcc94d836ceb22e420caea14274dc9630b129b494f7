@@ -1,4 +1,4 @@
-I"r7<aside>
+I"��<aside>
 🏋️ <strong>Today I Developed</strong> <br />
 매일 매일 제가 개발한 흔적을 남기는 공간입니다!
 </aside>
@@ -21,14 +21,222 @@
 
 <hr />
 
-<h3 id="220618--220630">&lt;220618&gt; ~ &lt;220630&gt;</h3>
+<h3 id="220714">&lt;220714&gt;</h3>
+
+<blockquote>
+  <p>#48 <code class="language-plaintext highlighter-rouge">Enhancement</code> : 새로운 대시보드 (Static 서비스 개선)</p>
+
+</blockquote>
+
 <ul>
-  <li><strong>Spring MVC 집중 공부! (강의 및 개인 학습으로 인해 따로 개발은 진행하지 않음)</strong></li>
-  <li>추후 해당 공부한 내용을 바탕으로 <strong>Semogong Project를 Upgrade 시킬 예정</strong></li>
-  <li>
-    <h3 id="220615">&lt;220615&gt;</h3>
+  <li>#48
+    <ul>
+      <li>
+        <p>기존의 문제점</p>
+
+        <p>파이썬으로 통계내어 해당 그래프를 사진으로 저장하고, 그 사진을 불러오는 형식으로 진행, 하지만 이는 통합되지 않는 문제가 있으며, 사진으로 보임으로써 부가적인 서비스를 제공하지 못함</p>
+      </li>
+      <li>
+        <p>해결</p>
+        <ul>
+          <li>javascript를 이용하여 그래프를 보여주는 형식으로 진행.</li>
+          <li>Model로 데이터를 담아와 thymeleaf in javascript 기술을 사용하여 데이터 이용</li>
+          <li>멤버당 최근 1주일 post를 가져와 해당 post의 모든 시간을 더한 시간을 적용
+            <ul>
+              <li>중요한 점은 새벽4시를 하루의 끝과 시작으로 정했기때문에, 요청 시간이 0~4시 사이일 경우와 나머지 시간일 경우에 대한 처리 구분 필요</li>
+            </ul>
+          </li>
+          <li>그래프로는 누적 시간을 보여줌</li>
+          <li>추가로 해당 일주일간의 누적 시간에 대한 랭킹 표시</li>
+          <li>
+            <p>StaticController 주요 코드</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/data"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">data</span><span class="o">(</span><span class="nc">Model</span> <span class="n">model</span><span class="o">,</span> <span class="nc">Authentication</span> <span class="n">authentication</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">authentication</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+          <span class="k">return</span> <span class="s">"redirect:/"</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberDto</span><span class="o">&gt;</span> <span class="n">members</span> <span class="o">=</span> <span class="n">memberService</span><span class="o">.</span><span class="na">findAll</span><span class="o">().</span><span class="na">stream</span><span class="o">().</span><span class="na">map</span><span class="o">(</span><span class="nl">MemberDto:</span><span class="o">:</span><span class="k">new</span><span class="o">).</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">());</span>
+      <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">MemberDto</span><span class="o">,</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">,</span> <span class="nc">Times</span><span class="o">&gt;&gt;</span> <span class="n">memberStatic</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">days</span> <span class="o">=</span> <span class="n">getDays</span><span class="o">(</span><span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">());</span>
+      <span class="k">for</span> <span class="o">(</span><span class="nc">MemberDto</span> <span class="n">member</span> <span class="o">:</span> <span class="n">members</span><span class="o">)</span> <span class="o">{</span>
+          <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">,</span> <span class="nc">Times</span><span class="o">&gt;</span> <span class="n">staticsData</span> <span class="o">=</span> <span class="n">getStaticsData</span><span class="o">(</span><span class="n">member</span><span class="o">);</span>
+          <span class="n">memberStatic</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">member</span><span class="o">,</span> <span class="n">staticsData</span><span class="o">);</span>
+          <span class="n">member</span><span class="o">.</span><span class="na">setTime</span><span class="o">(</span><span class="n">staticsData</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">days</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">days</span><span class="o">.</span><span class="na">size</span><span class="o">()-</span><span class="mi">1</span><span class="o">)));</span>
+          <span class="k">if</span> <span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">getTime</span><span class="o">().</span><span class="na">getHour</span><span class="o">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+              <span class="nc">Random</span> <span class="n">rand</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Random</span><span class="o">();</span>
+              <span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="n">rand</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">255</span><span class="o">);</span>
+              <span class="kt">int</span> <span class="n">g</span> <span class="o">=</span> <span class="n">rand</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">255</span><span class="o">);</span>
+              <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="n">rand</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">255</span><span class="o">);</span>
+              <span class="n">member</span><span class="o">.</span><span class="na">setColor</span><span class="o">(</span><span class="s">"rgba("</span> <span class="o">+</span> <span class="nc">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">r</span><span class="o">)</span> <span class="o">+</span> <span class="s">","</span> <span class="o">+</span> <span class="nc">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">g</span><span class="o">)</span> <span class="o">+</span> <span class="s">","</span> <span class="o">+</span> <span class="nc">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">b</span><span class="o">)</span> <span class="o">+</span> <span class="s">","</span> <span class="o">+</span> <span class="s">"1)"</span><span class="o">);</span>
+          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+              <span class="n">member</span><span class="o">.</span><span class="na">setColor</span><span class="o">(</span><span class="s">"rgba(236,236,236,1)"</span><span class="o">);</span>
+          <span class="o">}</span>
+      <span class="o">}</span>
+            
+      <span class="n">members</span><span class="o">.</span><span class="na">sort</span><span class="o">(</span><span class="k">new</span> <span class="nc">TimeSorter</span><span class="o">());</span> 
+  	  <span class="o">...</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>getDays : 그래프에 표시할 날짜모음(일)</li>
+              <li>getStaticData : 그래프에 표시할 데이터 생성
+                <ul>
+                  <li>0~4시의 요청 : 8일전 ~ 이틀전 까지의 데이터를 가져옴</li>
+                  <li>이외의 요청 : 7일전 ~ 하루 전 까지의 데이터를 가져옴</li>
+                  <li>추가로 날짜마다의 데이터를 넣어주기 위해 HashMap 사용 (key: 날짜, value: 시간) 이때, 해당 날짜의 post가 없는 경우 이전 데이터를 넘겨받아 사용하도록 설정 (누적 데이터이므로)</li>
+                </ul>
+              </li>
+              <li>또한 각 멤버별로 랜덤한 색깔을 설정하여 각 멤버별의 그래프가 구분 가능하도록 설정</li>
+              <li>그 후 랭킹표시를 위해 TimeSorter로 정렬</li>
+            </ul>
+          </li>
+          <li>
+            <p>Javascript 주요 코드</p>
+
+            <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">var</span> <span class="nx">datasets</span> <span class="o">=</span> <span class="p">[];</span>
+  <span class="p">[</span><span class="err">#</span> <span class="nx">th</span><span class="p">:</span><span class="nx">each</span><span class="o">=</span><span class="dl">"</span><span class="s2">user, stat : ${staticsDataMap}</span><span class="dl">"</span><span class="p">]</span>
+  <span class="kd">var</span> <span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]]</span> <span class="o">=</span> <span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">value</span><span class="p">}]];</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">6</span><span class="p">]].</span><span class="nx">hour</span> <span class="o">!==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">datasets</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
+          <span class="na">label</span><span class="p">:</span> <span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nx">name</span><span class="p">}]],</span>
+          <span class="na">lineTension</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>
+          <span class="na">backgroundColor</span><span class="p">:</span> <span class="dl">"</span><span class="s2">rgba(33,37,41,0)</span><span class="dl">"</span><span class="p">,</span>
+          <span class="na">borderColor</span><span class="p">:</span> <span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nx">color</span><span class="p">}]],</span>
+          <span class="na">pointRadius</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+          <span class="na">pointBackgroundColor</span><span class="p">:</span> <span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nx">color</span><span class="p">}]],</span>
+          <span class="na">pointBorderColor</span><span class="p">:</span> <span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nx">color</span><span class="p">}]],</span>
+          <span class="na">pointHoverRadius</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+          <span class="na">pointHoverBackgroundColor</span><span class="p">:</span> <span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nx">color</span><span class="p">}]],</span>
+          <span class="na">pointHoverBorderColor</span><span class="p">:</span> <span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nx">color</span><span class="p">}]],</span>
+          <span class="na">pointHitRadius</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+          <span class="na">pointBorderWidth</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+          <span class="na">data</span><span class="p">:</span> <span class="p">[</span><span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">0</span><span class="p">]].</span><span class="nx">hour</span> <span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">0</span><span class="p">]].</span><span class="nx">min</span><span class="o">/</span><span class="mi">60</span><span class="p">),</span>
+              <span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">1</span><span class="p">]].</span><span class="nx">hour</span><span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">1</span><span class="p">]].</span><span class="nx">min</span><span class="o">/</span><span class="mi">60</span><span class="p">),</span>
+              <span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">2</span><span class="p">]].</span><span class="nx">hour</span><span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">2</span><span class="p">]].</span><span class="nx">min</span><span class="o">/</span><span class="mi">60</span><span class="p">),</span>
+              <span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">3</span><span class="p">]].</span><span class="nx">hour</span><span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">3</span><span class="p">]].</span><span class="nx">min</span><span class="o">/</span><span class="mi">60</span><span class="p">),</span>
+              <span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">4</span><span class="p">]].</span><span class="nx">hour</span><span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">4</span><span class="p">]].</span><span class="nx">min</span><span class="o">/</span><span class="mi">60</span><span class="p">),</span>
+              <span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">5</span><span class="p">]].</span><span class="nx">hour</span><span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">5</span><span class="p">]].</span><span class="nx">min</span><span class="o">/</span><span class="mi">60</span><span class="p">),</span>
+              <span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">6</span><span class="p">]].</span><span class="nx">hour</span><span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]][</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">6</span><span class="p">]].</span><span class="nx">min</span><span class="o">/</span><span class="mi">60</span><span class="p">)],</span>
+      <span class="p">});</span>
+  <span class="p">}</span>
+            
+  <span class="p">[</span><span class="sr">/</span><span class="err">]
+</span>            
+  <span class="kd">var</span> <span class="nx">myLineChart</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Chart</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="p">{</span>
+          <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">line</span><span class="dl">'</span><span class="p">,</span>
+          <span class="na">data</span><span class="p">:</span> <span class="p">{</span>
+              <span class="na">labels</span><span class="p">:</span> <span class="p">[</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="dl">'</span><span class="s1">일</span><span class="dl">'</span><span class="p">,</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="dl">'</span><span class="s1">일</span><span class="dl">'</span><span class="p">,</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="dl">'</span><span class="s1">일</span><span class="dl">'</span><span class="p">,</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="dl">'</span><span class="s1">일</span><span class="dl">'</span><span class="p">,</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="dl">'</span><span class="s1">일</span><span class="dl">'</span><span class="p">,</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">+</span><span class="dl">'</span><span class="s1">일</span><span class="dl">'</span><span class="p">,</span><span class="nx">staticDays</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">+</span><span class="dl">'</span><span class="s1">일</span><span class="dl">'</span><span class="p">],</span>
+              <span class="na">datasets</span><span class="p">:</span> <span class="nx">datasets</span><span class="p">,</span>
+          <span class="p">},</span>
+  <span class="p">...})</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>thymeleaf in javascript 기술의 for each 를 사용하여 user를 만들고 해당 user의 데이터를 dataset에 넣어 그래프에 대입.</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
   </li>
 </ul>
+
+<h3 id="220713">&lt;220713&gt;</h3>
+
+<blockquote>
+  <p>#42 <code class="language-plaintext highlighter-rouge">Enhancement</code>: 하루 공부시간 랭킹 <br />
+#62 <code class="language-plaintext highlighter-rouge">Back</code> : MVC 최적화</p>
+
+</blockquote>
+
+<ul>
+  <li>#42
+    <ul>
+      <li>
+        <p>기존의 문제점</p>
+
+        <p>우측 아티클에서 누적 공부시간 그래프를 사진으로 대략적으로 보여주는 부분이 있었으나 사실상 의미가 없는 기능이였으며, 대시보드를 사진이 아닌 js로 구성하기로 결정. 추가로 공부 동기부여를 높여주기 위한 기능이 필요했음</p>
+      </li>
+      <li>
+        <p>해결 (<strong>하루 공부시간 랭킹</strong>으로 <strong>대체</strong>)</p>
+        <ul>
+          <li>기존의 제공하는 기능 중 하루 공부시간 계산 로직(<code class="language-plaintext highlighter-rouge">getTotalStudyTimes</code>())을 이용</li>
+          <li>
+            <p>이 로직을 모든 Member들에게 적용하여 각 Member의 하루 공부시간을 계산하도록 진행</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">for</span> <span class="o">(</span><span class="nc">MemberDto</span> <span class="n">m</span> <span class="o">:</span> <span class="n">memberDtos</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Optional</span><span class="o">&lt;</span><span class="nc">Post</span><span class="o">&gt;</span> <span class="n">eachOptionalPost</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">getRecentPost</span><span class="o">(</span><span class="n">m</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+      <span class="nc">PostViewDto</span> <span class="n">memberRecentPostDto</span> <span class="o">=</span> <span class="n">eachOptionalPost</span><span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="nl">PostViewDto:</span><span class="o">:</span><span class="k">new</span><span class="o">).</span><span class="na">orElse</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">memberRecentPostDto</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+          <span class="n">m</span><span class="o">.</span><span class="na">setTime</span><span class="o">(</span><span class="n">getTotalStudyTimes</span><span class="o">(</span><span class="n">memberRecentPostDto</span><span class="o">));</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          <span class="n">m</span><span class="o">.</span><span class="na">setTime</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+      <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>이 시간을 각각의 MemberDto의 time property에 저장 후 이를 View Template에서 받아, 이용.</li>
+          <li>
+            <p>여기서 중요한 부분은, 하루 공부시간 <strong>랭킹</strong>이기 때문에, 이들을 시간(<code class="language-plaintext highlighter-rouge">Times</code>)에 따라 정렬이 필요 →  <strong>custom Comparator</strong>(<code class="language-plaintext highlighter-rouge">TimeSorter</code>) 생성 후 <code class="language-plaintext highlighter-rouge">sort</code> 적용</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">TimeSorter</span> <span class="kd">implements</span> <span class="nc">Comparator</span> <span class="o">{</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">compare</span><span class="o">(</span><span class="nc">Object</span> <span class="n">o1</span><span class="o">,</span> <span class="nc">Object</span> <span class="n">o2</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">//o1 - o2 = ASC , o2 - o1 = DESC</span>
+        <span class="nc">MemberDto</span> <span class="n">m1</span> <span class="o">=</span> <span class="o">(</span><span class="nc">MemberDto</span><span class="o">)</span> <span class="n">o1</span><span class="o">;</span>
+        <span class="nc">MemberDto</span> <span class="n">m2</span> <span class="o">=</span> <span class="o">(</span><span class="nc">MemberDto</span><span class="o">)</span> <span class="n">o2</span><span class="o">;</span>
+        <span class="kt">int</span> <span class="n">totalTime1</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="kt">int</span> <span class="n">totalTime2</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">m1</span><span class="o">.</span><span class="na">getTime</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="n">totalTime1</span> <span class="o">=</span> <span class="n">m1</span><span class="o">.</span><span class="na">getTime</span><span class="o">().</span><span class="na">getHour</span><span class="o">()</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">m1</span><span class="o">.</span><span class="na">getTime</span><span class="o">().</span><span class="na">getMin</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">m2</span><span class="o">.</span><span class="na">getTime</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="n">totalTime2</span> <span class="o">=</span> <span class="n">m2</span><span class="o">.</span><span class="na">getTime</span><span class="o">().</span><span class="na">getHour</span><span class="o">()</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">m2</span><span class="o">.</span><span class="na">getTime</span><span class="o">().</span><span class="na">getMin</span><span class="o">();</span>
+        <span class="k">return</span> <span class="n">totalTime2</span> <span class="o">-</span> <span class="n">totalTime1</span><span class="o">;</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>Times가 hour와 min으로 구성되어 있기 때문에, 이를 모두 minute으로 변경 후 이들에 대한 정렬을 실행.</li>
+            </ul>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberDto</span><span class="o">&gt;</span> <span class="n">memberRanking</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;(</span><span class="n">memberDtos</span><span class="o">);</span>
+  <span class="n">memberRanking</span><span class="o">.</span><span class="na">sort</span><span class="o">(</span><span class="k">new</span> <span class="nc">TimeSorter</span><span class="o">());</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#62
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>페이징에 따른 Controller가 존재 → 번잡한 구성</li>
+          <li>Static 화면도 HomeController에 존재 → 관심사 분리 필요</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>페이징 Controller 통합 → <code class="language-plaintext highlighter-rouge">@RequestMapping({"/", "/{page}"})</code> , <code class="language-plaintext highlighter-rouge">@PathVariable(name = "page", required = false) Integer page</code> , <code class="language-plaintext highlighter-rouge">if (page == null) page = 1;</code>
+            <ul>
+              <li>url로 변수를 받아오고 해당 변수가 없다면 1로 설정하여 main은 page 1로 갈 수 있도록 설정</li>
+            </ul>
+          </li>
+          <li>StaticController 생성 → (HomeController와 분리)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220618--220630">&lt;220618&gt; ~ &lt;220630&gt;</h3>
+<ul>
+  <li><strong>Spring MVC 집중 공부! (강의 및 개인 학습으로 인해 강의에서 진행한 개발 의외의 개발은 진행하지 않음)</strong></li>
+  <li>추후 해당 공부한 내용을 바탕으로 <strong>Semogong Project를 Upgrade 시킬 예정</strong></li>
+</ul>
+
+<h3 id="220615">&lt;220615&gt;</h3>
 
 <blockquote>
   <p><code class="language-plaintext highlighter-rouge">Front</code> : 사용자 편의를 위한 애니메이션 추가</p>
@@ -357,7 +565,7 @@
 
 <h3 id="2205010--220530">&lt;2205010&gt; ~ &lt;220530&gt;</h3>
 <ul>
-  <li><strong>Spring MVC 집중 공부! (강의 및 개인 학습으로 인해 따로 개발은 진행하지 않음)</strong></li>
+  <li><strong>Spring MVC 집중 공부! (강의 및 개인 학습으로 인해 강의에서 진행한 개발 의외의 개발은 진행하지 않음)</strong></li>
   <li>추후 해당 공부한 내용을 바탕으로 <strong>Semogong Project를 Upgrade 시킬 예정</strong></li>
 </ul>
 

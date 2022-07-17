@@ -23,6 +23,167 @@ image:
 
 <hr>
 
+### <220714>
+
+> #48 `Enhancement` : 새로운 대시보드 (Static 서비스 개선)
+>
+
+- #48
+    - 기존의 문제점
+
+      파이썬으로 통계내어 해당 그래프를 사진으로 저장하고, 그 사진을 불러오는 형식으로 진행, 하지만 이는 통합되지 않는 문제가 있으며, 사진으로 보임으로써 부가적인 서비스를 제공하지 못함
+
+    - 해결
+        - javascript를 이용하여 그래프를 보여주는 형식으로 진행.
+        - Model로 데이터를 담아와 thymeleaf in javascript 기술을 사용하여 데이터 이용
+        - 멤버당 최근 1주일 post를 가져와 해당 post의 모든 시간을 더한 시간을 적용
+            - 중요한 점은 새벽4시를 하루의 끝과 시작으로 정했기때문에, 요청 시간이 0~4시 사이일 경우와 나머지 시간일 경우에 대한 처리 구분 필요
+        - 그래프로는 누적 시간을 보여줌
+        - 추가로 해당 일주일간의 누적 시간에 대한 랭킹 표시
+        - StaticController 주요 코드
+
+            ```java
+            @GetMapping("/data")
+            public String data(Model model, Authentication authentication) throws IOException {
+                if (authentication == null) {
+                    return "redirect:/";
+                }
+                List<MemberDto> members = memberService.findAll().stream().map(MemberDto::new).collect(Collectors.toList());
+                Map<MemberDto, Map<Integer, Times>> memberStatic = new HashMap<>();
+                List<Integer> days = getDays(LocalDateTime.now());
+                for (MemberDto member : members) {
+                    Map<Integer, Times> staticsData = getStaticsData(member);
+                    memberStatic.put(member, staticsData);
+                    member.setTime(staticsData.get(days.get(days.size()-1)));
+                    if (member.getTime().getHour() != 0) {
+                        Random rand = new Random();
+                        int r = rand.nextInt(255);
+                        int g = rand.nextInt(255);
+                        int b = rand.nextInt(255);
+                        member.setColor("rgba(" + String.valueOf(r) + "," + String.valueOf(g) + "," + String.valueOf(b) + "," + "1)");
+                    } else {
+                        member.setColor("rgba(236,236,236,1)");
+                    }
+                }
+            
+                members.sort(new TimeSorter()); 
+            	  ...
+            }
+            ```
+
+            - getDays : 그래프에 표시할 날짜모음(일)
+            - getStaticData : 그래프에 표시할 데이터 생성
+                - 0~4시의 요청 : 8일전 ~ 이틀전 까지의 데이터를 가져옴
+                - 이외의 요청 : 7일전 ~ 하루 전 까지의 데이터를 가져옴
+                - 추가로 날짜마다의 데이터를 넣어주기 위해 HashMap 사용 (key: 날짜, value: 시간) 이때, 해당 날짜의 post가 없는 경우 이전 데이터를 넘겨받아 사용하도록 설정 (누적 데이터이므로)
+            - 또한 각 멤버별로 랜덤한 색깔을 설정하여 각 멤버별의 그래프가 구분 가능하도록 설정
+            - 그 후 랭킹표시를 위해 TimeSorter로 정렬
+        - Javascript 주요 코드
+
+            ```jsx
+            var datasets = [];
+            [# th:each="user, stat : ${staticsDataMap}"]
+            var user[[${stat.count}]] = [[${user.value}]];
+            if (user[[${stat.count}]][staticDays[6]].hour !== 0) {
+                datasets.push({
+                    label: [[${user.key.name}]],
+                    lineTension: 0.3,
+                    backgroundColor: "rgba(33,37,41,0)",
+                    borderColor: [[${user.key.color}]],
+                    pointRadius: 3,
+                    pointBackgroundColor: [[${user.key.color}]],
+                    pointBorderColor: [[${user.key.color}]],
+                    pointHoverRadius: 3,
+                    pointHoverBackgroundColor: [[${user.key.color}]],
+                    pointHoverBorderColor: [[${user.key.color}]],
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2,
+                    data: [user[[${stat.count}]][staticDays[0]].hour + Math.round(user[[${stat.count}]][staticDays[0]].min/60),
+                        user[[${stat.count}]][staticDays[1]].hour+ Math.round(user[[${stat.count}]][staticDays[1]].min/60),
+                        user[[${stat.count}]][staticDays[2]].hour+ Math.round(user[[${stat.count}]][staticDays[2]].min/60),
+                        user[[${stat.count}]][staticDays[3]].hour+ Math.round(user[[${stat.count}]][staticDays[3]].min/60),
+                        user[[${stat.count}]][staticDays[4]].hour+ Math.round(user[[${stat.count}]][staticDays[4]].min/60),
+                        user[[${stat.count}]][staticDays[5]].hour+ Math.round(user[[${stat.count}]][staticDays[5]].min/60),
+                        user[[${stat.count}]][staticDays[6]].hour+ Math.round(user[[${stat.count}]][staticDays[6]].min/60)],
+                });
+            }
+            
+            [/]
+            
+            var myLineChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [staticDays[0]+'일',staticDays[1]+'일',staticDays[2]+'일',staticDays[3]+'일',staticDays[4]+'일',staticDays[5]+'일',staticDays[6]+'일'],
+                        datasets: datasets,
+                    },
+            ...})
+            ```
+
+            - thymeleaf in javascript 기술의 for each 를 사용하여 user를 만들고 해당 user의 데이터를 dataset에 넣어 그래프에 대입.
+
+
+### <220713>
+
+> #42 `Enhancement`: 하루 공부시간 랭킹 <br>
+#62 `Back` : MVC 최적화
+>
+
+- #42
+    - 기존의 문제점
+
+      우측 아티클에서 누적 공부시간 그래프를 사진으로 대략적으로 보여주는 부분이 있었으나 사실상 의미가 없는 기능이였으며, 대시보드를 사진이 아닌 js로 구성하기로 결정. 추가로 공부 동기부여를 높여주기 위한 기능이 필요했음
+
+    - 해결 (**하루 공부시간 랭킹**으로 **대체**)
+        - 기존의 제공하는 기능 중 하루 공부시간 계산 로직(`getTotalStudyTimes`())을 이용
+        - 이 로직을 모든 Member들에게 적용하여 각 Member의 하루 공부시간을 계산하도록 진행
+
+            ```java
+            for (MemberDto m : memberDtos) {
+                Optional<Post> eachOptionalPost = postService.getRecentPost(m.getId());
+                PostViewDto memberRecentPostDto = eachOptionalPost.map(PostViewDto::new).orElse(null);
+                if (memberRecentPostDto != null) {
+                    m.setTime(getTotalStudyTimes(memberRecentPostDto));
+                } else {
+                    m.setTime(null);
+                }
+            }
+            ```
+
+        - 이 시간을 각각의 MemberDto의 time property에 저장 후 이를 View Template에서 받아, 이용.
+        - 여기서 중요한 부분은, 하루 공부시간 **랭킹**이기 때문에, 이들을 시간(`Times`)에 따라 정렬이 필요 →  **custom Comparator**(`TimeSorter`) 생성 후 `sort` 적용
+
+            ```java
+            public class TimeSorter implements Comparator {
+              @Override
+              public int compare(Object o1, Object o2) {
+                  //o1 - o2 = ASC , o2 - o1 = DESC
+                  MemberDto m1 = (MemberDto) o1;
+                  MemberDto m2 = (MemberDto) o2;
+                  int totalTime1 = 0;
+                  int totalTime2 = 0;
+                  if (m1.getTime() != null) totalTime1 = m1.getTime().getHour() * 60 + m1.getTime().getMin();
+                  if (m2.getTime() != null) totalTime2 = m2.getTime().getHour() * 60 + m2.getTime().getMin();
+                  return totalTime2 - totalTime1;
+              }
+            }
+            ```
+
+            - Times가 hour와 min으로 구성되어 있기 때문에, 이를 모두 minute으로 변경 후 이들에 대한 정렬을 실행.
+
+            ```java
+            List<MemberDto> memberRanking = new ArrayList<>(memberDtos);
+            memberRanking.sort(new TimeSorter());
+            ```
+
+- #62
+    - 기존의 문제점
+        - 페이징에 따른 Controller가 존재 → 번잡한 구성
+        - Static 화면도 HomeController에 존재 → 관심사 분리 필요
+    - 해결
+        - 페이징 Controller 통합 → `@RequestMapping({"/", "/{page}"})` , `@PathVariable(name = "page", required = false) Integer page` , `if (page == null) page = 1;`
+            - url로 변수를 받아오고 해당 변수가 없다면 1로 설정하여 main은 page 1로 갈 수 있도록 설정
+        - StaticController 생성 → (HomeController와 분리)
+
 ### <220618> ~ <220630>
 - **Spring MVC 집중 공부! (강의 및 개인 학습으로 인해 강의에서 진행한 개발 의외의 개발은 진행하지 않음)**
 - 추후 해당 공부한 내용을 바탕으로 **Semogong Project를 Upgrade 시킬 예정**
