@@ -23,6 +23,140 @@ image:
 
 <hr>
 
+### <220719>
+
+> #65 `Bug` : static 그래프 오류
+>
+
+- #65
+    - 발생된 Bug
+        - 0~4시의 요청에 대해선 이틀전까지의 데이터만 보여져야되는데, 0시20분 쯤에 요청했을 때, 하루전의 데이터가 보여짐
+        - 누적 데이터인데, 중간에 누적되지 않는 현상 발생
+    - 해결
+        - 0~4시의 요청에 대한 분기를 if (0<nowTime…) 이런 식으로 범위 설정을 잘못함. → `if (now.getHour() < 4)` 로 범위 수정
+        - 누적 데이터 문제
+            - 날짜에 대한 HashMap의 key를 가져올때, 따로 정렬하지 않아 발생 → keySet을 통해 가져오면 당연히 정렬없이 가져와짐.
+            - 이는 keySet을 가져오고, 날짜를 오름차순으로 정렬하여 해결
+
+                ```java
+                List<Integer> list = new ArrayList<>(dayTimes.keySet());
+                list.sort(Comparator.naturalOrder());
+                ```
+
+                - keySet을 list로 변경하고 sort를 통해 정렬
+            - 이렇게 되면 날짜가 뒤죽박죽되지 않고 오름차순으로 진행되기 때문에, 코드 상 누적이 제대로 진행됨
+
+### <220718>
+
+> #63 `Bug` : 첫 로그인 시 발생하는 오류 (session Id 이동으로 인한 문제) <br>
+> #64 `Enhancement` : static 서비스 기능 추가 (일주일 간의 공부 횟수, 공부왕, 출석왕 기능 추가)
+>
+
+- #63
+    - 기존의 문제점
+        - 첫 로그인 시 (세션 저장 시) 오류 발생
+        - 세션 저장 후 해당 값을 url로 보내지면서 발생하는 오류로 판단 (쿠키가 적용되지 않는 상황을 대비한 servlet 자동 기능 → traking-modes)
+    - 해결
+        - servlet 설정을 통해 해당 자동 기능을 막음 (cookie로 설정함으로써 쿠키로만 session을 인식하겠다는 설정)
+
+        ```yaml
+        server.servlet.session.tracking-modes: 'cookie'
+        ```
+
+- #64
+    - 일주일 간의 공부 횟수
+        - 일자로 count 하며 공부시간이 0인 post들에 대해서 counting
+        - 그 후 7-cnt 로 공부 횟수 기록
+        - 마지막으로 해당 값을 memberDto에 저장, veiw Template으로 넘겨줌
+    - 공부왕, 출석왕 기능
+        - 공부왕 : 일주일간의 누적 공부시간이 가장 많은 사람
+        - 출석왕 : 일주일간의 공부 횟수가 가장 많은 사람
+
+### <220717>
+
+> #62 `Back` : 배운내용적용 → 최적화
+> <ol>
+> <li> Spring Security 없이 로그인 개발 (authentication → session) </li>
+> <li> session timeout 연장 </li>
+> </ol>
+> #61 `Front` : 로그인 페이지 생성
+>
+
+- #62-1
+    - 기존의 문제점
+        - 제대로 배우지 않은 Spring Security를 사용함으로써 원하는 기능을 제때 제대로 이용하지 못함 (session 설정 등) → 추후 학습 후 적용 예정
+    - 해결
+        - **session**을 이용한 login(인증)으로 구현 → 로그인 검증 및 로그인을 모두 직접 구현
+        - Spring Security와 관련된 모든 코드를 제거하고 session과 관련된 코드로 대체 _(비밀번호 인코딩 제외)_
+        - 로그인
+
+            ```java
+            @PostMapping("/members/login")
+                public String login(@Validated @ModelAttribute("loginForm") LoginForm loginForm, BindingResult bindingResult,
+                                    @RequestParam(defaultValue = "/") String redirectURL,
+                                    HttpServletRequest request) {...}
+            ```
+
+            - 로그인 시 중간에 로그인 요구에 의해서 로그인을 하는 상황을 대비해서 redirectURL을 받아옴 (없을 경우 그냥 home으로)
+            - session을 받아오기 위해 HttpServletRequest 이용
+            - 로그인 검증
+
+                ```java
+                // form 형식에 맞지 않은 제출
+                if (bindingResult.hasErrors()) {
+                    return "login";
+                }
+                
+                // 로그인 검증         // Global Error -> Object 단 오류! (직접 처리해야 되는 부분)
+                Optional<Member> loginMember = memberService.findByLoginId(loginForm.getLoginId());
+                BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+                if (loginMember.isEmpty() || !passwordEncoder.matches(loginForm.getPassword(), loginMember.get().getPassword())) {
+                    bindingResult.reject("loginFail", "아이디 또는 비밀번호가 맞지 않습니다.");
+                    return "login";
+                }
+                ```
+
+                - Form 형식에 맞지 않은 제출에서의 검증은 Bean Validation 사용 (`FieldError`)
+                - 아이디 및 비밀번호 오류 시 `ObjectError` 발생 후 veiw Template으로 넘겨 줌
+                - `Optional`을 통해 오류 검증
+            - 로그인 성공
+
+                ```java
+                // 로그인 성공
+                HttpSession session = request.getSession();
+                // 세션에 로그인 회원 정보 보관
+                session.setAttribute("loginMember", loginMember.get().getId());
+                return "redirect:"+ redirectURL;
+                ```
+
+                - 로그인 성공 시 session에 회원정보(member id) 저장
+                - **member 객체 자체를 저장하지 않고, member id만을 저장하여, 추후 이를 통해 repo에서 member객체를 가져오는 방식으로 진행**
+- #62-2
+    - 기존의 문제점
+        - session timeout을 설정하지 않아, 너무 자주 로그아웃되어 사용 시 불편함
+    - 해결
+        - spring securrity를 사용하지 않고 직접 session을 이용하고, session timeout을 applications.yml 에 설정하여 관리 (timeout을 10시간으로 설정)
+
+            ```yaml
+            server.servlet.session.timeout: 36000
+            ```
+
+- #61
+    - 기존의 문제점
+        - 로그인 페이지 없이 home에서 로그인을 진행하다 보니 쓸데없이 데이터가 주고받아지는 경우가 있음. (home에서 로그인 이전에도 다량의 데이터를 보여주고, 로그인 후에도 다량의 데이터를 보여주고 있음. → 비 효율적)
+        - redirect를 통한 로그인 후 페이지 이동이 불가능.
+    - 해결
+        - 일반적인 웹사이트처럼 로그인 페이지를 따로 만들어 제공
+        - 로그인 페이지를 새로 생성
+
+
+<aside>
+⚠️ <strong>[오늘의 발견] session에 정보 저장 시 주의점!</strong> <br>
+session에 member 객체를 그대로 저장하면 그 저장된 member를 사용하기 때문에 변경된 값이 적용되지 않음 ( → 저장 시점의 member를 사용하는 것) <br>
+그렇기에 <b>session에는 id만을 저장하고 사용 시 그 id를 통해 repo에 저장되어 있는 member(변경 사항 반영된 member)를 가져와야</b>됨
+
+</aside>
+
 ### <220714>
 
 > #48 `Enhancement` : 새로운 대시보드 (Static 서비스 개선)

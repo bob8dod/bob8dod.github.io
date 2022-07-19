@@ -1,4 +1,4 @@
-I"��<aside>
+I"��<aside>
 🏋️ <strong>Today I Developed</strong> <br />
 매일 매일 제가 개발한 흔적을 남기는 공간입니다!
 </aside>
@@ -20,6 +20,217 @@
 </ul>
 
 <hr />
+
+<h3 id="220719">&lt;220719&gt;</h3>
+
+<blockquote>
+  <p>#65 <code class="language-plaintext highlighter-rouge">Bug</code> : static 그래프 오류</p>
+
+</blockquote>
+
+<ul>
+  <li>#65
+    <ul>
+      <li>발생된 Bug
+        <ul>
+          <li>0~4시의 요청에 대해선 이틀전까지의 데이터만 보여져야되는데, 0시20분 쯤에 요청했을 때, 하루전의 데이터가 보여짐</li>
+          <li>누적 데이터인데, 중간에 누적되지 않는 현상 발생</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>0~4시의 요청에 대한 분기를 if (0&lt;nowTime…) 이런 식으로 범위 설정을 잘못함. → <code class="language-plaintext highlighter-rouge">if (now.getHour() &lt; 4)</code> 로 범위 수정</li>
+          <li>누적 데이터 문제
+            <ul>
+              <li>날짜에 대한 HashMap의 key를 가져올때, 따로 정렬하지 않아 발생 → keySet을 통해 가져오면 당연히 정렬없이 가져와짐.</li>
+              <li>
+                <p>이는 keySet을 가져오고, 날짜를 오름차순으로 정렬하여 해결</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">array</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;(</span><span class="n">dayTimes</span><span class="o">.</span><span class="na">keySet</span><span class="o">());</span>
+  <span class="n">array</span><span class="o">.</span><span class="na">sort</span><span class="o">(</span><span class="nc">Comparator</span><span class="o">.</span><span class="na">naturalOrder</span><span class="o">());</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li>keySet을</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220718">&lt;220718&gt;</h3>
+
+<blockquote>
+  <p>#63 <code class="language-plaintext highlighter-rouge">Bug</code> : 첫 로그인 시 발생하는 오류 (session Id 이동으로 인한 문제) <br />
+#64 <code class="language-plaintext highlighter-rouge">Enhancement</code> : static 서비스 기능 추가 (일주일 간의 공부 횟수, 공부왕, 출석왕 기능 추가)</p>
+
+</blockquote>
+
+<ul>
+  <li>#63
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>첫 로그인 시 (세션 저장 시) 오류 발생</li>
+          <li>세션 저장 후 해당 값을 url로 보내지면서 발생하는 오류로 판단 (쿠키가 적용되지 않는 상황을 대비한 servlet 자동 기능 → traking-modes)</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>servlet 설정을 통해 해당 자동 기능을 막음 (cookie로 설정함으로써 쿠키로만 session을 인식하겠다는 설정)</li>
+        </ul>
+
+        <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="na">server.servlet.session.tracking-modes</span><span class="pi">:</span> <span class="s1">'</span><span class="s">cookie'</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li>#64
+    <ul>
+      <li>일주일 간의 공부 횟수
+        <ul>
+          <li>일자로 count 하며 공부시간이 0인 post들에 대해서 counting</li>
+          <li>그 후 7-cnt 로 공부 횟수 기록</li>
+          <li>마지막으로 해당 값을 memberDto에 저장, veiw Template으로 넘겨줌</li>
+        </ul>
+      </li>
+      <li>공부왕, 출석왕 기능
+        <ul>
+          <li>공부왕 : 일주일간의 누적 공부시간이 가장 많은 사람</li>
+          <li>출석왕 : 일주일간의 공부 횟수가 가장 많은 사람</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220717">&lt;220717&gt;</h3>
+
+<blockquote>
+  <p>#62 <code class="language-plaintext highlighter-rouge">Back</code> : 배운내용적용 → 최적화</p>
+  <ol>
+<li> Spring Security 없이 로그인 개발 (authentication → session) </li>
+<li> session timeout 연장 </li>
+</ol>
+  <p>#61 <code class="language-plaintext highlighter-rouge">Front</code> : 로그인 페이지 생성</p>
+
+</blockquote>
+
+<ul>
+  <li>#62-1
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>제대로 배우지 않은 Spring Security를 사용함으로써 원하는 기능을 제때 제대로 이용하지 못함 (session 설정 등) → 추후 학습 후 적용 예정</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li><strong>session</strong>을 이용한 login(인증)으로 구현 → 로그인 검증 및 로그인을 모두 직접 구현</li>
+          <li>Spring Security와 관련된 모든 코드를 제거하고 session과 관련된 코드로 대체 <em>(비밀번호 인코딩 제외)</em></li>
+          <li>
+            <p>로그인</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PostMapping</span><span class="o">(</span><span class="s">"/members/login"</span><span class="o">)</span>
+      <span class="kd">public</span> <span class="nc">String</span> <span class="nf">login</span><span class="o">(</span><span class="nd">@Validated</span> <span class="nd">@ModelAttribute</span><span class="o">(</span><span class="s">"loginForm"</span><span class="o">)</span> <span class="nc">LoginForm</span> <span class="n">loginForm</span><span class="o">,</span> <span class="nc">BindingResult</span> <span class="n">bindingResult</span><span class="o">,</span>
+                          <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">defaultValue</span> <span class="o">=</span> <span class="s">"/"</span><span class="o">)</span> <span class="nc">String</span> <span class="n">redirectURL</span><span class="o">,</span>
+                          <span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">)</span> <span class="o">{...}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>로그인 시 중간에 로그인 요구에 의해서 로그인을 하는 상황을 대비해서 redirectURL을 받아옴 (없을 경우 그냥 home으로)</li>
+              <li>session을 받아오기 위해 HttpServletRequest 이용</li>
+              <li>
+                <p>로그인 검증</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">// form 형식에 맞지 않은 제출</span>
+  <span class="k">if</span> <span class="o">(</span><span class="n">bindingResult</span><span class="o">.</span><span class="na">hasErrors</span><span class="o">())</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="s">"login"</span><span class="o">;</span>
+  <span class="o">}</span>
+                
+  <span class="c1">// 로그인 검증         // Global Error -&gt; Object 단 오류! (직접 처리해야 되는 부분)</span>
+  <span class="nc">Optional</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">loginMember</span> <span class="o">=</span> <span class="n">memberService</span><span class="o">.</span><span class="na">findByLoginId</span><span class="o">(</span><span class="n">loginForm</span><span class="o">.</span><span class="na">getLoginId</span><span class="o">());</span>
+  <span class="nc">BCryptPasswordEncoder</span> <span class="n">passwordEncoder</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BCryptPasswordEncoder</span><span class="o">();</span>
+  <span class="k">if</span> <span class="o">(</span><span class="n">loginMember</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">()</span> <span class="o">||</span> <span class="o">!</span><span class="n">passwordEncoder</span><span class="o">.</span><span class="na">matches</span><span class="o">(</span><span class="n">loginForm</span><span class="o">.</span><span class="na">getPassword</span><span class="o">(),</span> <span class="n">loginMember</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">getPassword</span><span class="o">()))</span> <span class="o">{</span>
+      <span class="n">bindingResult</span><span class="o">.</span><span class="na">reject</span><span class="o">(</span><span class="s">"loginFail"</span><span class="o">,</span> <span class="s">"아이디 또는 비밀번호가 맞지 않습니다."</span><span class="o">);</span>
+      <span class="k">return</span> <span class="s">"login"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li>Form 형식에 맞지 않은 제출에서의 검증은 Bean Validation 사용 (<code class="language-plaintext highlighter-rouge">FieldError</code>)</li>
+                  <li>아이디 및 비밀번호 오류 시 <code class="language-plaintext highlighter-rouge">ObjectError</code> 발생 후 veiw Template으로 넘겨 줌</li>
+                  <li><code class="language-plaintext highlighter-rouge">Optional</code>을 통해 오류 검증</li>
+                </ul>
+              </li>
+              <li>
+                <p>로그인 성공</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">// 로그인 성공</span>
+  <span class="nc">HttpSession</span> <span class="n">session</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getSession</span><span class="o">();</span>
+  <span class="c1">// 세션에 로그인 회원 정보 보관</span>
+  <span class="n">session</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="s">"loginMember"</span><span class="o">,</span> <span class="n">loginMember</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">getId</span><span class="o">());</span>
+  <span class="k">return</span> <span class="s">"redirect:"</span><span class="o">+</span> <span class="n">redirectURL</span><span class="o">;</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li>로그인 성공 시 session에 회원정보(member id) 저장</li>
+                  <li><strong>member 객체 자체를 저장하지 않고, member id만을 저장하여, 추후 이를 통해 repo에서 member객체를 가져오는 방식으로 진행</strong></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#62-2
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>session timeout을 설정하지 않아, 너무 자주 로그아웃되어 사용 시 불편함</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>
+            <p>spring securrity를 사용하지 않고 직접 session을 이용하고, session timeout을 applications.yml 에 설정하여 관리 (timeout을 10시간으로 설정)</p>
+
+            <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="na">server.servlet.session.timeout</span><span class="pi">:</span> <span class="m">36000</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#61
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>로그인 페이지 없이 home에서 로그인을 진행하다 보니 쓸데없이 데이터가 주고받아지는 경우가 있음. (home에서 로그인 이전에도 다량의 데이터를 보여주고, 로그인 후에도 다량의 데이터를 보여주고 있음. → 비 효율적)</li>
+          <li>redirect를 통한 로그인 후 페이지 이동이 불가능.</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>일반적인 웹사이트처럼 로그인 페이지를 따로 만들어 제공</li>
+          <li>로그인 페이지를 새로 생성</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>[오늘의 발견] session에 정보 저장 시 주의점!</strong> <br />
+session에 member 객체를 그대로 저장하면 그 저장된 member를 사용하기 때문에 변경된 값이 적용되지 않음 ( → 저장 시점의 member를 사용하는 것) <br />
+그렇기에 <b>session에는 id만을 저장하고 사용 시 그 id를 통해 repo에 저장되어 있는 member(변경 사항 반영된 member)를 가져와야</b>됨
+
+</aside>
 
 <h3 id="220714">&lt;220714&gt;</h3>
 
