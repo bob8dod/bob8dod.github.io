@@ -1,4 +1,4 @@
-I"��<aside>
+I"7�<aside>
 🏋️ <strong>Today I Developed</strong> <br />
 매일 매일 제가 개발한 흔적을 남기는 공간입니다!
 </aside>
@@ -20,6 +20,677 @@
 </ul>
 
 <hr />
+
+<h3 id="220728">&lt;220728&gt;</h3>
+
+<blockquote>
+  <p>#69 <code class="language-plaintext highlighter-rouge">Bug</code> : post_times DB 저장 오류 <br />
+#71 <code class="language-plaintext highlighter-rouge">Bug</code> : 인증에 따른 html 오류 변경 <br />
+#59 <code class="language-plaintext highlighter-rouge">Enhancement</code> : 하루 목표 시간에 따른 알림</p>
+
+</blockquote>
+
+<ul>
+  <li>#69
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>4월,5월에 대한 post들의 저장된 post_times가 중복되어 저장되어 있어서 시간계산등에서 기존의 2배의 시간으로 기록됨 → ex) [12:00~15:00] [16:00~17:30] [12:00~15:00][16:00~17:30] 과 같이 중복되어 저장.</li>
+          <li>이렇게 되면 전체 공부 시간, 월별 공부시간 등 통계자료에  영향을 미침</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>DBM 에서 수정하려 했지만, post_times가 Embedded Type으로 저장되어 있기 떄문에, unique key가 없어서 삭제 시 모든 post_times가 삭제되는 현상 발생</li>
+          <li>
+            <p>Spring 내에서 코드로 직접 수정하는 방식 선택</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Component</span>
+  <span class="nd">@RequiredArgsConstructor</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">DbChange</span> <span class="o">{</span>
+            
+      <span class="kd">private</span> <span class="kd">final</span> <span class="nc">InitService</span> <span class="n">initService</span><span class="o">;</span>
+            
+      <span class="nd">@PostConstruct</span>
+      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">dbInit</span><span class="o">()</span> <span class="o">{</span>
+          <span class="n">initService</span><span class="o">.</span><span class="na">dbInit1</span><span class="o">();</span>
+      <span class="o">}</span>
+            
+      <span class="nd">@Component</span>
+      <span class="nd">@Transactional</span>
+      <span class="nd">@RequiredArgsConstructor</span>
+      <span class="kd">static</span> <span class="kd">class</span> <span class="nc">InitService</span> <span class="o">{</span>
+            
+          <span class="kd">private</span> <span class="kd">final</span> <span class="nc">MemberService</span> <span class="n">memberService</span><span class="o">;</span>
+          <span class="kd">private</span> <span class="kd">final</span> <span class="nc">PostNativeRepository</span> <span class="n">postNativeRepository</span><span class="o">;</span>
+          <span class="kd">private</span> <span class="kd">final</span> <span class="nc">PostService</span> <span class="n">postService</span><span class="o">;</span>
+            
+          <span class="kd">public</span> <span class="kt">void</span> <span class="nf">dbInit1</span><span class="o">()</span> <span class="o">{</span>
+              <span class="c1">// 4/1 ~ 5/31</span>
+              <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">all</span> <span class="o">=</span> <span class="n">memberService</span><span class="o">.</span><span class="na">findAll</span><span class="o">();</span>
+              <span class="k">for</span> <span class="o">(</span><span class="nc">Member</span> <span class="n">member</span> <span class="o">:</span> <span class="n">all</span><span class="o">)</span> <span class="o">{</span>
+                  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Post</span><span class="o">&gt;</span> <span class="n">posts</span> <span class="o">=</span> <span class="n">postNativeRepository</span><span class="o">.</span><span class="na">getBetween</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="s">"2022-04-17"</span><span class="o">,</span> <span class="s">"2022-06-01"</span><span class="o">);</span>
+                  <span class="k">for</span> <span class="o">(</span><span class="nc">Post</span> <span class="n">post</span> <span class="o">:</span> <span class="n">posts</span><span class="o">)</span> <span class="o">{</span>
+                      <span class="nc">Post</span> <span class="n">one</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">findOne</span><span class="o">(</span><span class="n">post</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+                      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">times</span> <span class="o">=</span> <span class="n">one</span><span class="o">.</span><span class="na">getTimes</span><span class="o">();</span>
+                      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">newTimes</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+                      <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">time</span> <span class="o">:</span> <span class="n">times</span><span class="o">)</span> <span class="o">{</span>
+                          <span class="k">if</span> <span class="o">(</span><span class="n">newTimes</span><span class="o">.</span><span class="na">contains</span><span class="o">(</span><span class="n">time</span><span class="o">))</span> <span class="o">{</span>
+                              <span class="k">break</span><span class="o">;</span>
+                          <span class="o">}</span>
+                          <span class="n">newTimes</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">time</span><span class="o">);</span>
+                      <span class="o">}</span>
+                      <span class="n">one</span><span class="o">.</span><span class="na">setTimes</span><span class="o">(</span><span class="n">newTimes</span><span class="o">);</span>
+                  <span class="o">}</span>
+              <span class="o">}</span>
+            
+          <span class="o">}</span>
+      <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>해당 로직이 이루어진 Class를 Component로 등록하고 PostCostruct를 통해 프로그램이 시작되자 마자 해당 로직이 진행될 수 있도록 설정</li>
+              <li>로직
+                <ul>
+                  <li>모든 멤버들에 대해 진행</li>
+                  <li>해당 멤버의 4/1 ~ 5/31 의 post를 가져온 후</li>
+                  <li>해당 post들 중 중복되는 값이 나올때까지 반복을 진행하며 시간을 renew 한 후 저장</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#71
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>my post와 동일한 html을 사용하다보니 member detail 화면 에서도 인증없이 post edit, 댓글 인증 등에서 사용이 가능하게됨</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>각 상황에 따라 인증을 진행한 후 post, comment 수정 및 삭제 등을 적용</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#59
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>목표시간을 넘기지 못했을 때 동기부여를 주기 위함</li>
+        </ul>
+      </li>
+      <li>
+        <p>구현</p>
+
+        <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">function</span> <span class="nx">check_end</span><span class="p">(</span><span class="nx">memberId</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+          <span class="na">url</span><span class="p">:</span> <span class="dl">'</span><span class="s1">/members/times/</span><span class="dl">'</span> <span class="o">+</span> <span class="nx">memberId</span><span class="p">,</span>
+          <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">GET</span><span class="dl">"</span>
+      <span class="p">})</span>
+          <span class="p">.</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
+              <span class="kd">var</span> <span class="nx">currTotal</span> <span class="o">=</span> <span class="nx">response</span><span class="p">.</span><span class="nx">hour</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="nx">response</span><span class="p">.</span><span class="nx">min</span><span class="p">;</span>
+              <span class="k">if</span> <span class="p">(</span><span class="nx">currTotal</span> <span class="o">&lt;</span> <span class="nx">memberTodayGoalTotal</span><span class="p">)</span> <span class="p">{</span>
+                  <span class="kd">var</span> <span class="nx">timeDiff</span> <span class="o">=</span> <span class="nx">memberTodayGoalTotal</span> <span class="o">-</span> <span class="nx">currTotal</span><span class="p">;</span>
+                  <span class="kd">var</span> <span class="nx">check</span> <span class="o">=</span> <span class="nx">confirm</span><span class="p">(</span><span class="dl">"</span><span class="s2">아직 목표 시간에 도달하지 못하셨습니다. (</span><span class="dl">"</span> <span class="o">+</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">floor</span><span class="p">(</span><span class="nx">timeDiff</span> <span class="o">/</span> <span class="mi">60</span><span class="p">)</span> <span class="o">+</span> <span class="dl">"</span><span class="s2">시간 </span><span class="dl">"</span> <span class="o">+</span> <span class="nx">timeDiff</span> <span class="o">%</span> <span class="mi">60</span> <span class="o">+</span> <span class="dl">"</span><span class="s2">분 부족)</span><span class="se">\n</span><span class="s2">사용을 종료하시겠습니까?</span><span class="dl">"</span><span class="p">);</span>
+                  <span class="k">if</span> <span class="p">(</span><span class="nx">check</span><span class="p">)</span> <span class="p">{</span>
+                      <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">/end</span><span class="dl">"</span><span class="p">;</span>
+                  <span class="p">}</span>
+              <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                  <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">/end</span><span class="dl">"</span><span class="p">;</span>
+              <span class="p">}</span>
+          <span class="p">})</span>
+  <span class="p">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>javascript, ajax 통신을 이용하여 목표시간보다 작은 경우 alert을 통해 알림을 줌</li>
+          <li>그게 아니라면 그냥 바로 “/end” 를 통해 공부 종료 진행</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>[오늘의 발견] @PostConstruct 주의점</strong> <br />
+@PostConstruct 의 method에서 다른 method로 진행하는 것이 아닌 직접 로직을 작성하여 진행하면 안됨 → 다른 객체의 method를 실행하는 방식으로 진행해야지 PostConstruct가 정상적으로 진행됨
+
+</aside>
+
+<h3 id="220727">&lt;220727&gt;</h3>
+
+<blockquote>
+  <p>#58 <code class="language-plaintext highlighter-rouge">Enhancement</code>: 상단바 메뉴(all-members) 및  멤버 상세화면 설정</p>
+
+</blockquote>
+
+<ul>
+  <li>#58
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>멤버들에 대한 프로필을 볼 수 있는 화면이 없었음</li>
+          <li>all-members 기능을 통해 기본적인 간단한 모든 멤버의 프로필 확인할 수 있도록 설정</li>
+          <li>또 해당 프로필을 클릭하면 회원의 상세 정보 (통계자료, 목표, 공부 캘린더) 등을 확인할 수 있게 설정</li>
+        </ul>
+      </li>
+      <li>구현
+        <ul>
+          <li>기본 “/” 에 mapping 된 controller에서 모든 멤버를 이미 넘기고 있었기에 해당 정보를 이용해서 view Template에서 일부만을 수정하여 진행</li>
+          <li>
+            <p>focus request parameter가 all-members면 post를 rendering하지않고 해당 위치에 모든 멤버의 프로필을 보일 수 있도록 설정. (all-members가 아니면 post(all, today, my-posts) rendering)</p>
+
+            <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="p">=</span><span class="s">"col-lg-5 mb-4"</span> <span class="na">th</span><span class="err">:</span><span class="na">if</span><span class="p">=</span><span class="s">"${nav2 == 'all-members'}"</span> <span class="na">th</span><span class="err">:</span><span class="na">each</span><span class="p">=</span><span class="s">"mem:${allMembers}"</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="err">!--</span> <span class="na">All</span> <span class="na">Members</span> <span class="err">--</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="p">=</span><span class="s">"profile"</span> <span class="na">class</span><span class="p">=</span><span class="s">"card shadow"</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="p">=</span><span class="s">"card-header d-sm-flex justify-content-between"</span><span class="p">&gt;</span>
+              <span class="p">&lt;</span><span class="nt">div</span> <span class="na">style</span><span class="p">=</span><span class="s">"margin-top: 5px"</span> <span class="na">class</span><span class="p">=</span><span class="s">"input-group"</span><span class="p">&gt;</span>
+                  <span class="p">&lt;</span><span class="nt">h6</span> <span class="na">class</span><span class="p">=</span><span class="s">"m-0 font-weight-bold"</span><span class="p">&gt;</span> <span class="p">&lt;</span><span class="nt">span</span>
+                          <span class="na">class</span><span class="p">=</span><span class="s">"ml-1 h5 fw-bold"</span><span class="p">&gt;</span>프로필<span class="p">&lt;/</span><span class="nt">span</span><span class="p">&gt;&lt;/</span><span class="nt">h6</span><span class="p">&gt;</span>
+  								...
+          <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220726">&lt;220726&gt;</h3>
+
+<blockquote>
+  <p><strong>Article Nav바(All Members) 서비스</strong> <br />
+#58 <code class="language-plaintext highlighter-rouge">Enhancement</code>: 상단바 메뉴 (my-posts 인터셉터, all-members) <br />
+#70 <code class="language-plaintext highlighter-rouge">Bug</code> : Interceptor 오류 <br /></p>
+
+</blockquote>
+
+<ul>
+  <li>#58
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>상단바 메뉴에서 my-posts 같은 경우, 로그인된 회원의 전체 posts를 가져오는 것이기 때문에, my-posts에 들어갈 경우 인터셉터를 적용해줘야 됨</li>
+          <li>또한, redirect를 통해 로그인 후 다시 my-posts로 넘어갈 수 있도록 redirectURL 포함 필수</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>WebConfig 에 인터셉터 적용 URL에 “/”를 추가하고 focus @RequestParam 이 “my-posts”인 경우만 로그인인증이 진행될 수 있도록 설정 → <code class="language-plaintext highlighter-rouge">.addPathPatterns("/members/my-page", "/members/edit/**", "/");</code></li>
+          <li>
+            <p>Spring Interceptor 적용 시 포함 Url과 제외 Url은 설정이 가능하지만, request param과 같은 parameter 필터링은 지원하지 않아 Interceptor 내의 request를 통해 parameter를 직접 받아와 로직을 구성해줘야됨</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">String</span> <span class="n">requestURI</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getRequestURI</span><span class="o">();</span>
+  <span class="nc">String</span> <span class="n">focus</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"focus"</span><span class="o">);</span>
+            
+  <span class="k">if</span> <span class="o">(</span><span class="n">requestURI</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"/"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">focus</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="o">!</span><span class="n">focus</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"my-posts"</span><span class="o">))</span> <span class="o">{</span> <span class="c1">// basic home -&gt; / or parameters -&gt; focus=all, today, all-members</span>
+          <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+      <span class="o">}</span>
+  <span class="o">}</span> <span class="c1">// my-posts 만 로그인 인증 진행</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>“/” url에 대해서 focus paramter가 my-posts가 아닌 모든 url은 true를 통해 로그인인증을 진행하지 않음</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#70
+    <ul>
+      <li>Bug : 추가적인 로직에 따라 My Page가 들어가지지 않아짐</li>
+      <li>해당 로직을 짜는 과정에서 기존의 My Page에 대한 Interceptor 오류가 발생 → url과 request param 판정 과정에서의 실수 해결 (조건문 실수)</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220725">&lt;220725&gt;</h3>
+
+<blockquote>
+  <p><strong>Article Nav바(All, Today, My Posts) 서비스</strong>
+#58 <code class="language-plaintext highlighter-rouge">Enhancement</code>: 상단바 메뉴 개발
+#44 <code class="language-plaintext highlighter-rouge">Enhancement</code>: Today 활성화</p>
+
+</blockquote>
+
+<ul>
+  <li>#58, #44
+    <ul>
+      <li>개발 필요성
+        <ul>
+          <li>현재 모든 Post들에서 확인할 수 있지만, 오늘 작성된 Post, 나의 Post등 조건에 따른 post를 보여줄 필요가 있음</li>
+          <li>즉, 필터링된 Post들에 대해서 보여줄 필요 존재</li>
+        </ul>
+      </li>
+      <li>구현
+        <ul>
+          <li>이들을 Nav바를 통해 All(모든 Posts), Today(오늘의 Posts), My Posts(나의 모든 Posts) 를 선택하여 Post들을 볼 수 있음</li>
+          <li>
+            <p>이들을 @RequestParam으로 구분 → <code class="language-plaintext highlighter-rouge">@RequestParam(name = "focus", defaultValue = "all") String focus</code> (all, today, my-posts)</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">if</span> <span class="o">(</span><span class="n">focus</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"today"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="nc">DateTimeFormatter</span> <span class="n">dateTimeFormatter</span> <span class="o">=</span> <span class="nc">DateTimeFormatter</span><span class="o">.</span><span class="na">ofPattern</span><span class="o">(</span><span class="s">"yyyy-MM-dd"</span><span class="o">);</span>
+      <span class="nc">LocalDateTime</span> <span class="n">now</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">();</span>
+      <span class="nc">String</span> <span class="n">date</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="n">dateTimeFormatter</span><span class="o">);</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">now</span><span class="o">.</span><span class="na">getHour</span><span class="o">()</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="o">)</span> <span class="o">{</span>
+          <span class="n">date</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="na">minusDays</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">format</span><span class="o">(</span><span class="n">dateTimeFormatter</span><span class="o">);</span>
+      <span class="o">}</span>
+      <span class="n">posts</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">getTodayPosts</span><span class="o">(</span><span class="n">date</span><span class="o">,</span> <span class="o">(</span><span class="n">page</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">*</span> <span class="mi">12</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">focus</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"my-posts"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="n">posts</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">getMemberPosts</span><span class="o">(</span><span class="n">loginMemberId</span><span class="o">,</span> <span class="o">(</span><span class="n">page</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">*</span> <span class="mi">12</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">posts</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">findByPage</span><span class="o">((</span><span class="n">page</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">*</span> <span class="mi">12</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>여기서 all,today,my-posts 에 따라 repository에서 가져오는 post가 다름</li>
+              <li>또한 여기서 paging기능도 있기 때문에, 각 조건에 따른 post에 더불어 paging기능까지 적용하여 repository에서 가져올 수 있도록 설정</li>
+              <li>가져온 후 똑같이 home.html에 rendering → 모두 posts로 viewTemplate에 보내짐</li>
+              <li>추가로 today는 요청 시간에 따라 설정되는 날짜를 지정
+                <ul>
+                  <li>0~4 요청 : 전날 글</li>
+                  <li>4~24 요청 : 당일 글</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220723">&lt;220723&gt;</h3>
+
+<blockquote>
+  <p>#55 <code class="language-plaintext highlighter-rouge">Back</code> : 목표 설정
+#52 <code class="language-plaintext highlighter-rouge">Back</code> : older page</p>
+
+</blockquote>
+
+<ul>
+  <li>#55
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>목표를 설정해서 해당 목표에 다른 달성률 등을 알려주며 공부 동기 부여를 줄 필요가 있음</li>
+        </ul>
+      </li>
+      <li>구현
+        <ul>
+          <li>목표는 Member에 따라 설정되어야 하므로 Member 객체에 목표값을 정할 수 있는 Goal 객체 field 추가 (Embedded Type)
+            <ul>
+              <li>
+                <p>Goal</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Embeddable</span>
+  <span class="nd">@Getter</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">Goal</span> <span class="o">{</span>
+                
+      <span class="kd">private</span> <span class="kt">int</span> <span class="n">dayGoalTimes</span><span class="o">;</span>
+      <span class="kd">private</span> <span class="kt">int</span> <span class="n">weekGoalTimes</span><span class="o">;</span>
+                
+      <span class="kd">public</span> <span class="nf">Goal</span><span class="o">(</span><span class="kt">int</span> <span class="n">day</span><span class="o">,</span> <span class="kt">int</span> <span class="n">week</span><span class="o">)</span> <span class="o">{</span>
+          <span class="k">this</span><span class="o">.</span><span class="na">dayGoalTimes</span> <span class="o">=</span> <span class="n">day</span><span class="o">;</span>
+          <span class="k">this</span><span class="o">.</span><span class="na">weekGoalTimes</span> <span class="o">=</span> <span class="n">week</span><span class="o">;</span>
+      <span class="o">}</span>
+                
+      <span class="kd">public</span> <span class="nf">Goal</span><span class="o">()</span> <span class="o">{</span> <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li><code class="language-plaintext highlighter-rouge">int dayGoalTimes</code> : 하루 목표 공부시간</li>
+                  <li><code class="language-plaintext highlighter-rouge">int weekGoalTimes</code> : 일주일 목표 공부시간</li>
+                  <li>Entity에 Embedded Type으로 저장되기 때문에 Custom 객체인 Times로 저장이 안됨 → 해당 값을 분(int)으로 바꿔서 저장</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>새로운 Member가 생성될 때, 기본적인 목표시간이 정해진 상태로 저장될 수 있도록 설정 → <code class="language-plaintext highlighter-rouge">member.setGoal(new Goal(300, 1500));</code></li>
+          <li>추가로 목표 설정은 My Page에서 가능하도록 설정
+            <ul>
+              <li>
+                <p>goal 설정 시 편의상 시간과 분을 따로 입력 받아야 하기 때문에 기존의 Goal 객체가 아닌 입력 Form을 위한 GoalDto 생성</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Data</span>
+  <span class="kd">static</span> <span class="kd">class</span> <span class="nc">GoalDto</span> <span class="o">{</span>
+                
+      <span class="kd">private</span> <span class="kt">int</span> <span class="n">dayHour</span><span class="o">;</span>
+      <span class="kd">private</span> <span class="kt">int</span> <span class="n">dayMin</span><span class="o">;</span>
+      <span class="kd">private</span> <span class="kt">int</span> <span class="n">weekHour</span><span class="o">;</span>
+      <span class="kd">private</span> <span class="kt">int</span> <span class="n">weekMin</span><span class="o">;</span>
+                
+      <span class="kd">public</span> <span class="nf">GoalDto</span><span class="o">(</span><span class="nc">Goal</span> <span class="n">goal</span><span class="o">)</span> <span class="o">{</span>
+          <span class="kt">int</span> <span class="n">day</span> <span class="o">=</span> <span class="n">goal</span><span class="o">.</span><span class="na">getDayGoalTimes</span><span class="o">();</span>
+          <span class="k">this</span><span class="o">.</span><span class="na">dayHour</span> <span class="o">=</span> <span class="nc">Math</span><span class="o">.</span><span class="na">floorDiv</span><span class="o">(</span><span class="n">day</span><span class="o">,</span> <span class="mi">60</span><span class="o">);</span>
+          <span class="k">this</span><span class="o">.</span><span class="na">dayMin</span> <span class="o">=</span> <span class="n">day</span> <span class="o">%</span> <span class="mi">60</span><span class="o">;</span>
+          <span class="kt">int</span> <span class="n">week</span> <span class="o">=</span> <span class="n">goal</span><span class="o">.</span><span class="na">getWeekGoalTimes</span><span class="o">();</span>
+          <span class="k">this</span><span class="o">.</span><span class="na">weekHour</span> <span class="o">=</span> <span class="nc">Math</span><span class="o">.</span><span class="na">floorDiv</span><span class="o">(</span><span class="n">week</span><span class="o">,</span> <span class="mi">60</span><span class="o">);</span>
+          <span class="k">this</span><span class="o">.</span><span class="na">weekMin</span> <span class="o">=</span> <span class="n">week</span> <span class="o">%</span> <span class="mi">60</span><span class="o">;</span>
+      <span class="o">}</span>
+                
+      <span class="kd">public</span> <span class="nf">GoalDto</span><span class="o">()</span> <span class="o">{</span>
+      <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li>Times로 하면 두단계로 modelAttribute가 동작해야됨 → 이 부분이 되지 않아 모두 한단계의 modelAttribute가 동작하도록 모든 field를 int로 설정</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>또한, 이 목표에 따른 달성률(하루 목표 달성률, 일주일 목표 달성률) 보여줌</li>
+          <li>이에 따른 랭크도 추가 (브론즈, 실버, 골드, …)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#52
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>paging에 따른 post들을 보여주긴했지만, 5페이지 넘겨서의 post들을 보여주지 못했음</li>
+          <li>older 버튼이 있었지만 활성화되고 있지 않았음</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>
+            <p>older 버튼을 누르면 이전 page로 계속해서 넘어갈 수 있도록 설정</p>
+
+            <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;ul</span> <span class="na">class=</span><span class="s">"pagination justify-content-center my-4"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;li</span> <span class="na">class=</span><span class="s">"page-item"</span><span class="nt">&gt;</span>
+                  <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"page-link"</span> <span class="na">href=</span><span class="s">"/"</span> <span class="na">tabindex=</span><span class="s">"-1"</span> <span class="na">aria-disabled=</span><span class="s">"true"</span><span class="nt">&gt;</span>Newer<span class="nt">&lt;/a&gt;</span>
+      <span class="nt">&lt;/li&gt;</span>
+      <span class="nt">&lt;li</span> <span class="na">th:each=</span><span class="s">"i: ${#numbers.sequence(1, 5)}"</span> <span class="na">aria-current=</span><span class="s">"page"</span>
+          <span class="na">th:class=</span><span class="s">"${page == i}? 'page-item active' : 'page-item'"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"page-link"</span> <span class="na">th:href=</span><span class="s">"@{/ (page=${i}, focus=${nav2})}"</span> <span class="na">th:text=</span><span class="s">"${i}"</span><span class="nt">&gt;</span>#<span class="nt">&lt;/a&gt;</span>
+      <span class="nt">&lt;/li&gt;</span>
+      <span class="nt">&lt;li</span> <span class="na">class=</span><span class="s">"page-item"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"page-link"</span> <span class="na">th:href=</span><span class="s">"@{/ (page=${page+1}, focus=${nav2})}"</span><span class="nt">&gt;</span>Older<span class="nt">&lt;/a&gt;</span>
+      <span class="nt">&lt;/li&gt;</span>
+  <span class="nt">&lt;/ul&gt;</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>현재 focus 되어 있는 page에 1을 더하여 다음 page로 넘어가도록 설정</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>[오늘의 발견1] JPA Entity로써 DB에 저장 시 주의점</strong> <br />
+DB에 Entity를 저장할 때는 DB에서 지정된 객체의 field로만 저장 가능! 즉, 비지니스 로직 상 개발한 custom class로 DB로 저장이 안됨. 따라서 DB에 저장하기 위해선 기본 객체들을 이용한 field로 변경 후 저장 필요 (ex_ hour, min을 저장하는 Times Custom Class 자체로 DB에 저장이 안되고, 이를 int(Integer)로 변경하여 저장해야 됨)
+
+</aside>
+
+<aside>
+⚠️ <strong>[오늘의 발견2] Form 입력 및 @ModelAttribute 주의점</strong> <br />
+만약 Goal 이라는 객체의 field에 Times라는 또다른 객체가 있고 Times의 hour가 min field를 변경하고 싶을때 ModelAttribute를 사용하면 먹히지 않음. 즉, ModelAttribute는 두단계에 거쳐서 set을 하지는 못함 → http message를 보면 dayTimes.hour=3 이런식으로 set이 진행됨. 이 부분이 제대로 동작되지 못함. <br />
+결론 : ModelAttribute를 사용하려면 한단계의 field만 적용되도록 객체를 설정해야 됨. (두단계의 객체 설정X)
+</aside>
+
+<h3 id="220722">&lt;220722&gt;</h3>
+
+<blockquote>
+  <p><strong>My Page (내 프로필) 서비스</strong>
+#54 <code class="language-plaintext highlighter-rouge">Enhancement</code> : 공부 달력 및 해당 월별 통계</p>
+
+</blockquote>
+
+<ul>
+  <li>#54
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>지금까지는 자신이 썼던 글을 확인할 수 없으며</li>
+          <li>그에 따라 얼마나 공부를 했는지도 알 수 없고, 어떤 공부를 했는지도 알 수 없었음</li>
+          <li>이를 월별로 어떤 공부를 했고 공부를 얼마나 했는지 확인할 수 있는 수단이 필요</li>
+        </ul>
+      </li>
+      <li>구현
+        <ul>
+          <li>월별로 어떤 공부를 했고, 해당 일자의 글을 확인하고 수정할 수 있게끔 공부 달력 및 해당 월별 통계 서비스 제공</li>
+          <li>공부 달력
+            <ul>
+              <li>기본적으로 현재의 달을 기준으로 달력을 보여주고, &lt; &gt; 버튼을 통해 다른 달로 넘어갈 수 있게 설정</li>
+              <li>각 날짜에 해당하는 post가 있는지 확인 후 있으면 해당 post의 제목을 달력에 보여줌</li>
+              <li>또한, 그 제목을 클릭하면 모달형식으로 해당 post가 뜰 수 있도록 설정</li>
+            </ul>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">if</span> <span class="o">(</span><span class="n">month</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">month</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getMonthValue</span><span class="o">();</span>
+  <span class="o">}</span>
+  <span class="n">focusedDate</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">year</span><span class="o">,</span> <span class="n">month</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Post</span><span class="o">&gt;</span> <span class="n">monthPosts</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">getMonthPosts</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="n">month</span><span class="o">);</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">PostViewDto</span><span class="o">&gt;</span> <span class="n">monthPostDtos</span> <span class="o">=</span> <span class="n">monthPosts</span><span class="o">.</span><span class="na">stream</span><span class="o">().</span><span class="na">map</span><span class="o">(</span><span class="nl">PostViewDto:</span><span class="o">:</span><span class="k">new</span><span class="o">).</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">());</span>
+  <span class="kt">int</span><span class="o">[]</span> <span class="n">dayData</span> <span class="o">=</span> <span class="o">{</span><span class="mi">31</span><span class="o">,</span> <span class="mi">28</span><span class="o">,</span> <span class="mi">31</span><span class="o">,</span> <span class="mi">30</span><span class="o">,</span> <span class="mi">31</span><span class="o">,</span> <span class="mi">30</span><span class="o">,</span> <span class="mi">31</span><span class="o">,</span> <span class="mi">31</span><span class="o">,</span> <span class="mi">30</span><span class="o">,</span> <span class="mi">31</span><span class="o">,</span> <span class="mi">30</span><span class="o">,</span> <span class="mi">31</span><span class="o">};</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">weekDay</span> <span class="o">=</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="s">"sunday"</span><span class="o">,</span> <span class="s">"monday"</span><span class="o">,</span> <span class="s">"tuesday"</span><span class="o">,</span> <span class="s">"wednesday"</span><span class="o">,</span> <span class="s">"thursday"</span><span class="o">,</span> <span class="s">"friday"</span><span class="o">,</span> <span class="s">"saturday"</span><span class="o">);</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">calenderDays</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+  <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">,</span> <span class="nc">PostViewDto</span><span class="o">&gt;</span> <span class="n">calenderData</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">dayData</span><span class="o">[</span><span class="n">month</span> <span class="o">-</span> <span class="mi">1</span><span class="o">];</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+      <span class="n">calenderDays</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+      <span class="n">calenderData</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+  <span class="o">}</span>
+  <span class="k">for</span> <span class="o">(</span><span class="nc">PostViewDto</span> <span class="n">monthPostDto</span> <span class="o">:</span> <span class="n">monthPostDtos</span><span class="o">)</span> <span class="o">{</span>
+      <span class="kt">int</span> <span class="n">dayOfMonth</span> <span class="o">=</span> <span class="n">monthPostDto</span><span class="o">.</span><span class="na">getCreateTime</span><span class="o">().</span><span class="na">getDayOfMonth</span><span class="o">();</span>
+      <span class="n">calenderData</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">dayOfMonth</span><span class="o">,</span> <span class="n">monthPostDto</span><span class="o">);</span>
+  <span class="o">}</span>
+  <span class="nc">ForCalender</span> <span class="nc">CalenderInfo</span> <span class="o">=</span> <span class="n">getCalenderInfo</span><span class="o">(</span><span class="n">weekDay</span><span class="o">,</span> <span class="n">focusedDate</span><span class="o">);</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>@RequestParam 으로 month를 받아 오는데, 이때 month가 없다면 현재 월을 focus</li>
+              <li>해당 month의 1일을 시작 날짜로 설정</li>
+              <li>
+                <p>해당 member의 해당 month의 post를 가져옴 (navtive query 사용) → <code class="language-plaintext highlighter-rouge">postService.getMonthPosts(member.getId(), month);</code></p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">"SELECT * "</span> <span class="o">+</span>
+          <span class="s">"FROM post p "</span> <span class="o">+</span>
+          <span class="s">"where p.member_id = :m_id "</span> <span class="o">+</span>
+          <span class="s">"and MONTH(p.create_time) = :request_month ;"</span><span class="o">,</span> <span class="n">nativeQuery</span> <span class="o">=</span> <span class="kc">true</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Post</span><span class="o">&gt;</span> <span class="nf">getMonthPost</span><span class="o">(</span><span class="nd">@Param</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">"m_id"</span><span class="o">)</span> <span class="nc">Long</span> <span class="n">id</span><span class="o">,</span> <span class="nd">@Param</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">"request_month"</span><span class="o">)</span> <span class="kt">int</span> <span class="n">month</span><span class="o">);</span>
+</code></pre></div>                </div>
+              </li>
+              <li>해당 월에 맞는 calender 생성 (List로 달력을 만들고, Map으로 해당 날짜에 맞는 post를 넣어줌)</li>
+              <li>마지막으로 해당 calender의 정보(년도, 월, 시작요일 등)를 담아 View Template에 넘겨줌</li>
+            </ul>
+          </li>
+          <li>공부 통계
+            <ul>
+              <li>현재 focus 되어 있는 달의 모든 post를 가져와서 “출석률, 총 공부시간, 평균 공부시간” 에 대한 통계 자료를 제공</li>
+            </ul>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kt">int</span> <span class="n">monthDate</span> <span class="o">=</span> <span class="n">dayData</span><span class="o">[</span><span class="n">month</span> <span class="o">-</span> <span class="mi">1</span><span class="o">];</span>
+  <span class="kt">int</span> <span class="n">nowMonthPostsLen</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+  <span class="k">if</span> <span class="o">(</span><span class="n">month</span> <span class="o">==</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getMonthValue</span><span class="o">())</span> <span class="o">{</span>
+      <span class="n">monthDate</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getDayOfMonth</span><span class="o">();</span>
+      <span class="n">nowMonthPostsLen</span> <span class="o">=</span> <span class="n">monthPosts</span><span class="o">.</span><span class="na">size</span><span class="o">();</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">nowMonthPostsLen</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">getMonthPosts</span><span class="o">(</span><span class="n">loginMemberId</span><span class="o">,</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getMonthValue</span><span class="o">()).</span><span class="na">size</span><span class="o">();</span>
+  <span class="o">}</span>
+  <span class="nc">AllStatic</span> <span class="n">allStatic</span> <span class="o">=</span> <span class="n">getAllStatus</span><span class="o">(</span><span class="n">oriMember</span><span class="o">,</span> <span class="n">staticsData</span><span class="o">,</span> <span class="n">days</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">days</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">-</span> <span class="mi">1</span><span class="o">),</span> <span class="n">monthPosts</span><span class="o">,</span> <span class="n">monthDate</span><span class="o">,</span> <span class="n">nowMonthPostsLen</span><span class="o">);</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>출석률 : 해당 달의 모든 post의 개수 / 해당 달의 모든 날짜 (해당 달이 현재 달이면 현재까지의 출석률로 계산)</li>
+              <li>총 공부시간 : 해당 달의 모든 post를 가져와서 시간계산</li>
+              <li>평균 공부시간 : 총 공부시간 / 해당 달의 모든 날짜 (해당 달이 현재 달이면 현재까지의 출석률로 계산)</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220721">&lt;220721&gt;</h3>
+
+<blockquote>
+  <p><strong>My Page (내 프로필) 서비스</strong>
+#65 <code class="language-plaintext highlighter-rouge">Enhancement</code>: 주간 공부 그래프 (누적 그래프 X → 일반 그래프 O)</p>
+
+</blockquote>
+
+<ul>
+  <li>#65
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>Ranking 화면을 통해서 일주일간의 공부시간 누적 그래프는 확인할 수 있지만, 일반 그래프, 즉 일주일간의 내가 하루하루 얼마나 공부했는지에 대한 그래프가 없어 불편</li>
+          <li>또한 Profile에서의 그래프는 누적 그래프보다는 일반 그래프가 더욱 필요 (Bar Chart)</li>
+        </ul>
+      </li>
+      <li>구현
+        <ul>
+          <li>
+            <p>먼저 모든 멤버들의 일주일 간의 post를 가져온 후 시간 계산 (<code class="language-plaintext highlighter-rouge">getStaticsData</code>)</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">,</span> <span class="nc">Times</span><span class="o">&gt;</span> <span class="nf">getStaticsData</span><span class="o">(</span><span class="nc">MemberDto</span> <span class="n">member</span><span class="o">)</span> <span class="o">{</span>
+            
+      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Post</span><span class="o">&gt;</span> <span class="n">posts</span><span class="o">;</span>
+      <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">,</span> <span class="nc">Times</span><span class="o">&gt;</span> <span class="n">dayTimes</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+      <span class="nc">DateTimeFormatter</span> <span class="n">dateTimeFormatter</span> <span class="o">=</span> <span class="nc">DateTimeFormatter</span><span class="o">.</span><span class="na">ofPattern</span><span class="o">(</span><span class="s">"yyyy-MM-dd"</span><span class="o">);</span>
+      <span class="c1">// 0-4 사이 요청 (이틀전까지의 데이터)</span>
+      <span class="k">if</span> <span class="o">(</span><span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getHour</span><span class="o">()</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="o">)</span> <span class="o">{</span>
+          <span class="nc">String</span> <span class="n">end</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">minusDays</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">format</span><span class="o">(</span><span class="n">dateTimeFormatter</span><span class="o">);</span>
+          <span class="nc">String</span> <span class="n">start</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">minusDays</span><span class="o">(</span><span class="mi">8</span><span class="o">).</span><span class="na">format</span><span class="o">(</span><span class="n">dateTimeFormatter</span><span class="o">);</span>
+          <span class="n">posts</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">getLast7</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="n">start</span><span class="o">,</span> <span class="n">end</span><span class="o">);</span>
+          <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">8</span><span class="o">;</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span><span class="o">--)</span> <span class="o">{</span>
+              <span class="n">dayTimes</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">minusDays</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="na">getDayOfMonth</span><span class="o">(),</span> <span class="k">new</span> <span class="nc">Times</span><span class="o">(</span><span class="mi">0</span><span class="o">));</span>
+          <span class="o">}</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="o">{...}</span> <span class="c1">// 이외의 요청 (4~24 사이 요청, 하루전까지의 데이터)</span>
+      <span class="o">}</span>
+      <span class="k">for</span> <span class="o">(</span><span class="nc">Post</span> <span class="n">post</span> <span class="o">:</span> <span class="n">posts</span><span class="o">)</span> <span class="o">{</span>
+          <span class="nc">Times</span> <span class="n">time</span> <span class="o">=</span> <span class="n">getTimes</span><span class="o">(</span><span class="n">post</span><span class="o">.</span><span class="na">getTimes</span><span class="o">());</span>
+          <span class="kt">int</span> <span class="n">today</span> <span class="o">=</span> <span class="o">(</span><span class="n">time</span><span class="o">.</span><span class="na">getHour</span><span class="o">()</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">time</span><span class="o">.</span><span class="na">getMin</span><span class="o">());</span>
+  				<span class="o">...</span>
+      <span class="o">}</span>
+      <span class="k">return</span> <span class="n">dayTimes</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>먼저 날짜별의 시간데이터를 저장하기 위해 Map 사용 (날짜와 인덱스가 일치하지 않기 때문에 List 말고 Map 사용)</li>
+              <li>nativequery에서 Between을 사용하여 요청시간에 따른 post list를 가져옴 (0-4 사이 요청 → 이틀전까지의 데이터, 이외의 요청(4~24 사이 요청) →  하루전까지의 데이터) [<code class="language-plaintext highlighter-rouge">getLast7(Long memberId, String start, String end)</code>]</li>
+              <li>마지막으로 Times 객체를 이용하여 시간 계산 후 해당 정보가 들어있는 dayTimes Map 반환</li>
+            </ul>
+          </li>
+          <li>
+            <p>그 후 해당 데이터를 view Template으로 보낸 후 이 값을 Javascript로 받아와 BarChart의 데이터 값에 넣어줌 (staticDays 는 staticData의 key를 정렬한 값. → 정렬된 날짜)</p>
+
+            <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">var</span> <span class="nx">staticDays</span> <span class="o">=</span> <span class="p">[[</span> <span class="nx">$</span><span class="p">{</span><span class="nx">staticDays</span><span class="p">}]];</span>
+  <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="p">[[</span> <span class="nx">$</span><span class="p">{</span><span class="nx">staticData</span><span class="p">}]]</span>
+            
+  <span class="c1">// Bar Chart</span>
+  <span class="kd">var</span> <span class="nx">ctx</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">"</span><span class="s2">myBarChart</span><span class="dl">"</span><span class="p">);</span>
+  <span class="kd">var</span> <span class="nx">myBarChart</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Chart</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="p">{</span> <span class="na">datatsets</span><span class="p">:</span> <span class="p">...})</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220720">&lt;220720&gt;</h3>
+
+<blockquote>
+  <p><strong>My Page (내 프로필) 서비스 추가</strong>
+#13 <code class="language-plaintext highlighter-rouge">Enhancement</code> : 사용자 정보 보기
+#53 <code class="language-plaintext highlighter-rouge">Back</code> : 모든 공부 시간
+#67 <code class="language-plaintext highlighter-rouge">Back</code> : Spring Interceptor 적용</p>
+
+</blockquote>
+
+<ul>
+  <li>#13
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>지금까지는 상대방의 상세 프로필을 확인할 수 없을 뿐더러 자신의 상세 프로필도 확인할 수 없었음</li>
+          <li>링크, 별명 등 자신의 정보, 다른 사용자들의 정보를 보여줄 필요가 있음</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>My Page를 생성해서 사용자의 상세 정보를 볼 수 있는 페이지 추가 (사용자는 Session에 저장된 member → 로그인된 멤버)</li>
+          <li>Session에 저장된 member의 Id를 받아와 해당 member의 정보를 DB에서 가져와 보여줌. (login id, name, nickname, introduce, links)
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">@SessionAttribute(name = SessionConst.LOGIN_MEMBER, required = false) Long loginMemberId</code> → <code class="language-plaintext highlighter-rouge">Member oriMember = memberService.findOne(loginMemberId);</code></li>
+              <li>DTO로 변경 후 보여줄 정보만을 veiw Template에 넘겨줌 → <code class="language-plaintext highlighter-rouge">MemberDto member = new MemberDto(oriMember);</code></li>
+            </ul>
+          </li>
+          <li>link는 클릭 시 해당 link로 이동할 수 있도록 설정</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#53
+    <ul>
+      <li>기능 설명
+        <ul>
+          <li>해당 멤버가 지금까지 얼마나 공부를 해왔는지  알려주는 기능 (시간)</li>
+        </ul>
+      </li>
+      <li>구현
+        <ul>
+          <li>프로필에 추가 해당 기능 추가</li>
+          <li>
+            <p>해당 멤버의 모든 post를 가져온 후 각 post의 times들의 시간 값을 계산, 그 후 member에 저장 → <code class="language-plaintext highlighter-rouge">member.setTotalTime(getAllTimes(oriMember));</code></p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="nc">Times</span> <span class="nf">getAllTimes</span><span class="o">(</span><span class="nc">Member</span> <span class="n">member</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Post</span><span class="o">&gt;</span> <span class="n">posts</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="na">getPosts</span><span class="o">();</span>
+      <span class="kt">int</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+      <span class="k">for</span> <span class="o">(</span><span class="nc">Post</span> <span class="n">post</span> <span class="o">:</span> <span class="n">posts</span><span class="o">)</span> <span class="o">{</span>
+          <span class="k">if</span> <span class="o">(</span><span class="n">post</span><span class="o">.</span><span class="na">getTimes</span><span class="o">().</span><span class="na">size</span><span class="o">()</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="k">continue</span><span class="o">;</span>
+          <span class="nc">Times</span> <span class="n">times</span> <span class="o">=</span> <span class="n">getTimes</span><span class="o">(</span><span class="n">post</span><span class="o">.</span><span class="na">getTimes</span><span class="o">());</span>
+          <span class="n">total</span> <span class="o">+=</span> <span class="n">times</span><span class="o">.</span><span class="na">getHour</span><span class="o">()</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">times</span><span class="o">.</span><span class="na">getMin</span><span class="o">();</span>
+      <span class="o">}</span>
+            
+      <span class="k">return</span> <span class="k">new</span> <span class="nf">Times</span><span class="o">(</span><span class="n">total</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#67
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>My Page 같은 경우, 자신의 정보를 확인하고 수정하는 공간이므로 로그인 인증 및 회원 일치 인증이 필요</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>Login Interceptor에 해당 url 추가</li>
+          <li><code class="language-plaintext highlighter-rouge">.addPathPatterns("/members/my-page", … )</code></li>
+          <li>만약 로그인이 되어있지 않다면 로그인 후 들어올 수 있도록 설정</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
 
 <h3 id="220719">&lt;220719&gt;</h3>
 
@@ -220,6 +891,24 @@
         <ul>
           <li>일반적인 웹사이트처럼 로그인 페이지를 따로 만들어 제공</li>
           <li>로그인 페이지를 새로 생성</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#30
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>세션 만료 시 에러페이지 발생</li>
+          <li>세션 만료에도 서비스를 유동적으로 이용하기 위해 로그인 페이지 후 redirect를 통해 되돌아가는 것이 필요</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>Interceptor에서 로그인 페이지로 넘어가는 request에 redirectURL query parameter를 추가.</li>
+          <li>로그인 후 해당 redirectURL query parameter 를 통해 이전 페이지로 되돌아감.</li>
+          <li><code class="language-plaintext highlighter-rouge">response.sendRedirect( "/members/login?redirectURL=" + request.getRequestURI())</code></li>
+          <li><code class="language-plaintext highlighter-rouge">@RequestParam(name = "redirectURL", defaultValue = "/") String redirectURL</code> → <code class="language-plaintext highlighter-rouge">return "redirect:" + redirectURL</code></li>
         </ul>
       </li>
     </ul>

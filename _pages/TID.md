@@ -23,6 +23,481 @@ image:
 
 <hr>
 
+### <220728>
+
+> #69 `Bug` : post_times DB 저장 오류 <br>
+#71 `Bug` : 인증에 따른 html 오류 변경 <br>
+#59 `Enhancement` : 하루 목표 시간에 따른 알림
+>
+
+- #69
+    - 기존의 문제점
+        - 4월,5월에 대한 post들의 저장된 post_times가 중복되어 저장되어 있어서 시간계산등에서 기존의 2배의 시간으로 기록됨 → ex) [12:00~15:00] [16:00~17:30] [12:00~15:00][16:00~17:30] 과 같이 중복되어 저장.
+        - 이렇게 되면 전체 공부 시간, 월별 공부시간 등 통계자료에  영향을 미침
+    - 해결
+        - DBM 에서 수정하려 했지만, post_times가 Embedded Type으로 저장되어 있기 떄문에, unique key가 없어서 삭제 시 모든 post_times가 삭제되는 현상 발생
+        - Spring 내에서 코드로 직접 수정하는 방식 선택
+
+            ```java
+            @Component
+            @RequiredArgsConstructor
+            public class DbChange {
+            
+                private final InitService initService;
+            
+                @PostConstruct
+                public void dbInit() {
+                    initService.dbInit1();
+                }
+            
+                @Component
+                @Transactional
+                @RequiredArgsConstructor
+                static class InitService {
+            
+                    private final MemberService memberService;
+                    private final PostNativeRepository postNativeRepository;
+                    private final PostService postService;
+            
+                    public void dbInit1() {
+                        // 4/1 ~ 5/31
+                        List<Member> all = memberService.findAll();
+                        for (Member member : all) {
+                            List<Post> posts = postNativeRepository.getBetween(member.getId(), "2022-04-17", "2022-06-01");
+                            for (Post post : posts) {
+                                Post one = postService.findOne(post.getId());
+                                List<String> times = one.getTimes();
+                                List<String> newTimes = new ArrayList<>();
+                                for (String time : times) {
+                                    if (newTimes.contains(time)) {
+                                        break;
+                                    }
+                                    newTimes.add(time);
+                                }
+                                one.setTimes(newTimes);
+                            }
+                        }
+            
+                    }
+                }
+            }
+            ```
+
+            - 해당 로직이 이루어진 Class를 Component로 등록하고 PostCostruct를 통해 프로그램이 시작되자 마자 해당 로직이 진행될 수 있도록 설정
+            - 로직
+                - 모든 멤버들에 대해 진행
+                - 해당 멤버의 4/1 ~ 5/31 의 post를 가져온 후
+                - 해당 post들 중 중복되는 값이 나올때까지 반복을 진행하며 시간을 renew 한 후 저장
+- #71
+    - 기존의 문제점
+        - my post와 동일한 html을 사용하다보니 member detail 화면 에서도 인증없이 post edit, 댓글 인증 등에서 사용이 가능하게됨
+    - 해결
+        - 각 상황에 따라 인증을 진행한 후 post, comment 수정 및 삭제 등을 적용
+- #59
+    - 기능 필요성
+        - 목표시간을 넘기지 못했을 때 동기부여를 주기 위함
+    - 구현
+
+        ```jsx
+        function check_end(memberId) {
+            $.ajax({
+                url: '/members/times/' + memberId,
+                type: "GET"
+            })
+                .done(function (response) {
+                    var currTotal = response.hour * 60 + response.min;
+                    if (currTotal < memberTodayGoalTotal) {
+                        var timeDiff = memberTodayGoalTotal - currTotal;
+                        var check = confirm("아직 목표 시간에 도달하지 못하셨습니다. (" + Math.floor(timeDiff / 60) + "시간 " + timeDiff % 60 + "분 부족)\n사용을 종료하시겠습니까?");
+                        if (check) {
+                            window.location.href = "/end";
+                        }
+                    } else {
+                        window.location.href = "/end";
+                    }
+                })
+        }
+        ```
+
+        - javascript, ajax 통신을 이용하여 목표시간보다 작은 경우 alert을 통해 알림을 줌
+        - 그게 아니라면 그냥 바로 “/end” 를 통해 공부 종료 진행
+
+<aside>
+⚠️ <strong>[오늘의 발견] @PostConstruct 주의점</strong> <br>
+@PostConstruct 의 method에서 다른 method로 진행하는 것이 아닌 직접 로직을 작성하여 진행하면 안됨 → 다른 객체의 method를 실행하는 방식으로 진행해야지 PostConstruct가 정상적으로 진행됨
+
+</aside>
+
+### <220727>
+
+> #58 `Enhancement`: 상단바 메뉴(all-members) 및  멤버 상세화면 설정
+>
+
+- #58
+    - 기능 필요성
+        - 멤버들에 대한 프로필을 볼 수 있는 화면이 없었음
+        - all-members 기능을 통해 기본적인 간단한 모든 멤버의 프로필 확인할 수 있도록 설정
+        - 또 해당 프로필을 클릭하면 회원의 상세 정보 (통계자료, 목표, 공부 캘린더) 등을 확인할 수 있게 설정
+    - 구현
+        - 기본 “/” 에 mapping 된 controller에서 모든 멤버를 이미 넘기고 있었기에 해당 정보를 이용해서 view Template에서 일부만을 수정하여 진행
+        - focus request parameter가 all-members면 post를 rendering하지않고 해당 위치에 모든 멤버의 프로필을 보일 수 있도록 설정. (all-members가 아니면 post(all, today, my-posts) rendering)
+
+            ```jsx
+            <div class="col-lg-5 mb-4" th:if="${nav2 == 'all-members'}" th:each="mem:${allMembers}">
+                <!-- All Members -->
+                <div id="profile" class="card shadow">
+                    <div class="card-header d-sm-flex justify-content-between">
+                        <div style="margin-top: 5px" class="input-group">
+                            <h6 class="m-0 font-weight-bold"> <span
+                                    class="ml-1 h5 fw-bold">프로필</span></h6>
+            								...
+                    </div>
+                </div>
+            </div>
+            ```
+
+
+### <220726>
+
+> **Article Nav바(All Members) 서비스** <br>
+#58 `Enhancement`: 상단바 메뉴 (my-posts 인터셉터, all-members) <br>
+#70 `Bug` : Interceptor 오류 <br>
+>
+
+- #58
+    - 기존의 문제점
+        - 상단바 메뉴에서 my-posts 같은 경우, 로그인된 회원의 전체 posts를 가져오는 것이기 때문에, my-posts에 들어갈 경우 인터셉터를 적용해줘야 됨
+        - 또한, redirect를 통해 로그인 후 다시 my-posts로 넘어갈 수 있도록 redirectURL 포함 필수
+    - 해결
+        - WebConfig 에 인터셉터 적용 URL에 “/”를 추가하고 focus @RequestParam 이 “my-posts”인 경우만 로그인인증이 진행될 수 있도록 설정 → `.addPathPatterns("/members/my-page", "/members/edit/**", "/");`
+        - Spring Interceptor 적용 시 포함 Url과 제외 Url은 설정이 가능하지만, request param과 같은 parameter 필터링은 지원하지 않아 Interceptor 내의 request를 통해 parameter를 직접 받아와 로직을 구성해줘야됨
+
+            ```java
+            String requestURI = request.getRequestURI();
+            String focus = request.getParameter("focus");
+            
+            if (requestURI.equals("/")) {
+                if (focus == null || !focus.equals("my-posts")) { // basic home -> / or parameters -> focus=all, today, all-members
+                    return true;
+                }
+            } // my-posts 만 로그인 인증 진행
+            ```
+
+            - “/” url에 대해서 focus paramter가 my-posts가 아닌 모든 url은 true를 통해 로그인인증을 진행하지 않음
+- #70
+    - Bug : 추가적인 로직에 따라 My Page가 들어가지지 않아짐
+    - 해당 로직을 짜는 과정에서 기존의 My Page에 대한 Interceptor 오류가 발생 → url과 request param 판정 과정에서의 실수 해결 (조건문 실수)
+
+### <220725>
+
+> **Article Nav바(All, Today, My Posts) 서비스** <br>
+#58 `Enhancement`: 상단바 메뉴 개발 <br>
+#44 `Enhancement`: Today 활성화
+>
+
+- #58, #44
+    - 개발 필요성
+        - 현재 모든 Post들에서 확인할 수 있지만, 오늘 작성된 Post, 나의 Post등 조건에 따른 post를 보여줄 필요가 있음
+        - 즉, 필터링된 Post들에 대해서 보여줄 필요 존재
+    - 구현
+        - 이들을 Nav바를 통해 All(모든 Posts), Today(오늘의 Posts), My Posts(나의 모든 Posts) 를 선택하여 Post들을 볼 수 있음
+        - 이들을 @RequestParam으로 구분 → `@RequestParam(name = "focus", defaultValue = "all") String focus` (all, today, my-posts)
+
+            ```java
+            if (focus.equals("today")) {
+                DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                LocalDateTime now = LocalDateTime.now();
+                String date = now.format(dateTimeFormatter);
+                if (now.getHour() < 4) {
+                    date = now.minusDays(1).format(dateTimeFormatter);
+                }
+                posts = postService.getTodayPosts(date, (page - 1) * 12);
+            } else if (focus.equals("my-posts")) {
+                posts = postService.getMemberPosts(loginMemberId, (page - 1) * 12);
+            } else {
+                posts = postService.findByPage((page - 1) * 12);
+            }
+            ```
+
+            - 여기서 all,today,my-posts 에 따라 repository에서 가져오는 post가 다름
+            - 또한 여기서 paging기능도 있기 때문에, 각 조건에 따른 post에 더불어 paging기능까지 적용하여 repository에서 가져올 수 있도록 설정
+            - 가져온 후 똑같이 home.html에 rendering → 모두 posts로 viewTemplate에 보내짐
+            - 추가로 today는 요청 시간에 따라 설정되는 날짜를 지정
+                - 0~4 요청 : 전날 글
+                - 4~24 요청 : 당일 글
+
+### <220723>
+
+> #55 `Back` : 목표 설정 <br>
+#52 `Back` : older page
+>
+
+- #55
+    - 기능 필요성
+        - 목표를 설정해서 해당 목표에 다른 달성률 등을 알려주며 공부 동기 부여를 줄 필요가 있음
+    - 구현
+        - 목표는 Member에 따라 설정되어야 하므로 Member 객체에 목표값을 정할 수 있는 Goal 객체 field 추가 (Embedded Type)
+            - Goal
+
+                ```java
+                @Embeddable
+                @Getter
+                public class Goal {
+                
+                    private int dayGoalTimes;
+                    private int weekGoalTimes;
+                
+                    public Goal(int day, int week) {
+                        this.dayGoalTimes = day;
+                        this.weekGoalTimes = week;
+                    }
+                
+                    public Goal() { }
+                }
+                ```
+
+                - `int dayGoalTimes` : 하루 목표 공부시간
+                - `int weekGoalTimes` : 일주일 목표 공부시간
+                - Entity에 Embedded Type으로 저장되기 때문에 Custom 객체인 Times로 저장이 안됨 → 해당 값을 분(int)으로 바꿔서 저장
+        - 새로운 Member가 생성될 때, 기본적인 목표시간이 정해진 상태로 저장될 수 있도록 설정 → `member.setGoal(new Goal(300, 1500));`
+        - 추가로 목표 설정은 My Page에서 가능하도록 설정
+            - goal 설정 시 편의상 시간과 분을 따로 입력 받아야 하기 때문에 기존의 Goal 객체가 아닌 입력 Form을 위한 GoalDto 생성
+
+                ```java
+                @Data
+                static class GoalDto {
+                
+                    private int dayHour;
+                    private int dayMin;
+                    private int weekHour;
+                    private int weekMin;
+                
+                    public GoalDto(Goal goal) {
+                        int day = goal.getDayGoalTimes();
+                        this.dayHour = Math.floorDiv(day, 60);
+                        this.dayMin = day % 60;
+                        int week = goal.getWeekGoalTimes();
+                        this.weekHour = Math.floorDiv(week, 60);
+                        this.weekMin = week % 60;
+                    }
+                
+                    public GoalDto() {
+                    }
+                }
+                ```
+
+                - Times로 하면 두단계로 modelAttribute가 동작해야됨 → 이 부분이 되지 않아 모두 한단계의 modelAttribute가 동작하도록 모든 field를 int로 설정
+        - 또한, 이 목표에 따른 달성률(하루 목표 달성률, 일주일 목표 달성률) 보여줌
+        - 이에 따른 랭크도 추가 (브론즈, 실버, 골드, …)
+- #52
+    - 기존의 문제점
+        - paging에 따른 post들을 보여주긴했지만, 5페이지 넘겨서의 post들을 보여주지 못했음
+        - older 버튼이 있었지만 활성화되고 있지 않았음
+    - 해결
+        - older 버튼을 누르면 이전 page로 계속해서 넘어갈 수 있도록 설정
+
+            ```html
+            <ul class="pagination justify-content-center my-4">
+                <li class="page-item">
+                            <a class="page-link" href="/" tabindex="-1" aria-disabled="true">Newer</a>
+                </li>
+                <li th:each="i: ${#numbers.sequence(1, 5)}" aria-current="page"
+                    th:class="${page == i}? 'page-item active' : 'page-item'">
+                    <a class="page-link" th:href="@{/ (page=${i}, focus=${nav2})}" th:text="${i}">#</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" th:href="@{/ (page=${page+1}, focus=${nav2})}">Older</a>
+                </li>
+            </ul>
+            ```
+
+            - 현재 focus 되어 있는 page에 1을 더하여 다음 page로 넘어가도록 설정
+
+<aside>
+⚠️ <strong>[오늘의 발견1] JPA Entity로써 DB에 저장 시 주의점</strong> <br>
+DB에 Entity를 저장할 때는 DB에서 지정된 객체의 field로만 저장 가능! 즉, 비지니스 로직 상 개발한 custom class로 DB로 저장이 안됨. 따라서 DB에 저장하기 위해선 기본 객체들을 이용한 field로 변경 후 저장 필요 (ex_ hour, min을 저장하는 Times Custom Class 자체로 DB에 저장이 안되고, 이를 int(Integer)로 변경하여 저장해야 됨)
+
+</aside>
+
+<aside>
+⚠️ <strong>[오늘의 발견2] Form 입력 및 @ModelAttribute 주의점</strong> <br>
+만약 Goal 이라는 객체의 field에 Times라는 또다른 객체가 있고 Times의 hour가 min field를 변경하고 싶을때 ModelAttribute를 사용하면 먹히지 않음. 즉, ModelAttribute는 두단계에 거쳐서 set을 하지는 못함 → http message를 보면 dayTimes.hour=3 이런식으로 set이 진행됨. 이 부분이 제대로 동작되지 못함. <br>
+<b>결론 : ModelAttribute를 사용하려면 한단계의 field만 적용되도록 객체를 설정해야 됨. (두단계의 객체 설정X) </b>
+</aside>
+
+### <220722>
+
+> **My Page (내 프로필) 서비스** <br>
+#54 `Enhancement` : 공부 달력 및 해당 월별 통계
+>
+
+- #54
+    - 기능 필요성
+        - 지금까지는 자신이 썼던 글을 확인할 수 없으며
+        - 그에 따라 얼마나 공부를 했는지도 알 수 없고, 어떤 공부를 했는지도 알 수 없었음
+        - 이를 월별로 어떤 공부를 했고 공부를 얼마나 했는지 확인할 수 있는 수단이 필요
+    - 구현
+        - 월별로 어떤 공부를 했고, 해당 일자의 글을 확인하고 수정할 수 있게끔 공부 달력 및 해당 월별 통계 서비스 제공
+        - 공부 달력
+            - 기본적으로 현재의 달을 기준으로 달력을 보여주고, < > 버튼을 통해 다른 달로 넘어갈 수 있게 설정
+            - 각 날짜에 해당하는 post가 있는지 확인 후 있으면 해당 post의 제목을 달력에 보여줌
+            - 또한, 그 제목을 클릭하면 모달형식으로 해당 post가 뜰 수 있도록 설정
+
+            ```java
+            if (month == null) {
+                month = LocalDateTime.now().getMonthValue();
+            }
+            focusedDate = LocalDateTime.of(year, month, 1, 0, 0);
+            List<Post> monthPosts = postService.getMonthPosts(member.getId(), month);
+            List<PostViewDto> monthPostDtos = monthPosts.stream().map(PostViewDto::new).collect(Collectors.toList());
+            int[] dayData = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+            List<String> weekDay = Arrays.asList("sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday");
+            List<Integer> calenderDays = new ArrayList<>();
+            Map<Integer, PostViewDto> calenderData = new HashMap<>();
+            for (int i = 1; i <= dayData[month - 1]; i++) {
+                calenderDays.add(i);
+                calenderData.put(i, null);
+            }
+            for (PostViewDto monthPostDto : monthPostDtos) {
+                int dayOfMonth = monthPostDto.getCreateTime().getDayOfMonth();
+                calenderData.put(dayOfMonth, monthPostDto);
+            }
+            ForCalender CalenderInfo = getCalenderInfo(weekDay, focusedDate);
+            ```
+
+            - @RequestParam 으로 month를 받아 오는데, 이때 month가 없다면 현재 월을 focus
+            - 해당 month의 1일을 시작 날짜로 설정
+            - 해당 member의 해당 month의 post를 가져옴 (navtive query 사용) → `postService.getMonthPosts(member.getId(), month);`
+
+                ```java
+                @Query(value = "SELECT * " +
+                        "FROM post p " +
+                        "where p.member_id = :m_id " +
+                        "and MONTH(p.create_time) = :request_month ;", nativeQuery = true)
+                List<Post> getMonthPost(@Param(value = "m_id") Long id, @Param(value="request_month") int month);
+                ```
+
+            - 해당 월에 맞는 calender 생성 (List로 달력을 만들고, Map으로 해당 날짜에 맞는 post를 넣어줌)
+            - 마지막으로 해당 calender의 정보(년도, 월, 시작요일 등)를 담아 View Template에 넘겨줌
+        - 공부 통계
+            - 현재 focus 되어 있는 달의 모든 post를 가져와서 “출석률, 총 공부시간, 평균 공부시간” 에 대한 통계 자료를 제공
+
+            ```java
+            int monthDate = dayData[month - 1];
+            int nowMonthPostsLen = 0;
+            if (month == LocalDateTime.now().getMonthValue()) {
+                monthDate = LocalDateTime.now().getDayOfMonth();
+                nowMonthPostsLen = monthPosts.size();
+            } else {
+                nowMonthPostsLen = postService.getMonthPosts(loginMemberId, LocalDateTime.now().getMonthValue()).size();
+            }
+            AllStatic allStatic = getAllStatus(oriMember, staticsData, days.get(days.size() - 1), monthPosts, monthDate, nowMonthPostsLen);
+            ```
+
+            - 출석률 : 해당 달의 모든 post의 개수 / 해당 달의 모든 날짜 (해당 달이 현재 달이면 현재까지의 출석률로 계산)
+            - 총 공부시간 : 해당 달의 모든 post를 가져와서 시간계산
+            - 평균 공부시간 : 총 공부시간 / 해당 달의 모든 날짜 (해당 달이 현재 달이면 현재까지의 출석률로 계산)
+
+### <220721>
+
+> **My Page (내 프로필) 서비스** <br>
+> #65 `Enhancement`: 주간 공부 그래프 (누적 그래프 X → 일반 그래프 O)
+>
+
+- #65
+    - 기능 필요성
+        - Ranking 화면을 통해서 일주일간의 공부시간 누적 그래프는 확인할 수 있지만, 일반 그래프, 즉 일주일간의 내가 하루하루 얼마나 공부했는지에 대한 그래프가 없어 불편
+        - 또한 Profile에서의 그래프는 누적 그래프보다는 일반 그래프가 더욱 필요 (Bar Chart)
+    - 구현
+        - 먼저 모든 멤버들의 일주일 간의 post를 가져온 후 시간 계산 (`getStaticsData`)
+
+            ```java
+            private Map<Integer, Times> getStaticsData(MemberDto member) {
+            
+                List<Post> posts;
+                Map<Integer, Times> dayTimes = new HashMap<>();
+                DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                // 0-4 사이 요청 (이틀전까지의 데이터)
+                if (LocalDateTime.now().getHour() < 4) {
+                    String end = LocalDateTime.now().minusDays(1).format(dateTimeFormatter);
+                    String start = LocalDateTime.now().minusDays(8).format(dateTimeFormatter);
+                    posts = postService.getLast7(member.getId(), start, end);
+                    for (int i = 8; i > 1; i--) {
+                        dayTimes.put(LocalDateTime.now().minusDays(i).getDayOfMonth(), new Times(0));
+                    }
+                } else {...} // 이외의 요청 (4~24 사이 요청, 하루전까지의 데이터)
+                }
+                for (Post post : posts) {
+                    Times time = getTimes(post.getTimes());
+                    int today = (time.getHour() * 60 + time.getMin());
+            				...
+                }
+                return dayTimes;
+            }
+            ```
+
+            - 먼저 날짜별의 시간데이터를 저장하기 위해 Map 사용 (날짜와 인덱스가 일치하지 않기 때문에 List 말고 Map 사용)
+            - nativequery에서 Between을 사용하여 요청시간에 따른 post list를 가져옴 (0-4 사이 요청 → 이틀전까지의 데이터, 이외의 요청(4~24 사이 요청) →  하루전까지의 데이터) [`getLast7(Long memberId, String start, String end)`]
+            - 마지막으로 Times 객체를 이용하여 시간 계산 후 해당 정보가 들어있는 dayTimes Map 반환
+        - 그 후 해당 데이터를 view Template으로 보낸 후 이 값을 Javascript로 받아와 BarChart의 데이터 값에 넣어줌 (staticDays 는 staticData의 key를 정렬한 값. → 정렬된 날짜)
+
+            ```jsx
+            var staticDays = [[ ${staticDays}]];
+            var data = [[ ${staticData}]]
+            
+            // Bar Chart
+            var ctx = document.getElementById("myBarChart");
+            var myBarChart = new Chart(ctx, { datatsets: ...})
+            ```
+
+
+### <220720>
+
+> **My Page (내 프로필) 서비스 추가** <br>
+#13 `Enhancement` : 사용자 정보 보기 <br>
+#53 `Back` : 모든 공부 시간 <br>
+#67 `Back` : Spring Interceptor 적용
+>
+
+- #13
+    - 기능 필요성
+        - 지금까지는 상대방의 상세 프로필을 확인할 수 없을 뿐더러 자신의 상세 프로필도 확인할 수 없었음
+        - 링크, 별명 등 자신의 정보, 다른 사용자들의 정보를 보여줄 필요가 있음
+    - 해결
+        - My Page를 생성해서 사용자의 상세 정보를 볼 수 있는 페이지 추가 (사용자는 Session에 저장된 member → 로그인된 멤버)
+        - Session에 저장된 member의 Id를 받아와 해당 member의 정보를 DB에서 가져와 보여줌. (login id, name, nickname, introduce, links)
+            - `@SessionAttribute(name = SessionConst.LOGIN_MEMBER, required = false) Long loginMemberId` → `Member oriMember = memberService.findOne(loginMemberId);`
+            - DTO로 변경 후 보여줄 정보만을 veiw Template에 넘겨줌 → `MemberDto member = new MemberDto(oriMember);`
+        - link는 클릭 시 해당 link로 이동할 수 있도록 설정
+- #53
+    - 기능 설명
+        - 해당 멤버가 지금까지 얼마나 공부를 해왔는지  알려주는 기능 (시간)
+    - 구현
+        - 프로필에 추가 해당 기능 추가
+        - 해당 멤버의 모든 post를 가져온 후 각 post의 times들의 시간 값을 계산, 그 후 member에 저장 → `member.setTotalTime(getAllTimes(oriMember));`
+
+            ```java
+            private Times getAllTimes(Member member) {
+                List<Post> posts = member.getPosts();
+                int total = 0;
+                for (Post post : posts) {
+                    if (post.getTimes().size() % 2 != 0) continue;
+                    Times times = getTimes(post.getTimes());
+                    total += times.getHour() * 60 + times.getMin();
+                }
+            
+                return new Times(total);
+            }
+            ```
+
+- #67
+    - 기능 필요성
+        - My Page 같은 경우, 자신의 정보를 확인하고 수정하는 공간이므로 로그인 인증 및 회원 일치 인증이 필요
+    - 해결
+        - Login Interceptor에 해당 url 추가
+        - `.addPathPatterns("/members/my-page", … )`
+        - 만약 로그인이 되어있지 않다면 로그인 후 들어올 수 있도록 설정
+
 ### <220719>
 
 > #65 `Bug` : static 그래프 오류
@@ -148,7 +623,15 @@ image:
     - 해결
         - 일반적인 웹사이트처럼 로그인 페이지를 따로 만들어 제공
         - 로그인 페이지를 새로 생성
-
+- #30
+    - 기존의 문제점
+        - 세션 만료 시 에러페이지 발생
+        - 세션 만료에도 서비스를 유동적으로 이용하기 위해 로그인 페이지 후 redirect를 통해 되돌아가는 것이 필요
+    - 해결
+        - Interceptor에서 로그인 페이지로 넘어가는 request에 redirectURL query parameter를 추가.
+        - 로그인 후 해당 redirectURL query parameter 를 통해 이전 페이지로 되돌아감. 
+        - `response.sendRedirect( "/members/login?redirectURL=" + request.getRequestURI())`
+        - `@RequestParam(name = "redirectURL", defaultValue = "/") String redirectURL` → `return "redirect:" + redirectURL`
 
 <aside>
 ⚠️ <strong>[오늘의 발견] session에 정보 저장 시 주의점!</strong> <br>
