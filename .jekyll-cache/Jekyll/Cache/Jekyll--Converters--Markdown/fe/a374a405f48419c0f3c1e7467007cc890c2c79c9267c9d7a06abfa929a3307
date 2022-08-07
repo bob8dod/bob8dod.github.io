@@ -1,4 +1,4 @@
-I"v�<aside>
+I"<�<aside>
 🏋️ <strong>Today I Developed</strong> <br />
 매일 매일 제가 개발한 흔적을 남기는 공간입니다!
 </aside>
@@ -21,6 +21,530 @@
 
 <hr />
 
+<h3 id="220806">&lt;220806&gt;</h3>
+
+<blockquote>
+  <p>#82 <code class="language-plaintext highlighter-rouge">Enhancement</code> : 시간양식 check</p>
+
+</blockquote>
+
+<ul>
+  <li>#82
+    <ul>
+      <li>기능의 필요성
+        <ul>
+          <li>현재 시간을 제출할 때, 시간의 개수, 빈 시간인지 아닌지 등의 Validation만 거치고 있음</li>
+          <li>하지만, 시간 계산을 위한 시간양식에서 벗어난 입력값에 대해선 처리가 되지 않고 있음</li>
+          <li>시간 계산을 위해선 올바른 시간양식으로 입력할 수 있도록 유도 필요</li>
+        </ul>
+      </li>
+      <li>구현
+        <ol>
+          <li>형식 체크
+            <ul>
+              <li>지정 형식 : (시간형식: ex_ ‘<code class="language-plaintext highlighter-rouge">17:20</code>’) <code class="language-plaintext highlighter-rouge">var reg = /^\d{1,2}:\d{1,2}$/;</code></li>
+              <li>정규표현식을 이용하여 형식 확인, 형식에서 벗어날 경우 alert 및 class 변경</li>
+            </ul>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">if</span> <span class="o">(!</span><span class="n">reg</span><span class="o">.</span><span class="na">test</span><span class="o">(</span><span class="n">times</span><span class="o">[</span><span class="n">idx</span><span class="o">].</span><span class="na">value</span><span class="o">))</span> <span class="o">{</span>
+     <span class="n">alert</span><span class="o">(</span><span class="err">'</span><span class="n">잘못된</span> <span class="n">형식의</span> <span class="n">시간이</span> <span class="n">입력되었습니다</span><span class="o">.</span><span class="err">\</span><span class="n">n올바른</span> <span class="nl">형식:</span> <span class="s">"시간:분"</span> <span class="n">ex</span><span class="o">)</span> <span class="mi">17</span><span class="o">:</span><span class="mi">20</span><span class="err">'</span><span class="o">);</span>
+     <span class="kt">var</span> <span class="n">temp_times_id</span> <span class="o">=</span> <span class="s">"times"</span> <span class="o">+</span> <span class="n">idx</span><span class="o">;</span>
+     <span class="kt">var</span> <span class="n">timeHtml</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="na">getElementById</span><span class="o">(</span><span class="n">temp_times_id</span><span class="o">);</span>
+     <span class="n">timeHtml</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="err">'</span><span class="kd">class</span><span class="err">',</span> <span class="err">'</span><span class="nc">form</span><span class="o">-</span><span class="n">control</span> <span class="n">is</span><span class="o">-</span><span class="n">invalid</span><span class="err">'</span><span class="o">);</span>
+     <span class="n">timeHtml</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="err">'</span><span class="n">style</span><span class="err">'</span><span class="o">,</span> <span class="err">'</span><span class="n">background</span><span class="o">-</span><span class="nl">image:</span> <span class="n">none</span><span class="o">;</span> <span class="nl">padding:</span> <span class="mi">6</span><span class="n">px</span><span class="o">;</span><span class="err">'</span><span class="o">);</span>
+     <span class="n">document</span><span class="o">.</span><span class="na">getElementById</span><span class="o">(</span><span class="s">"postEdit_container"</span><span class="o">).</span><span class="na">scrollIntoView</span><span class="o">();</span>
+     <span class="k">return</span><span class="o">;</span>
+ <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>시간 확인 - 1
+            <ul>
+              <li>입력된 시간 값이 현재 시간보다 큰지 확인</li>
+              <li>크면 오류, alert을 통해 수정할 수 있도록 설정</li>
+            </ul>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kt">var</span> <span class="n">curr</span> <span class="o">=</span> <span class="n">times</span><span class="o">[</span><span class="n">idx</span><span class="o">].</span><span class="na">value</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="sc">':'</span><span class="o">)</span>
+ <span class="kt">var</span> <span class="n">currTime</span> <span class="o">=</span> <span class="n">parseInt</span><span class="o">(</span><span class="n">curr</span><span class="o">[</span><span class="mi">0</span><span class="o">])*</span><span class="mi">60</span> <span class="o">+</span> <span class="n">parseInt</span><span class="o">(</span><span class="n">curr</span><span class="o">[</span><span class="mi">1</span><span class="o">])</span>
+ <span class="k">if</span> <span class="o">(</span><span class="n">currTime</span> <span class="o">&gt;</span> <span class="n">totalTimeToday</span><span class="o">)</span> <span class="o">{</span>
+     <span class="n">alert</span><span class="o">(</span><span class="s">"현재시간을 초과한 시간값이 있습니다."</span><span class="o">);</span>
+     <span class="kt">var</span> <span class="n">curr_times_id</span> <span class="o">=</span> <span class="s">"times"</span> <span class="o">+</span> <span class="n">idx</span><span class="o">;</span>
+     <span class="kt">var</span> <span class="n">timeHtmlCurr</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="na">getElementById</span><span class="o">(</span><span class="n">curr_times_id</span><span class="o">);</span>
+     <span class="n">timeHtmlCurr</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="err">'</span><span class="kd">class</span><span class="err">',</span> <span class="err">'</span><span class="nc">form</span><span class="o">-</span><span class="n">control</span> <span class="n">is</span><span class="o">-</span><span class="n">invalid</span><span class="err">'</span><span class="o">);</span>
+     <span class="n">timeHtmlCurr</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="err">'</span><span class="n">style</span><span class="err">'</span><span class="o">,</span> <span class="err">'</span><span class="n">background</span><span class="o">-</span><span class="nl">image:</span> <span class="n">none</span><span class="o">;</span> <span class="nl">padding:</span> <span class="mi">6</span><span class="n">px</span><span class="o">;</span><span class="err">'</span><span class="o">);</span>
+     <span class="n">document</span><span class="o">.</span><span class="na">getElementById</span><span class="o">(</span><span class="s">"postEdit_container"</span><span class="o">).</span><span class="na">scrollIntoView</span><span class="o">();</span>
+     <span class="k">return</span><span class="o">;</span>
+ <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>시간 확인 -2
+            <ul>
+              <li>이전 시간값이 이후 시간값보다 큰지 확인</li>
+              <li>크면 오류, alert을 통해 수정할 수 있도록 설정</li>
+            </ul>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">if</span> <span class="o">(</span><span class="n">idx</span> <span class="o">!==</span> <span class="mi">0</span><span class="o">){</span>
+     <span class="kt">var</span> <span class="n">before</span> <span class="o">=</span> <span class="n">times</span><span class="o">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="o">].</span><span class="na">value</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="sc">':'</span><span class="o">);</span>
+     <span class="kt">var</span> <span class="n">beforeTime</span> <span class="o">=</span> <span class="n">parseInt</span><span class="o">(</span><span class="n">before</span><span class="o">[</span><span class="mi">0</span><span class="o">])*</span><span class="mi">60</span> <span class="o">+</span> <span class="n">parseInt</span><span class="o">(</span><span class="n">before</span><span class="o">[</span><span class="mi">1</span><span class="o">]);</span>
+     <span class="k">if</span> <span class="o">(</span><span class="n">beforeTime</span> <span class="o">&gt;</span> <span class="n">currTime</span><span class="o">)</span> <span class="o">{</span>
+         <span class="n">alert</span><span class="o">(</span><span class="s">"이후 시간이 이전시간보다 작습니다. 수정해주세요!"</span><span class="o">);</span>
+         <span class="kt">var</span> <span class="n">timeAfter</span> <span class="o">=</span> <span class="s">"times"</span> <span class="o">+</span> <span class="n">idx</span><span class="o">;</span>
+         <span class="kt">var</span> <span class="n">timeBefore</span> <span class="o">=</span> <span class="s">"times"</span> <span class="o">+</span> <span class="o">(</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="o">);</span>
+         <span class="kt">var</span> <span class="n">timeHtmlAfter</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="na">getElementById</span><span class="o">(</span><span class="n">timeAfter</span><span class="o">);</span>
+         <span class="kt">var</span> <span class="n">timeHtmlBefore</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="na">getElementById</span><span class="o">(</span><span class="n">timeBefore</span><span class="o">);</span>
+         <span class="n">timeHtmlAfter</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="err">'</span><span class="kd">class</span><span class="err">',</span> <span class="err">'</span><span class="nc">form</span><span class="o">-</span><span class="n">control</span> <span class="n">is</span><span class="o">-</span><span class="n">invalid</span><span class="err">'</span><span class="o">);</span>
+         <span class="n">timeHtmlAfter</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="err">'</span><span class="n">style</span><span class="err">'</span><span class="o">,</span> <span class="err">'</span><span class="n">background</span><span class="o">-</span><span class="nl">image:</span> <span class="n">none</span><span class="o">;</span> <span class="nl">padding:</span> <span class="mi">6</span><span class="n">px</span><span class="o">;</span><span class="err">'</span><span class="o">);</span>
+         <span class="n">timeHtmlBefore</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="err">'</span><span class="kd">class</span><span class="err">',</span> <span class="err">'</span><span class="nc">form</span><span class="o">-</span><span class="n">control</span> <span class="n">is</span><span class="o">-</span><span class="n">invalid</span><span class="err">'</span><span class="o">);</span>
+         <span class="n">timeHtmlBefore</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="err">'</span><span class="n">style</span><span class="err">'</span><span class="o">,</span> <span class="err">'</span><span class="n">background</span><span class="o">-</span><span class="nl">image:</span> <span class="n">none</span><span class="o">;</span> <span class="nl">padding:</span> <span class="mi">6</span><span class="n">px</span><span class="o">;</span><span class="err">'</span><span class="o">);</span>
+         <span class="n">document</span><span class="o">.</span><span class="na">getElementById</span><span class="o">(</span><span class="s">"postEdit_container"</span><span class="o">).</span><span class="na">scrollIntoView</span><span class="o">();</span>
+         <span class="k">return</span><span class="o">;</span>
+     <span class="o">}</span>
+ <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220804">&lt;220804&gt;</h3>
+
+<blockquote>
+  <p>#80 <code class="language-plaintext highlighter-rouge">Back</code> : 랭크 측정 기준 변경 <br />
+#81 <code class="language-plaintext highlighter-rouge">Bug</code> : post edit 오류 <br />
+#79 <code class="language-plaintext highlighter-rouge">Bug</code> : paging 오류</p>
+
+</blockquote>
+
+<ul>
+  <li>#80
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>랭크 측정 기준 항목들의 기준이 일치하지 않았음 → 이번달 출석률(오늘까지 포함), 하루 목표 달성률(어제), 주간 목표 달성률(어제까지)</li>
+          <li>변경 필요 : 모두 어제까지를 기준으로 측정. -&gt; 이번달 출석률을 오늘이 아닌 어제까지만 포함하도록</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>이번달 출석률에 포함되는 범위를 오늘에서 어제까지만 포함</li>
+          <li>
+            <p>DB 자체의 조회를 통해서도 할 수 있지만, 이미 오늘까지의 데이터를 불러오기에, 불러온 데이터를 서버 자체에서 판단하도록 실행</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kt">int</span> <span class="n">focusedDay</span><span class="o">;</span>
+  <span class="kt">int</span> <span class="n">nowMonthPostsLen</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+  <span class="k">if</span> <span class="o">(</span><span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getHour</span><span class="o">()</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">focusedDay</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getDayOfMonth</span><span class="o">()</span> <span class="o">-</span> <span class="mi">2</span><span class="o">;</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">focusedDay</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getDayOfMonth</span><span class="o">()</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span>
+  <span class="o">}</span>
+  <span class="k">for</span> <span class="o">(</span><span class="nc">Post</span> <span class="n">post</span> <span class="o">:</span> <span class="n">nowMonthPosts</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">post</span><span class="o">.</span><span class="na">getCreateTime</span><span class="o">().</span><span class="na">getDayOfMonth</span><span class="o">()</span> <span class="o">&gt;</span> <span class="n">focusedDay</span><span class="o">)</span> <span class="o">{</span>
+          <span class="k">break</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="n">nowMonthPostsLen</span> <span class="o">=</span> <span class="n">nowMonthPostsLen</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>요청시간에 따라 범위를 1에서2로 줄임 (어제까지의 날짜)</li>
+              <li>또한 범위의 끝이 되는 focusedDay 이후의 post는 포함하지 않음</li>
+              <li>이렇게 해서 범위를 해당 날짜(어제)까지로 설정</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#81
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>edit 시 javascript(ajax)에서 post 후 받아오는 fragment로 replace를 하지 못하는 오류 발생</li>
+          <li>fragment 중 postModal id part를 찾아오지 못함 (id를 <code class="language-plaintext highlighter-rouge">th:id=”’postModal’+${post.id}”</code> 로 설정하여 발생한 오류)</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:id=”’postModal’+${post.id}”</code> → id=”postModal” 로변경</li>
+          <li>[중요] 그 후 replace를 통해 요소를 바꿔주고 해당 부분의 id를 새로 <code class="language-plaintext highlighter-rouge">“postModal+post.id"</code> 로 부여함</li>
+        </ul>
+      </li>
+    </ul>
+
+    <aside>
+  ⚠️ <strong>[오늘의 발견] Controller에서 Fragment 사용 시 주의점!</strong> <br />
+  Controller에서 fragment를 id나 요소로 찾을 때는 렌더링 전의 값으로 찾기 때문에 위와같이 id를 동적으로 설정하면 fragment로 찾아낼 수가 없음 → 렌더링은 찾아 낸 후 진행되는 것!!
+
+  </aside>
+  </li>
+  <li>#79
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>page 버튼이 제대로 동작하지 않음 (누르면 아무 post도 뜨지 않는 오류 발생)</li>
+          <li>page 버튼이 가지는 a 요소의 href의 requestParam 이름이 잘못 설정됨 (content값)</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>page의 queryParameter 수정 (queryParam : content -&gt; inputContent)</li>
+          <li><code class="language-plaintext highlighter-rouge">th:href="@{/ (page=${i}, focus=${nav2}, selected=${searchForm.selected}, **content**=${searchForm.inputContent})}"</code> → <code class="language-plaintext highlighter-rouge">th:href="@{/ (page=${i}, focus=${nav2}, selected=${searchForm.selected}, **inputContent**=${searchForm.inputContent})}"</code></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220803">&lt;220803&gt;</h3>
+
+<blockquote>
+  <p>#29 <code class="language-plaintext highlighter-rouge">Back</code> : comment 수정 기능</p>
+
+</blockquote>
+
+<ul>
+  <li>#29
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>member 정보를 수정, post를 수정 하는 등 기존의 모든 Entity는 수정기능이 있었지만, comment는 작성 및 삭제 기능밖에 없었음</li>
+          <li>comment도 잘못작성할 경우 수정 기능을 통해 변경이 가능해야 됨. (이전에는 수정을 원한다면 삭제 후 다시 작성)</li>
+        </ul>
+      </li>
+      <li>구현
+        <ul>
+          <li>Controller
+            <ul>
+              <li>
+                <p>댓글 수정 Form 요청</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">// 댓글 수정 get</span>
+  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/comment/api/edit/{id}/{commentId}"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">editForm</span><span class="o">(</span><span class="nd">@PathVariable</span><span class="o">(</span><span class="s">"id"</span><span class="o">)</span> <span class="nc">Long</span> <span class="n">postId</span><span class="o">,</span> <span class="nd">@PathVariable</span><span class="o">(</span><span class="s">"commentId"</span><span class="o">)</span> <span class="nc">Long</span> <span class="n">commentId</span><span class="o">,</span> <span class="nd">@SessionAttribute</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="nc">SessionConst</span><span class="o">.</span><span class="na">LOGIN_MEMBER</span><span class="o">,</span> <span class="n">required</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span> <span class="nc">Long</span> <span class="n">loginMemberId</span><span class="o">,</span><span class="nc">Model</span> <span class="n">model</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Post</span> <span class="n">post</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">findOne</span><span class="o">(</span><span class="n">postId</span><span class="o">);</span>
+      <span class="nc">PostViewDto</span> <span class="n">postViewDto</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PostViewDto</span><span class="o">(</span><span class="n">post</span><span class="o">);</span>
+      <span class="nc">Comment</span> <span class="n">comment</span> <span class="o">=</span> <span class="n">commentService</span><span class="o">.</span><span class="na">findOne</span><span class="o">(</span><span class="n">commentId</span><span class="o">);</span>
+      <span class="nc">CommentViewDto</span> <span class="n">commentDto</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">CommentViewDto</span><span class="o">(</span><span class="n">comment</span><span class="o">);</span>
+      <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">"post"</span><span class="o">,</span> <span class="n">postViewDto</span><span class="o">);</span>
+      <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">"check"</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+      <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">"comment"</span><span class="o">,</span> <span class="n">commentDto</span><span class="o">);</span>
+      <span class="k">return</span> <span class="s">"components/commentList :: #comment"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li>기존의 내용을 보여주기 위해 해당 id를 가진 comment를 가져와 model에 넣어줌</li>
+                  <li>post안의 comment를 보여주는 것이기 때문에 해당 comment를 가지고 있는 post도 model에 담아줌</li>
+                </ul>
+              </li>
+              <li>
+                <p>댓글 수정</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PostMapping</span><span class="o">(</span><span class="s">"/comment/api/edit/{id}/{commentId}"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">edit</span><span class="o">(</span><span class="nd">@PathVariable</span><span class="o">(</span><span class="s">"id"</span><span class="o">)</span> <span class="nc">Long</span> <span class="n">postId</span><span class="o">,</span> <span class="nd">@PathVariable</span><span class="o">(</span><span class="s">"commentId"</span><span class="o">)</span> <span class="nc">Long</span> <span class="n">commentId</span><span class="o">,</span> <span class="nd">@SessionAttribute</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="nc">SessionConst</span><span class="o">.</span><span class="na">LOGIN_MEMBER</span><span class="o">,</span> <span class="n">required</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span> <span class="nc">Long</span> <span class="n">loginMemberId</span><span class="o">,</span> <span class="nc">Model</span> <span class="n">model</span><span class="o">,</span> <span class="nd">@RequestParam</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">paramMap</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Member</span> <span class="n">member</span> <span class="o">=</span> <span class="n">memberService</span><span class="o">.</span><span class="na">findOne</span><span class="o">(</span><span class="n">loginMemberId</span><span class="o">);</span>
+      <span class="nc">Post</span> <span class="n">post</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">findOne</span><span class="o">(</span><span class="n">postId</span><span class="o">);</span>
+      <span class="n">commentService</span><span class="o">.</span><span class="na">edit</span><span class="o">(</span><span class="n">commentId</span><span class="o">,</span> <span class="n">paramMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"comment"</span><span class="o">).</span><span class="na">toString</span><span class="o">());</span>
+      <span class="nc">PostViewDto</span> <span class="n">postViewDto</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PostViewDto</span><span class="o">(</span><span class="n">post</span><span class="o">);</span>
+      <span class="nc">MemberDto</span> <span class="n">memberDto</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">MemberDto</span><span class="o">(</span><span class="n">member</span><span class="o">);</span>
+                
+      <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">"post"</span><span class="o">,</span> <span class="n">postViewDto</span><span class="o">);</span>
+      <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">"check"</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+      <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">"member"</span><span class="o">,</span> <span class="n">memberDto</span><span class="o">);</span>
+      <span class="k">return</span> <span class="s">"components/commentList :: #commentPart"</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li>기존의 새로운 댓글 작성과 비슷한 원리로 진행 (해당 post의 comment들을 새로 불러와 redering 후 해당 commentPart를 replace하는 것)</li>
+                  <li>하지만 다른 점은 save가 아닌 edit</li>
+                  <li>
+                    <p><code class="language-plaintext highlighter-rouge">commentService.edit()</code></p>
+
+                    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">edit</span><span class="o">(</span><span class="nc">Long</span> <span class="n">id</span><span class="o">,</span> <span class="nc">String</span> <span class="n">content</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Comment</span> <span class="n">comment</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="nc">Comment</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+      <span class="n">comment</span><span class="o">.</span><span class="na">editContent</span><span class="o">(</span><span class="n">content</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>                    </div>
+
+                    <ul>
+                      <li>해당 comment를 가져와 content의 내용을 수정해줌 (새로 저장) → <code class="language-plaintext highlighter-rouge">editContent</code> : <code class="language-plaintext highlighter-rouge">this.content = content;</code></li>
+                      <li>중요한 점은 이렇게 수정 후 새로 post에 연결할 필요가 없음. 이미 연결되어 있기에.</li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220802">&lt;220802&gt;</h3>
+
+<blockquote>
+  <p>#3 <code class="language-plaintext highlighter-rouge">Back</code> : post 검색 (필터를 통해 -&gt; 조건[제목,이름,희망직무,내용]) <br />
+#76 <code class="language-plaintext highlighter-rouge">Back</code> : member 검색 (필터를 통해 -&gt; 조건[이름, 희망직무]) <br />
+#8 <code class="language-plaintext highlighter-rouge">Enhancement</code> : error page 생성 (error.html, error/4xx.html, error/5xx.html) <br />
+#77 <code class="language-plaintext highlighter-rouge">Bug</code> : edit 시 search bar에 simpleMDE가 생기는 오류</p>
+
+</blockquote>
+
+<ul>
+  <li>#3, #76
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>현재까지는 그냥 해당 메뉴(전체글, 나의글, 오늘의글 등)에 맞는 모든 글들을 보여줌</li>
+          <li>하지만, 검색을 통해 원하는 글을 필터링하여 보는 기능은 당연히 필요</li>
+          <li>여기서 검색 시, 조건을 달아 세부적으로 검색할 수 있도록 하는 것이 필요</li>
+          <li>추가로 멤버 검색도 필요</li>
+        </ul>
+      </li>
+      <li>해결 및 구현
+        <ul>
+          <li>search bar를 만들고 해당 search bar 좌측에 조건[제목,이름,희망직무,내용]을 선택하여 검색할 수 있도록 설정</li>
+          <li>해당 form에서 사용될 Object(<code class="language-plaintext highlighter-rouge">SearchForm</code>)를 HomeController에서 보내준 후 해당 SearchForm의 <code class="language-plaintext highlighter-rouge">selected</code>(조건), <code class="language-plaintext highlighter-rouge">inputContent</code>(검색내용) 을 받아와 검색 진행</li>
+          <li><code class="language-plaintext highlighter-rouge">@ModelAttribute(name = "searchForm") SearchForm searchForm</code></li>
+          <li>ReqeustMapping으로 진행, GetMapping에서는 ModelAttribute의 기능을 통해 serachForm을 새로 만들어 model에 포함시켜주어 넘기며, PostMapping 때는 ModelAttribute를 통해 selected와 inputContent의 입력된 값을 받아옴 → GET과 POST를 분리하지 않았기에 추가적인 코딩이 필요했음 (searchForm이 초기화가 되지 않은 상태 판단 (<code class="language-plaintext highlighter-rouge">if (searchForm.getSelected() == null)</code>) → GET, searchForm이 초기화 → POST)</li>
+          <li>
+            <p>이를 이용하여 form html 작성</p>
+
+            <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;form</span> <span class="na">id=</span><span class="s">"search-form"</span> <span class="na">class=</span><span class="s">"d-flex px-1"</span> <span class="na">th:object=</span><span class="s">"${searchForm}"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;input</span> <span class="na">hidden</span> <span class="na">id=</span><span class="s">"focus"</span> <span class="na">name=</span><span class="s">"focus"</span> <span class="na">th:value=</span><span class="s">"${nav2}"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;select</span> <span class="na">th:field=</span><span class="s">"*{selected}"</span> <span class="na">class=</span><span class="s">"form-select form-select-sm"</span> <span class="na">aria-label=</span><span class="s">".form-select-lg example"</span> <span class="na">style=</span><span class="s">"width: 35%"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;option</span> <span class="na">th:if=</span><span class="s">"${nav2 != 'all-members'}"</span> <span class="na">selected</span> <span class="na">value=</span><span class="s">"title"</span><span class="nt">&gt;</span>제목<span class="nt">&lt;/option&gt;</span>
+          <span class="nt">&lt;option</span> <span class="na">th:if=</span><span class="s">"${nav2 != 'my-posts'}"</span> <span class="na">value=</span><span class="s">"writer"</span><span class="nt">&gt;</span>이름<span class="nt">&lt;/option&gt;</span>
+          <span class="nt">&lt;option</span> <span class="na">th:if=</span><span class="s">"${nav2 != 'my-posts'}"</span> <span class="na">value=</span><span class="s">"desiredJob"</span><span class="nt">&gt;</span>희망직무<span class="nt">&lt;/option&gt;</span>
+          <span class="nt">&lt;option</span> <span class="na">th:if=</span><span class="s">"${nav2 != 'all-members'}"</span> <span class="na">value=</span><span class="s">"content"</span><span class="nt">&gt;</span>내용<span class="nt">&lt;/option&gt;</span>
+      <span class="nt">&lt;/select&gt;</span>
+      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"search"</span> <span class="na">th:field=</span><span class="s">"*{inputContent}"</span> <span class="na">class=</span><span class="s">"form-control"</span> <span class="na">th:placeholder=</span><span class="s">"'['+ ${nav2} + ']' + ' 에서 검색'"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;button</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">class=</span><span class="s">"btn btn-secondary"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;svg</span> <span class="na">xmlns=</span><span class="s">"http://www.w3.org/2000/svg"</span> <span class="na">width=</span><span class="s">"16"</span> <span class="na">height=</span><span class="s">"16"</span> <span class="na">fill=</span><span class="s">"currentColor"</span> <span class="na">class=</span><span class="s">"bi bi-search"</span> <span class="na">viewBox=</span><span class="s">"0 0 16 16"</span><span class="nt">&gt;</span>
+              <span class="nt">&lt;path</span> <span class="na">d=</span><span class="s">"M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"</span><span class="nt">/&gt;</span>
+          <span class="nt">&lt;/svg&gt;</span>
+      <span class="nt">&lt;/button&gt;</span>
+  <span class="nt">&lt;/form&gt;</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>selected 와 inputContent를 th:field를 통해 연결</li>
+              <li>[중요] 추가로 Mapping된 Controller는 focus request param값을 요구하기 때문에 현재 focus를 담아 같이 form으로 전해줌</li>
+            </ul>
+          </li>
+          <li>중요한 점은 각 메뉴에 맞게 검색이 진행되며, 페이징까지 적용이 되어야 한다는 점
+            <ul>
+              <li>all, today, my-posts, members 의 메뉴에 맞게 검색이 진행되어야 함</li>
+              <li>all,today 에서는 모든 조건(필터) 사용 가능</li>
+              <li>my-posts 에서는 이미 이름과 희망직무는 정해져있기 때문에 [제목, 내용] 필터만 적용 가능</li>
+              <li>members 에서는 글이 아니므로 [이름, 희망직무]로만 검색 가능. (페이징도 적용X)</li>
+              <li>이에 Controller, Service에서도 현재 메뉴와 들어오는 필터 조건, 검색내용에 따라 다른 쿼리 적용 [분기 순서 : menu → selected→ searchContent]
+                <ul>
+                  <li>또한 query 적용 시 like을 사용하고 해당 검색내용을 포함하는 모든 post를 가져와야 하기 때문에 ‘%’+검색내용+’%’ 형식 적용 → <code class="language-plaintext highlighter-rouge">String searchKeyword = '%' + content + '%';</code></li>
+                  <li>today : <code class="language-plaintext highlighter-rouge">posts = postService.findByTodaySearch(...)</code>
+                    <ul>
+                      <li>
+                        <p>selected[title,writer,desriedJob,content] → searchContent</p>
+
+                        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">if</span> <span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"title"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postNativeRepository</span><span class="o">.</span><span class="na">findByTitleToday</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">,</span> <span class="n">date</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"writer"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postNativeRepository</span><span class="o">.</span><span class="na">findByWriterToday</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">,</span> <span class="n">date</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"desiredJob"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postNativeRepository</span><span class="o">.</span><span class="na">findByJobToday</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">,</span> <span class="n">date</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postNativeRepository</span><span class="o">.</span><span class="na">findByContentToday</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">,</span> <span class="n">date</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>                        </div>
+                      </li>
+                      <li>
+                        <p>today같은 경우 날짜가 들어가기에 native query로 DB 조회</p>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>my-posts : <code class="language-plaintext highlighter-rouge">posts = postService.findBySearchMy(...)</code>
+                    <ul>
+                      <li>
+                        <p>selected[title,content] → searchContent</p>
+
+                        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">if</span> <span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"title"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postRepository</span><span class="o">.</span><span class="na">findByTitleMy</span><span class="o">(</span><span class="n">memberId</span><span class="o">,</span> <span class="n">searchKeyword</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postRepository</span><span class="o">.</span><span class="na">findByContentMy</span><span class="o">(</span><span class="n">memberId</span><span class="o">,</span> <span class="n">searchKeyword</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>                        </div>
+                      </li>
+                      <li>
+                        <p>my-posts는 날짜가 들어가지 않기 때문에 일반적인 JPQL 사용</p>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>all : <code class="language-plaintext highlighter-rouge">posts = postService.findBySearch(...)</code>
+                    <ul>
+                      <li>
+                        <p>selected[title,writer,desriedJob,content] → searchContent</p>
+
+                        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">if</span> <span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"title"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postRepository</span><span class="o">.</span><span class="na">findByTitle</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"writer"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postRepository</span><span class="o">.</span><span class="na">findSearchByMember</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"desiredJob"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postRepository</span><span class="o">.</span><span class="na">findByJob</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">postRepository</span><span class="o">.</span><span class="na">findByContent</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">,</span> <span class="n">offset</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>                        </div>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>members: <code class="language-plaintext highlighter-rouge">bySearchMembers = memberService.findBySearch(...)</code>
+                    <ul>
+                      <li>
+                        <p>selected[writer,desriedJob] → searchContent</p>
+
+                        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">if</span> <span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"writer"</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findSearchByName</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findSearchByJob</span><span class="o">(</span><span class="n">searchKeyword</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>                        </div>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li><strong>[중요]</strong> 또한 이런 검색 기능에서 페이지 넘기는 기능을 적용하기 위해 page index 버튼에 request param([현재메뉴, 선택된 필터, 검색 내용])을 포함 → <code class="language-plaintext highlighter-rouge">th:href="@{/ (page=${i}, focus=${nav2}, selected=${searchForm.selected}, inputContent=${searchForm.inputContent})}"</code></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#8
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>error가 발생했을 때, Spring 기본 error page가 나와서 이질감을 줬음</li>
+          <li>직접 개발한 error page를 보여줌으로써 어떤 오류인지 안내하고 다른 페이지로 쉽게 이동 가능 필요</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>Spring에서는 자동으로 에러페이지를 연결하는 기능이 있으며, 그 기능을 이용</li>
+          <li>templates/error/4xx.html → 400, 404 등 Error Code가 4로 시작하는 에러들에 대해 해당 html로 연결</li>
+          <li>templates/error/5xx.html → 500, 505 등 Error Code가 5로 시작하는 에러들에 대해 해당 html로 연결</li>
+          <li>templates/error.html → 기본 에러페이지. 위의 해당되지 않는 Error Code들에 대해 연결</li>
+          <li>고로 해당 html 파일을 사용자친화적으로 만들어 해당 규칙에 맞게 설정.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#77
+    <ul>
+      <li>오류 항목
+        <ul>
+          <li>post edit을 누를 시 동적으로 페이지를 받아오는 데, 이때 post modal에서 진행되는 것이 아닌 search bar의 input 에 editor가 들어가게 됨.</li>
+          <li>문제 원인 : input 태그의 searchForm의 field의 이름을 content로 설정하고 이를 th:field로 받아오면서 해당 태그가 content의 id를 가지게 되고, MDE가 content에 mapping되어 있었기에 해당 input태그에 mde가 달리게 됨</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>searchForm의 field를 inputContent로 변경 (<code class="language-plaintext highlighter-rouge">searchForm.content → searchForm.inputContent</code>)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220801">&lt;220801&gt;</h3>
+
+<blockquote>
+  <p>#46 <code class="language-plaintext highlighter-rouge">Enhancement</code> : post edit에서 시간 수정(시간 추가 및 삭제) <br />
+#52 <code class="language-plaintext highlighter-rouge">Enhancement</code> : older page 기능 추가</p>
+
+</blockquote>
+
+<ul>
+  <li>#46
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>시간을 변경할 수는 있었지만, 시간을 추가하거나 삭제하는 기능이 없었음</li>
+          <li>Breaking을 잘못눌러, 쓸데없이 시간이 기록되거나 시간을 잘못 추가한 경우들이 있음</li>
+          <li>또한 쉰 것을 기록하지 않을 때는 시간변경을 위해 breaking을 눌렀다가 시간을 수정해야 되는 불편함 존재</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>edit을 통해 시간을 추가하거나 삭제할 수 있도록 설정</li>
+          <li>
+            <p>이때, 현재 상태에 맞지 않는 시간의 개수로 설정 될 때 알림을 통해 제대로 수정할 수 있도록 유도 (ex_ STUDYING 상태인데 [12:00] ~ [13:00] 처럼 공부가 마무리되어 있게 시간이 설정되어 있다면, 다시 수정할 수 있도록 alert 알림)</p>
+
+            <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">if</span> <span class="p">(</span><span class="nx">state</span> <span class="o">==</span> <span class="dl">'</span><span class="s1">STUDYING</span><span class="dl">'</span> <span class="o">&amp;</span> <span class="nx">times_len</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="dl">"</span><span class="s2">[STUDYING] 상태입니다. 시간 개수를 확인해주세요!</span><span class="dl">"</span><span class="p">);</span>
+      <span class="kd">var</span> <span class="nx">times_id</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">times</span><span class="dl">"</span> <span class="o">+</span> <span class="p">(</span><span class="nx">times_len</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+      <span class="kd">var</span> <span class="nx">timeInput</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="nx">times_id</span><span class="p">);</span>
+      <span class="nx">timeInput</span><span class="p">.</span><span class="nx">setAttribute</span><span class="p">(</span><span class="dl">'</span><span class="s1">class</span><span class="dl">'</span><span class="p">,</span><span class="dl">'</span><span class="s1">form-control is-invalid</span><span class="dl">'</span><span class="p">);</span>
+      <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">"</span><span class="s2">postEdit_container</span><span class="dl">"</span><span class="p">).</span><span class="nx">scrollIntoView</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">((</span><span class="nx">state</span> <span class="o">==</span> <span class="dl">'</span><span class="s1">BREAKING</span><span class="dl">'</span> <span class="o">||</span> <span class="nx">state</span> <span class="o">==</span> <span class="dl">'</span><span class="s1">END</span><span class="dl">'</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nx">times_len</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="dl">"</span><span class="s2">[BREAKING] 혹은 [END] 상태입니다. 시간 개수를 확인해주세요!</span><span class="dl">"</span><span class="p">);</span>
+      <span class="kd">var</span> <span class="nx">times_id</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">times</span><span class="dl">"</span> <span class="o">+</span> <span class="p">(</span><span class="nx">times_len</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+      <span class="kd">var</span> <span class="nx">titleHtml</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="nx">times_id</span><span class="p">);</span>
+      <span class="nx">titleHtml</span><span class="p">.</span><span class="nx">setAttribute</span><span class="p">(</span><span class="dl">'</span><span class="s1">class</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">form-control is-invalid</span><span class="dl">'</span><span class="p">);</span>
+      <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">"</span><span class="s2">postEdit_container</span><span class="dl">"</span><span class="p">).</span><span class="nx">scrollIntoView</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+          <span class="na">url</span><span class="p">:</span> <span class="dl">'</span><span class="s1">/posts/edit/</span><span class="dl">'</span> <span class="o">+</span> <span class="nx">id</span><span class="p">,</span>
+          <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">POST</span><span class="dl">"</span><span class="p">,</span>
+          <span class="na">data</span><span class="p">:</span> <span class="nx">formData</span>
+      <span class="p">}).</span><span class="nx">done</span><span class="p">(...)</span>
+  <span class="p">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p>추가로 비어있는 상태로 시간을 수정하면 빈 시간은 자동으로 삭제되도록 설정</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">times</span> <span class="o">=</span> <span class="n">postEditForm</span><span class="o">.</span><span class="na">getTimes</span><span class="o">();</span>
+  <span class="k">while</span> <span class="o">(</span><span class="n">times</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="s">""</span><span class="o">))</span> <span class="o">{}</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#52
+    <ul>
+      <li>추가 수정 필요 부분
+        <ul>
+          <li>현재까지는 그냥 older page로 다음 페이지로 넘어가는 것만 적용.</li>
+          <li>즉, 1~5page 까지는 선택하여 볼 수 있었지만, 6page 부터는 older page버튼을 눌러서 하나하나씩 다음페이지로 넘겨야지 확인할 수 있었음</li>
+        </ul>
+      </li>
+      <li>해결 (수정)
+        <ul>
+          <li>1~5p 에서 6p 로 넘어가면 page index 가 6~10로 설정될 수 있도록 설정</li>
+          <li>또한 7p도 6~11 범위에 있기에 7p에서도 6~11p 의 인덱스로 보여질 수 있도록 설정</li>
+          <li>page 값을 이용하여 인덱스 계산 실행
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">th:each="i: ${#numbers.sequence(5*((page -1)/5)+1, 5*((page -1)/5)+5)}"</code></li>
+              <li>1~5, 6~10, 12~16 등 범위별로 5로 나눌때의 몫이 같다는 점을 이용하여 수식 설정 ⇒ page 값에서 1을 뺀 값을 5로 나눈 몫을 5를 곱하고 1~5을 더해 설정.</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>[오늘의 발견] Fragment 사용 시 주의 점!</strong> <br />
+fragment로 html파일을 받아올 때는 해당 지정된 id의 요소만 가져옴! 즉, 해당 요소에서 적용되는 JS같은 경우도 그 요소안에다 <code>&lt;script&gt;</code> 를 넣어주거나 외부 js파일에 넣어주어야 함. 하지만 위같은 경우 외부 js에서는 사용되지 않지만 렌더링 후 사용되는 변수(`var state= [[${postForm.state}]]` 등)가 있으므로 요소 안에다 <code>&lt;script&gt;</code> 를 넣어주어야 함!
+
+</aside>
+
 <h3 id="220728">&lt;220728&gt;</h3>
 
 <blockquote>
@@ -41,7 +565,7 @@
       </li>
       <li>해결
         <ul>
-          <li>DBM 에서 수정하려 했지만, post_times가 Embedded Type으로 저장되어 있기 떄문에, unique key가 없어서 삭제 시 모든 post_times가 삭제되는 현상 발생</li>
+          <li>DBM 에서 수정하려 했지만, post_times가 Embedded Type으로 저장되어 있기 때문에, unique key가 없어서 삭제 시 모든 post_times가 삭제되는 현상 발생</li>
           <li>
             <p>Spring 내에서 코드로 직접 수정하는 방식 선택</p>
 
@@ -414,9 +938,9 @@
 
             <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;ul</span> <span class="na">class=</span><span class="s">"pagination justify-content-center my-4"</span><span class="nt">&gt;</span>
       <span class="nt">&lt;li</span> <span class="na">class=</span><span class="s">"page-item"</span><span class="nt">&gt;</span>
-                  <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"page-link"</span> <span class="na">href=</span><span class="s">"/"</span> <span class="na">tabindex=</span><span class="s">"-1"</span> <span class="na">aria-disabled=</span><span class="s">"true"</span><span class="nt">&gt;</span>Newer<span class="nt">&lt;/a&gt;</span>
+          <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"page-link"</span> <span class="na">href=</span><span class="s">"/"</span> <span class="na">tabindex=</span><span class="s">"-1"</span> <span class="na">aria-disabled=</span><span class="s">"true"</span><span class="nt">&gt;</span>Newer<span class="nt">&lt;/a&gt;</span>
       <span class="nt">&lt;/li&gt;</span>
-      <span class="nt">&lt;li</span> <span class="na">th:each=</span><span class="s">"i: ${#numbers.sequence(1, 5)}"</span> <span class="na">aria-current=</span><span class="s">"page"</span>
+      <span class="nt">&lt;li</span> <span class="na">th:each=</span><span class="s">"i: ${#numbers.sequence(5*((page -1)/5)+1, 5*((page -1)/5)+5)}"</span> <span class="na">aria-current=</span><span class="s">"page"</span>
           <span class="na">th:class=</span><span class="s">"${page == i}? 'page-item active' : 'page-item'"</span><span class="nt">&gt;</span>
           <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"page-link"</span> <span class="na">th:href=</span><span class="s">"@{/ (page=${i}, focus=${nav2})}"</span> <span class="na">th:text=</span><span class="s">"${i}"</span><span class="nt">&gt;</span>#<span class="nt">&lt;/a&gt;</span>
       <span class="nt">&lt;/li&gt;</span>
@@ -428,6 +952,7 @@
 
             <ul>
               <li>현재 focus 되어 있는 page에 1을 더하여 다음 page로 넘어가도록 설정</li>
+              <li><code class="language-plaintext highlighter-rouge">th:each="i: ${#numbers.sequence(5*((page -1)/5)+1, 5*((page -1)/5)+5)}"</code> 를 통해 현재 페이지에 따라 1~5, 6~10, 11~15 등으로 page index가 보일 수 있도록 설정</li>
             </ul>
           </li>
         </ul>
@@ -445,7 +970,7 @@ DB에 Entity를 저장할 때는 DB에서 지정된 객체의 field로만 저장
 <aside>
 ⚠️ <strong>[오늘의 발견2] Form 입력 및 @ModelAttribute 주의점</strong> <br />
 만약 Goal 이라는 객체의 field에 Times라는 또다른 객체가 있고 Times의 hour가 min field를 변경하고 싶을때 ModelAttribute를 사용하면 먹히지 않음. 즉, ModelAttribute는 두단계에 거쳐서 set을 하지는 못함 → http message를 보면 dayTimes.hour=3 이런식으로 set이 진행됨. 이 부분이 제대로 동작되지 못함. <br />
-<b>결론</b> : ModelAttribute를 사용하려면 한단계의 field만 적용되도록 객체를 설정해야 됨. (두단계의 객체 설정X)
+<b>결론 : ModelAttribute를 사용하려면 한단계의 field만 적용되도록 객체를 설정해야 됨. (두단계의 객체 설정X) </b>
 </aside>
 
 <h3 id="220722">&lt;220722&gt;</h3>
