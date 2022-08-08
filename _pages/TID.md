@@ -23,6 +23,85 @@ image:
 
 <hr>
 
+### <220808>
+
+> #87 `Bug` : 다중 post edit 시 여러 오류 발생
+>
+
+- #87
+    - 기존 문제점
+        1. 가장 마지막에 edit버튼을 누른 post의 content로 모든 post의 내용이 변경됨 (simpleMDE를 **전역변수로 공유**하며 사용해서 발생한 문제)
+        2. simpleMDE가 다른 post의 content에 생성됨 (postEditForm의 content가 **unique id가 아니면서 생기는 문제**. → edit하면 여러개의 content가 생성되고, 중복된 ID로 인해서 가장 처음 생성된 content에 simpleMDE가 발생)
+        3. submit 하면 이전에 열었던 post에 fragment가 replacement되고 현재 post는 replacement되지 않음 (postEditForm의 postEdit_container의 id가 **unique하지 않아 발생하는 문제**, 2번과 동일한 이유로 발생하는 문제)
+    - 해결
+        1. simpleMDE 변수 하나를 전역변수로 공유하며 사용해서 발생한 문제
+            - simpleMDE를 각 post의 ID로 생성한 후 (전역변수로 선언 → 다른 함수에서도 사용해야 되기 때문)
+            - edit 시 해당 post의 ID 값을 가지는 simpleMDE를 가져와 해당 변수에 새로운 simpleMDE를 생성해줌. → unique ID를 가지고 있기 때문에, 각 post의 simpleMDE의 값을 구분하여 저장할 수 있게 됨
+            - 구현 코드
+
+                ```jsx
+                // home.html의 script 부분 (변경 전: var simplemde;)
+                [# th:each="post, stat : ${postDtos}"]
+                var simplemde[[${post.id}]];
+                [/]
+                ```
+
+                - home.html의 simplemde를 각 post에 mapping 될 수 있도록 id에 맞게 simplemde를 생성
+                - thymeleaf의 javascirpt에서의 유용한 기능을 이용하여 **동적 변수 생성**
+
+                ```jsx
+                function edit_post(id) {
+                    $.ajax({
+                        url: '/posts/edit/' + id,
+                        type: "GET",
+                    })
+                        .done(function (fragment) {
+                            $('#postModal_content' + id).replaceWith(fragment);
+                						/* (변경 전) => simplemde = new SimpleMDE({element: document.getElementById("content"+id.toString()),spellChecker: false});*/
+                            eval("simplemde" + id + "= new SimpleMDE({element: document.getElementById("content"+id.toString()),spellChecker: false})");
+                            ...
+                        });
+                }
+                ```
+
+                - edit 요청이 들어올 때 동적으로 해당 post에 mapping 되는 simplemde를 재정의 → 해당 post에 simpleMDE를 content에 심어주는 것
+                - 이때 id에 맞는 **동적 변수**를 통해 전역 변수인 simpleMDE를 가져와야 하기 떄문에 `eval()` 함수 사용
+        2. postEditForm의 content가 unique id가 아니면서 생기는 문제. → edit하면 여러개의 content가 생성되고, 중복된 ID로 인해서 가장 처음 생성된 content에 simpleMDE가 발생
+            - postEditForm에 content id속성을 post의 ID를 연결해주어 unique한 id가 될 수 있도록 설정.
+
+                ```jsx
+                <textarea type="text" rows="4" 
+                					th:field="*{content}" th:id="'content'+${postForm.id}" 
+                					placeholder="Content" class="form-control"
+                          autocomplete="off"></textarea>
+                ```
+
+            - 추가로 그에 맞게 simpleMDE를 심어줄 때도 `content+post.id` 로 찾아오고 심을 수 있도록 설정 → unique id이기 때문에 겹칠일도 없으며, 제대로된 위치에 생성 가능
+
+              `new SimpleMDE({element: document.getElementById(\"content\"+id.toString()),spellChecker: false})`
+
+        3. submit 하면 이전에 열었던 post에 fragment가 replacement되고 현재 post는 replacement되지 않음 (postEditForm의 postEdit_container의 id가 unique하지 않아 발생하는 문제, 2번과 동일한 이유로 발생하는 문제)
+            - eidt 요청 시 postEditForm의 postEdit_container를 찾아와 교체해 준 후
+            - 해당 postEdit_container id값을 `postEdit_container + post.id` 로 가질 수 있도록 설정 → 미리 id값으로 렌더링 후 찾으면 찾아와지지 않기 때문에 가져온 후 id 값을 변경
+            - 코드
+
+                ```jsx
+                function edit_post(id) {
+                    $.ajax({
+                        url: '/posts/edit/' + id,
+                        type: "GET",
+                    })
+                        .done(function (fragment) {
+                            $('#postModal_content' + id).replaceWith(fragment);
+                            ...
+                            document.getElementById("postEdit_container").setAttribute("id", "postEdit_container" + id.toString());
+                            document.getElementById("postEdit_container"+id.toString()).scrollIntoView();
+                        });
+                }
+                ```
+
+            - 마지막으로 post 시 `postEdit_container + post.id` 로 결과 fragment로 replace. → unique ID를 가지고 있기 때문에 제대로된 위치로 replace 됨
+
 ### <220807>
 
 > #83 `Bug` : 시간 변경 오류
