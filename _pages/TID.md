@@ -23,6 +23,79 @@ image:
 
 <hr>
 
+### <220811>
+
+> #88 `Bug` : My Page 에서의 post edit 오류 <br>
+#89 `Bug` : My Page, Member Detail 에서의 출석률 계산 오류
+>
+
+- #88
+    - 발생 오류
+        - My Page 에서 글 수정 submit이 안되는 오류
+        - focusedPostId 를 찾을 수 없어서 발생한 오류
+        - 뿐만 아니라 이전에 home에서의 post edit 시 발생하는 오류와 동일한 오류 발생
+        - 원인 : focusedPostId 변수이름 변경으로 발생한 오류 + 중복되는 id로 인한 오류 → 전체적인 post edit의 변경사항을 반영하지 않음
+    - 해결
+        - Home에서의 오류해결과 동일하게 My Page의 렌더링되는 html에 각 모든 post에 연결되는 simplemde + {post.id} 변수 생성 후 해당 변수에 새로 생성되는 Simple MDE 할당
+        - focusedPostId 변수 이름 수정
+    - 추후 필요 수정 사항
+        - **[중요]** focusedPostId는 해당 비지니스 로직에서 사용되지 않음 → main.js 가 아닌 새로운 javascript를 생성하여 분리할 필요가 있음.
+- #89
+    - 발생 오류
+        - 한달 공부 통계에서 출석률, 전체 공부시간, 평균 공부시간 등이 수정한 부분과 다르게 '오늘'까지 고려가 됨. ( → 원래는 '어제' 까지만 고려가 되어 계산되어야 함)
+        - 계산 부분에 있어서 오류 발생 → 계산 해놓고 다른 변수로 적용하고 있었음
+    - 해결
+        - 공부 랭킹을 위해서 현재 달의 출석률을 구해주기 위해서 focusedDay, nowMonthDayLen 을 사용했지만, 현재 보고 있는 달력의 통계를 보여주기 위해 monthDate, mothPosts 를 사용했음. 여기서 만약 현재 보는 달력이 오늘 날짜의 달과 동일하다면 monthDate에 focusedDay 를 대입 하고 monthPosts에 어제날짜까지의 post를 넣어주어 해결
+        - 즉, 보고 있는 달력의 통계를 상황에 따라 현재 달에 맞게 설정해주며 해결
+
+        ```java
+        List<Post> nowMonthPosts = postService.getMonthPosts(memberId, LocalDateTime.now().getMonthValue());
+        int focusedDay;
+        if (LocalDateTime.now().getHour() < 4) {
+            focusedDay = LocalDateTime.now().getDayOfMonth() - 2;
+        } else {
+            focusedDay = LocalDateTime.now().getDayOfMonth() - 1;
+        }
+        List<Post> calculatedNowMonthPosts = new ArrayList<>();
+        for (Post post : nowMonthPosts) {
+            if (post.getCreateTime().getDayOfMonth() > focusedDay) {
+                break;
+            }
+            calculatedNowMonthPosts.add(post);
+        }
+        
+        ForCalender CalenderInfo = getCalenderInfo(weekDay, focusedDate);
+        int monthDate = dayData[month - 1];
+        if (month == LocalDateTime.now().getMonthValue()) {
+            monthDate = focusedDay;
+            monthPosts = new ArrayList<>(calculatedNowMonthPosts);
+        }
+        AllStatic allStatic = getAllStatus(oriMember, staticsData, days.get(days.size() - 1), monthPosts, monthDate, focusedDay, calculatedNowMonthPosts.size());
+        ```
+
+        - 먼저 focosedDay를 구해고 해당 변수에 맞는 현재 달의 posts를 가져옴
+        - 그 후 만약 사용자가 확인하고 있는 달력이 현재 달과 동일하다면 해당 변수들을 현재 달에 사용되는 변수로 변경. (아니라면 기존의 변수 사용)
+
+### <220809>
+
+> #90 `Bug` : 새 글 작성 오류
+>
+
+- #90
+    - 발생 오류
+        - 새 글 작성 시 simpleMDE 가 content에 생성되지 않음
+        - submit 시 제출되지 않음
+        - 원인 : post edit 과 fragment를 공유하고 있기 때문에, 이전에 post edit 오류 수정 시 id 값을 변경하는 부분이 있었는데, 그 부분을 post new(새 글 작성)의 javascript 코드에 반영하지 않았기 때문에 발생
+    - 해결
+        - 기존의 content 라는 id를 가졌던 요소에 `content + ${post.id}` 의 id를 새로 부여 → 이제 해당 id로 Simple MDE 를 심어줄 수 있음
+        - `simplemde + ${post.id}` 의 변수를 생성해주고 해당 변수에 새로 생성된 Simple MDE 를 할당 → 해당 MDE의 value(content) 를 가져올 수 있게 됨
+
+<aside>
+⚠️ <strong>[오늘의 깨달음] Fragment 사용</strong> <br>
+무조건 fragment를 사용한다고 편한 것이 아님. fragment를 난무하지 말고, 개별 비지니스 로직이 좀 많은 부분에서 다르다 하면 사용하지 말고 (유지 보수가 힘듦), 정말 공통적인 요소에만 fragment를 사용하는 것이 좋음
+
+</aside>
+
 ### <220808>
 
 > #87 `Bug` : 다중 post edit 시 여러 오류 발생
