@@ -23,6 +23,103 @@ image:
 
 <hr>
 
+### <220818>
+
+> #99 `Bug` : 0-4 시 시작 시 시작시간 오류
+>
+
+- #99
+    - 기존의 문제점
+        - 0-4시 공부 시작 시, 로직에 따라 날짜는 전날로 설정되는데, 그때 공부 시작 시간 마저 createTime으로 설정되는 오류
+        - Post Entity 생성 메서드 createPost 의 시간 List에 시간을 추가하는 times.add 가 createTime 으로 설정되어 있어 발생하는 오류
+    - 해결
+        - createPost의 times.add 를 현재 시간(LocalDateTime.now())으로 설정
+
+            ```java
+            public static Post createPost(Member member, LocalDateTime createTime){
+                Post post = new Post();
+                post.setMember(member);
+                post.createTime = createTime;
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+                post.times.add(LocalDateTime.now().format(timeFormatter));
+                post.state = StudyState.STUDYING;
+                return post;
+            }
+            ```
+
+
+### <220815>
+
+> #96 `Back` : 공부 시작 시간이 0~4시 사이일 경우에 대한 처리 [시간 처리]
+>
+
+- #96
+    - 기존의 문제점
+        - 만약 사용자가 0~4시 사이에 공부를 시작할 경우, 해당 post는 비지니스 로직 특성 상 해당 날짜를 가지게 됨. (`LocalDateTime.now()` 이용)
+        - 하지만, 서비스 특성 상 0~4시 사이의 시간은 이전 날짜로 인식되게 해야됨. (그렇지 않으면 해당 날짜의 Post가 2개가 되는 예외 발생)
+        - ex) 13일이 넘어가는 1시에 공부를 시작했다면 14일로 인식 → 13일로 인식되게 설정 필요
+    - 구현
+        - 0 - 4 시 사이에 글을 작성할 경우, 전 날의 23:59 에 글을 작성한 것과 동일하게 취급하여 구현 → 기존의 로직에 방해되지 않으면서 현재 필요한 요구사항 충족 가능
+        - 즉, post의 times에는 현재시간을 넣어주고, post의 createTime은 그전날의 23:59 로 설정
+
+            ```java
+            if (createDate.getHour() < 4) { // 0 - 4 시 사이에 글을 작성할 경우, 전 날의 23:59 에 글을 작성한 것과 동일하게 취급.
+                LocalDateTime toChange = createDate.minusDays(1); // 전날로 설정
+                createDate = LocalDateTime.of(toChange.getYear(), toChange.getMonthValue(), toChange.getDayOfMonth(), 23, 59, 59); // 전날 23시59분으로 설정
+            }
+            Long postId = postService.save(loginMember.getId(), createDate); // 저장할 때는 해당 글의 작성자 Member 연결, creatTime만 설정해줌
+            ```
+
+
+### <220814>
+
+> #95 `Back` : 랭크 측정 기법 변경
+>
+
+- #95
+    - 기능 필요성
+        - 현재 랭크 측정 기준은 [어제 공부 시간을 기준으로 하루 목표 달성량 + 일주일 총 공부시간을 기준으로 일주일 목표 달성량 + 한달 출석률]
+        - 하지만, ‘어제 공부 시간을 기준으로 하루 목표 달성량’ 은 변동량이 너무 크기 때문에 어제 하루의 공부량이 랭크에 큰 영향을 미침. → 랭크 변동률이 커짐
+        - 고로 변동률을 줄일 필요가 존재
+    - 구현
+        - '어제 공부 시간을 기준으로 하루 목표 달성량’ → '일주일 기준 하루 평균 공부시간으로 하루 목표 달성량’ 으로 변경 (해당 사항은 추후 변동 가능)
+
+            ```java
+            Times weekAvgTimes = new Times();
+            int weekAvgTime = weekAllTimes / 7;
+            int dayGoalTimes = member.getGoal().getDayGoalTimes();
+            allStatic.setGoalAttainmentToday(Math.round(((float) weekAvgTime / (float) dayGoalTimes) * 100));
+            ```
+
+
+### <220812>
+
+> #93 `Bug` : 랭킹 페이지 및 My Page Times 계산 오류
+>
+
+- #93
+    - 발생 오류
+        - Ranking Page 이든 My Page 이든 공부 시간 계산 시 시간이 마무리되지 않은 Post에 대해선 Times가 Null 반환 → `NullPointerException` 발생
+        - Post의 times size 가 홀수 일경우 그냥 null이 반환되도록 설정되어 있었음 → 처리 필요
+    - 해결
+        - times size 가 짝수라면 계산을 돌리고
+        - 홀수 (마무리되지 않은 시간) 에 대해서는 null 이 아닌 0을 반환하여 `NullPointerException` 을 피할 수 있도록 설정
+
+            ```java
+            private Times getTimes(List<String> times) {
+                Times resultTime;
+                if (times.size() % 2 == 0) { // 짝수
+            					int total1 = 0;
+            					...
+                    }
+                    resultTime = new Times(total1);
+                } else { // 홀수 -> 마무리되지 않은 post
+                    resultTime = new Times(0);
+                }
+                return resultTime;
+            }
+            ```
+
 ### <220811>
 
 > #88 `Bug` : My Page 에서의 post edit 오류 <br>
