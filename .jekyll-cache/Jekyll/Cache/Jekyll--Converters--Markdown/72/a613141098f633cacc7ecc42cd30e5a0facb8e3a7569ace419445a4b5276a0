@@ -1,11 +1,11 @@
-I"G�<aside>
+I"<<aside>
 🏋️ <strong>Today I Developed</strong> <br />
 매일 매일 제가 개발한 흔적을 남기는 공간입니다!
 </aside>
 
 <p><br /></p>
 
-<h2 id="projectsemogong-capstone--개발-일지">Project(SEMOGONG, Capstone, …) 개발 일지</h2>
+<h2 id="projectsemogong-개발-일지">Project(SEMOGONG) 개발 일지</h2>
 
 <ul>
   <li>Issue 를 바탕으로 개발 진행.</li>
@@ -20,6 +20,411 @@
 </ul>
 
 <hr />
+
+<h3 id="220818">&lt;220818&gt;</h3>
+
+<blockquote>
+  <p>#99 <code class="language-plaintext highlighter-rouge">Bug</code> : 0-4 시 시작 시 시작시간 오류</p>
+
+</blockquote>
+
+<ul>
+  <li>#99
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>0-4시 공부 시작 시, 로직에 따라 날짜는 전날로 설정되는데, 그때 공부 시작 시간 마저 createTime으로 설정되는 오류</li>
+          <li>Post Entity 생성 메서드 createPost 의 시간 List에 시간을 추가하는 times.add 가 createTime 으로 설정되어 있어 발생하는 오류</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>
+            <p>createPost의 times.add 를 현재 시간(LocalDateTime.now())으로 설정</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">static</span> <span class="nc">Post</span> <span class="nf">createPost</span><span class="o">(</span><span class="nc">Member</span> <span class="n">member</span><span class="o">,</span> <span class="nc">LocalDateTime</span> <span class="n">createTime</span><span class="o">){</span>
+      <span class="nc">Post</span> <span class="n">post</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Post</span><span class="o">();</span>
+      <span class="n">post</span><span class="o">.</span><span class="na">setMember</span><span class="o">(</span><span class="n">member</span><span class="o">);</span>
+      <span class="n">post</span><span class="o">.</span><span class="na">createTime</span> <span class="o">=</span> <span class="n">createTime</span><span class="o">;</span>
+      <span class="nc">DateTimeFormatter</span> <span class="n">timeFormatter</span> <span class="o">=</span> <span class="nc">DateTimeFormatter</span><span class="o">.</span><span class="na">ofPattern</span><span class="o">(</span><span class="s">"HH:mm"</span><span class="o">);</span>
+      <span class="n">post</span><span class="o">.</span><span class="na">times</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">format</span><span class="o">(</span><span class="n">timeFormatter</span><span class="o">));</span>
+      <span class="n">post</span><span class="o">.</span><span class="na">state</span> <span class="o">=</span> <span class="nc">StudyState</span><span class="o">.</span><span class="na">STUDYING</span><span class="o">;</span>
+      <span class="k">return</span> <span class="n">post</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220815">&lt;220815&gt;</h3>
+
+<blockquote>
+  <p>#96 <code class="language-plaintext highlighter-rouge">Back</code> : 공부 시작 시간이 0~4시 사이일 경우에 대한 처리 [시간 처리]</p>
+
+</blockquote>
+
+<ul>
+  <li>#96
+    <ul>
+      <li>기존의 문제점
+        <ul>
+          <li>만약 사용자가 0~4시 사이에 공부를 시작할 경우, 해당 post는 비지니스 로직 특성 상 해당 날짜를 가지게 됨. (<code class="language-plaintext highlighter-rouge">LocalDateTime.now()</code> 이용)</li>
+          <li>하지만, 서비스 특성 상 0~4시 사이의 시간은 이전 날짜로 인식되게 해야됨. (그렇지 않으면 해당 날짜의 Post가 2개가 되는 예외 발생)</li>
+          <li>ex) 13일이 넘어가는 1시에 공부를 시작했다면 14일로 인식 → 13일로 인식되게 설정 필요</li>
+        </ul>
+      </li>
+      <li>구현
+        <ul>
+          <li>0 - 4 시 사이에 글을 작성할 경우, 전 날의 23:59 에 글을 작성한 것과 동일하게 취급하여 구현 → 기존의 로직에 방해되지 않으면서 현재 필요한 요구사항 충족 가능</li>
+          <li>
+            <p>즉, post의 times에는 현재시간을 넣어주고, post의 createTime은 그전날의 23:59 로 설정</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">if</span> <span class="o">(</span><span class="n">createDate</span><span class="o">.</span><span class="na">getHour</span><span class="o">()</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// 0 - 4 시 사이에 글을 작성할 경우, 전 날의 23:59 에 글을 작성한 것과 동일하게 취급.</span>
+      <span class="nc">LocalDateTime</span> <span class="n">toChange</span> <span class="o">=</span> <span class="n">createDate</span><span class="o">.</span><span class="na">minusDays</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <span class="c1">// 전날로 설정</span>
+      <span class="n">createDate</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">toChange</span><span class="o">.</span><span class="na">getYear</span><span class="o">(),</span> <span class="n">toChange</span><span class="o">.</span><span class="na">getMonthValue</span><span class="o">(),</span> <span class="n">toChange</span><span class="o">.</span><span class="na">getDayOfMonth</span><span class="o">(),</span> <span class="mi">23</span><span class="o">,</span> <span class="mi">59</span><span class="o">,</span> <span class="mi">59</span><span class="o">);</span> <span class="c1">// 전날 23시59분으로 설정</span>
+  <span class="o">}</span>
+  <span class="nc">Long</span> <span class="n">postId</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">save</span><span class="o">(</span><span class="n">loginMember</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="n">createDate</span><span class="o">);</span> <span class="c1">// 저장할 때는 해당 글의 작성자 Member 연결, creatTime만 설정해줌</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220814">&lt;220814&gt;</h3>
+
+<blockquote>
+  <p>#95 <code class="language-plaintext highlighter-rouge">Back</code> : 랭크 측정 기법 변경</p>
+
+</blockquote>
+
+<ul>
+  <li>#95
+    <ul>
+      <li>기능 필요성
+        <ul>
+          <li>현재 랭크 측정 기준은 [어제 공부 시간을 기준으로 하루 목표 달성량 + 일주일 총 공부시간을 기준으로 일주일 목표 달성량 + 한달 출석률]</li>
+          <li>하지만, ‘어제 공부 시간을 기준으로 하루 목표 달성량’ 은 변동량이 너무 크기 때문에 어제 하루의 공부량이 랭크에 큰 영향을 미침. → 랭크 변동률이 커짐</li>
+          <li>고로 변동률을 줄일 필요가 존재</li>
+        </ul>
+      </li>
+      <li>구현
+        <ul>
+          <li>
+            <p>‘어제 공부 시간을 기준으로 하루 목표 달성량’ → ‘일주일 기준 하루 평균 공부시간으로 하루 목표 달성량’ 으로 변경 (해당 사항은 추후 변동 가능)</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Times</span> <span class="n">weekAvgTimes</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Times</span><span class="o">();</span>
+  <span class="kt">int</span> <span class="n">weekAvgTime</span> <span class="o">=</span> <span class="n">weekAllTimes</span> <span class="o">/</span> <span class="mi">7</span><span class="o">;</span>
+  <span class="kt">int</span> <span class="n">dayGoalTimes</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="na">getGoal</span><span class="o">().</span><span class="na">getDayGoalTimes</span><span class="o">();</span>
+  <span class="n">allStatic</span><span class="o">.</span><span class="na">setGoalAttainmentToday</span><span class="o">(</span><span class="nc">Math</span><span class="o">.</span><span class="na">round</span><span class="o">(((</span><span class="kt">float</span><span class="o">)</span> <span class="n">weekAvgTime</span> <span class="o">/</span> <span class="o">(</span><span class="kt">float</span><span class="o">)</span> <span class="n">dayGoalTimes</span><span class="o">)</span> <span class="o">*</span> <span class="mi">100</span><span class="o">));</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220812">&lt;220812&gt;</h3>
+
+<blockquote>
+  <p>#93 <code class="language-plaintext highlighter-rouge">Bug</code> : 랭킹 페이지 및 My Page Times 계산 오류</p>
+
+</blockquote>
+
+<ul>
+  <li>#93
+    <ul>
+      <li>발생 오류
+        <ul>
+          <li>Ranking Page 이든 My Page 이든 공부 시간 계산 시 시간이 마무리되지 않은 Post에 대해선 Times가 Null 반환 → <code class="language-plaintext highlighter-rouge">NullPointerException</code> 발생</li>
+          <li>Post의 times size 가 홀수 일경우 그냥 null이 반환되도록 설정되어 있었음 → 처리 필요</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>times size 가 짝수라면 계산을 돌리고</li>
+          <li>
+            <p>홀수 (마무리되지 않은 시간) 에 대해서는 null 이 아닌 0을 반환하여 <code class="language-plaintext highlighter-rouge">NullPointerException</code> 을 피할 수 있도록 설정</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="nc">Times</span> <span class="nf">getTimes</span><span class="o">(</span><span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">times</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Times</span> <span class="n">resultTime</span><span class="o">;</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">times</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// 짝수</span>
+  					<span class="kt">int</span> <span class="n">total1</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+  					<span class="o">...</span>
+          <span class="o">}</span>
+          <span class="n">resultTime</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Times</span><span class="o">(</span><span class="n">total1</span><span class="o">);</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span> <span class="c1">// 홀수 -&gt; 마무리되지 않은 post</span>
+          <span class="n">resultTime</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Times</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+      <span class="o">}</span>
+      <span class="k">return</span> <span class="n">resultTime</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220811">&lt;220811&gt;</h3>
+
+<blockquote>
+  <p>#88 <code class="language-plaintext highlighter-rouge">Bug</code> : My Page 에서의 post edit 오류 <br />
+#89 <code class="language-plaintext highlighter-rouge">Bug</code> : My Page, Member Detail 에서의 출석률 계산 오류</p>
+
+</blockquote>
+
+<ul>
+  <li>#88
+    <ul>
+      <li>발생 오류
+        <ul>
+          <li>My Page 에서 글 수정 submit이 안되는 오류</li>
+          <li>focusedPostId 를 찾을 수 없어서 발생한 오류</li>
+          <li>뿐만 아니라 이전에 home에서의 post edit 시 발생하는 오류와 동일한 오류 발생</li>
+          <li>원인 : focusedPostId 변수이름 변경으로 발생한 오류 + 중복되는 id로 인한 오류 → 전체적인 post edit의 변경사항을 반영하지 않음</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>Home에서의 오류해결과 동일하게 My Page의 렌더링되는 html에 각 모든 post에 연결되는 simplemde + {post.id} 변수 생성 후 해당 변수에 새로 생성되는 Simple MDE 할당</li>
+          <li>focusedPostId 변수 이름 수정</li>
+        </ul>
+      </li>
+      <li>추후 필요 수정 사항
+        <ul>
+          <li><strong>[중요]</strong> focusedPostId는 해당 비지니스 로직에서 사용되지 않음 → main.js 가 아닌 새로운 javascript를 생성하여 분리할 필요가 있음.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>#89
+    <ul>
+      <li>발생 오류
+        <ul>
+          <li>한달 공부 통계에서 출석률, 전체 공부시간, 평균 공부시간 등이 수정한 부분과 다르게 ‘오늘’까지 고려가 됨. ( → 원래는 ‘어제’ 까지만 고려가 되어 계산되어야 함)</li>
+          <li>계산 부분에 있어서 오류 발생 → 계산 해놓고 다른 변수로 적용하고 있었음</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>공부 랭킹을 위해서 현재 달의 출석률을 구해주기 위해서 focusedDay, nowMonthDayLen 을 사용했지만, 현재 보고 있는 달력의 통계를 보여주기 위해 monthDate, mothPosts 를 사용했음. 여기서 만약 현재 보는 달력이 오늘 날짜의 달과 동일하다면 monthDate에 focusedDay 를 대입 하고 monthPosts에 어제날짜까지의 post를 넣어주어 해결</li>
+          <li>즉, 보고 있는 달력의 통계를 상황에 따라 현재 달에 맞게 설정해주며 해결</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Post</span><span class="o">&gt;</span> <span class="n">nowMonthPosts</span> <span class="o">=</span> <span class="n">postService</span><span class="o">.</span><span class="na">getMonthPosts</span><span class="o">(</span><span class="n">memberId</span><span class="o">,</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getMonthValue</span><span class="o">());</span>
+  <span class="kt">int</span> <span class="n">focusedDay</span><span class="o">;</span>
+  <span class="k">if</span> <span class="o">(</span><span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getHour</span><span class="o">()</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">focusedDay</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getDayOfMonth</span><span class="o">()</span> <span class="o">-</span> <span class="mi">2</span><span class="o">;</span>
+  <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">focusedDay</span> <span class="o">=</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getDayOfMonth</span><span class="o">()</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span>
+  <span class="o">}</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Post</span><span class="o">&gt;</span> <span class="n">calculatedNowMonthPosts</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+  <span class="k">for</span> <span class="o">(</span><span class="nc">Post</span> <span class="n">post</span> <span class="o">:</span> <span class="n">nowMonthPosts</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">post</span><span class="o">.</span><span class="na">getCreateTime</span><span class="o">().</span><span class="na">getDayOfMonth</span><span class="o">()</span> <span class="o">&gt;</span> <span class="n">focusedDay</span><span class="o">)</span> <span class="o">{</span>
+          <span class="k">break</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="n">calculatedNowMonthPosts</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">post</span><span class="o">);</span>
+  <span class="o">}</span>
+        
+  <span class="nc">ForCalender</span> <span class="nc">CalenderInfo</span> <span class="o">=</span> <span class="n">getCalenderInfo</span><span class="o">(</span><span class="n">weekDay</span><span class="o">,</span> <span class="n">focusedDate</span><span class="o">);</span>
+  <span class="kt">int</span> <span class="n">monthDate</span> <span class="o">=</span> <span class="n">dayData</span><span class="o">[</span><span class="n">month</span> <span class="o">-</span> <span class="mi">1</span><span class="o">];</span>
+  <span class="k">if</span> <span class="o">(</span><span class="n">month</span> <span class="o">==</span> <span class="nc">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">getMonthValue</span><span class="o">())</span> <span class="o">{</span>
+      <span class="n">monthDate</span> <span class="o">=</span> <span class="n">focusedDay</span><span class="o">;</span>
+      <span class="n">monthPosts</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;(</span><span class="n">calculatedNowMonthPosts</span><span class="o">);</span>
+  <span class="o">}</span>
+  <span class="nc">AllStatic</span> <span class="n">allStatic</span> <span class="o">=</span> <span class="n">getAllStatus</span><span class="o">(</span><span class="n">oriMember</span><span class="o">,</span> <span class="n">staticsData</span><span class="o">,</span> <span class="n">days</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">days</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">-</span> <span class="mi">1</span><span class="o">),</span> <span class="n">monthPosts</span><span class="o">,</span> <span class="n">monthDate</span><span class="o">,</span> <span class="n">focusedDay</span><span class="o">,</span> <span class="n">calculatedNowMonthPosts</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>먼저 focosedDay를 구해고 해당 변수에 맞는 현재 달의 posts를 가져옴</li>
+          <li>그 후 만약 사용자가 확인하고 있는 달력이 현재 달과 동일하다면 해당 변수들을 현재 달에 사용되는 변수로 변경. (아니라면 기존의 변수 사용)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220809">&lt;220809&gt;</h3>
+
+<blockquote>
+  <p>#90 <code class="language-plaintext highlighter-rouge">Bug</code> : 새 글 작성 오류</p>
+
+</blockquote>
+
+<ul>
+  <li>#90
+    <ul>
+      <li>발생 오류
+        <ul>
+          <li>새 글 작성 시 simpleMDE 가 content에 생성되지 않음</li>
+          <li>submit 시 제출되지 않음</li>
+          <li>원인 : post edit 과 fragment를 공유하고 있기 때문에, 이전에 post edit 오류 수정 시 id 값을 변경하는 부분이 있었는데, 그 부분을 post new(새 글 작성)의 javascript 코드에 반영하지 않았기 때문에 발생</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>기존의 content 라는 id를 가졌던 요소에 <code class="language-plaintext highlighter-rouge">content + ${post.id}</code> 의 id를 새로 부여 → 이제 해당 id로 Simple MDE 를 심어줄 수 있음</li>
+          <li><code class="language-plaintext highlighter-rouge">simplemde + ${post.id}</code> 의 변수를 생성해주고 해당 변수에 새로 생성된 Simple MDE 를 할당 → 해당 MDE의 value(content) 를 가져올 수 있게 됨</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>[오늘의 깨달음] Fragment 사용</strong> <br />
+무조건 fragment를 사용한다고 편한 것이 아님. fragment를 난무하지 말고, 개별 비지니스 로직이 좀 많은 부분에서 다르다 하면 사용하지 말고 (유지 보수가 힘듦), 정말 공통적인 요소에만 fragment를 사용하는 것이 좋음
+
+</aside>
+
+<h3 id="220808">&lt;220808&gt;</h3>
+
+<blockquote>
+  <p>#87 <code class="language-plaintext highlighter-rouge">Bug</code> : 다중 post edit 시 여러 오류 발생</p>
+
+</blockquote>
+
+<ul>
+  <li>#87
+    <ul>
+      <li>기존 문제점
+        <ol>
+          <li>가장 마지막에 edit버튼을 누른 post의 content로 모든 post의 내용이 변경됨 (simpleMDE를 <strong>전역변수로 공유</strong>하며 사용해서 발생한 문제)</li>
+          <li>simpleMDE가 다른 post의 content에 생성됨 (postEditForm의 content가 <strong>unique id가 아니면서 생기는 문제</strong>. → edit하면 여러개의 content가 생성되고, 중복된 ID로 인해서 가장 처음 생성된 content에 simpleMDE가 발생)</li>
+          <li>submit 하면 이전에 열었던 post에 fragment가 replacement되고 현재 post는 replacement되지 않음 (postEditForm의 postEdit_container의 id가 <strong>unique하지 않아 발생하는 문제</strong>, 2번과 동일한 이유로 발생하는 문제)</li>
+        </ol>
+      </li>
+      <li>해결
+        <ol>
+          <li>simpleMDE 변수 하나를 전역변수로 공유하며 사용해서 발생한 문제
+            <ul>
+              <li>simpleMDE를 각 post의 ID로 생성한 후 (전역변수로 선언 → 다른 함수에서도 사용해야 되기 때문)</li>
+              <li>edit 시 해당 post의 ID 값을 가지는 simpleMDE를 가져와 해당 변수에 새로운 simpleMDE를 생성해줌. → unique ID를 가지고 있기 때문에, 각 post의 simpleMDE의 값을 구분하여 저장할 수 있게 됨</li>
+              <li>
+                <p>구현 코드</p>
+
+                <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">// home.html의 script 부분 (변경 전: var simplemde;)</span>
+  <span class="p">[</span><span class="err">#</span> <span class="nx">th</span><span class="p">:</span><span class="nx">each</span><span class="o">=</span><span class="dl">"</span><span class="s2">post, stat : ${postDtos}</span><span class="dl">"</span><span class="p">]</span>
+  <span class="kd">var</span> <span class="nx">simplemde</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">post</span><span class="p">.</span><span class="nx">id</span><span class="p">}]];</span>
+  <span class="p">[</span><span class="sr">/</span><span class="err">]
+</span></code></pre></div>                </div>
+
+                <ul>
+                  <li>home.html의 simplemde를 각 post에 mapping 될 수 있도록 id에 맞게 simplemde를 생성</li>
+                  <li>thymeleaf의 javascirpt에서의 유용한 기능을 이용하여 <strong>동적 변수 생성</strong></li>
+                </ul>
+
+                <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">function</span> <span class="nx">edit_post</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+          <span class="na">url</span><span class="p">:</span> <span class="dl">'</span><span class="s1">/posts/edit/</span><span class="dl">'</span> <span class="o">+</span> <span class="nx">id</span><span class="p">,</span>
+          <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">GET</span><span class="dl">"</span><span class="p">,</span>
+      <span class="p">})</span>
+          <span class="p">.</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">fragment</span><span class="p">)</span> <span class="p">{</span>
+              <span class="nx">$</span><span class="p">(</span><span class="dl">'</span><span class="s1">#postModal_content</span><span class="dl">'</span> <span class="o">+</span> <span class="nx">id</span><span class="p">).</span><span class="nx">replaceWith</span><span class="p">(</span><span class="nx">fragment</span><span class="p">);</span>
+  						<span class="cm">/* (변경 전) =&gt; simplemde = new SimpleMDE({element: document.getElementById("content"+id.toString()),spellChecker: false});*/</span>
+              <span class="nb">eval</span><span class="p">(</span><span class="dl">"</span><span class="s2">simplemde</span><span class="dl">"</span> <span class="o">+</span> <span class="nx">id</span> <span class="o">+</span> <span class="dl">"</span><span class="s2">= new SimpleMDE({element: document.getElementById(</span><span class="dl">"</span><span class="nx">content</span><span class="dl">"</span><span class="s2">+id.toString()),spellChecker: false})</span><span class="dl">"</span><span class="p">);</span>
+              <span class="p">...</span>
+          <span class="p">});</span>
+  <span class="p">}</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li>edit 요청이 들어올 때 동적으로 해당 post에 mapping 되는 simplemde를 재정의 → 해당 post에 simpleMDE를 content에 심어주는 것</li>
+                  <li>이때 id에 맞는 <strong>동적 변수</strong>를 통해 전역 변수인 simpleMDE를 가져와야 하기 떄문에 <code class="language-plaintext highlighter-rouge">eval()</code> 함수 사용</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>postEditForm의 content가 unique id가 아니면서 생기는 문제. → edit하면 여러개의 content가 생성되고, 중복된 ID로 인해서 가장 처음 생성된 content에 simpleMDE가 발생
+            <ul>
+              <li>
+                <p>postEditForm에 content id속성을 post의 ID를 연결해주어 unique한 id가 될 수 있도록 설정.</p>
+
+                <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="p">&lt;</span><span class="nt">textarea</span> <span class="na">type</span><span class="p">=</span><span class="s">"text"</span> <span class="na">rows</span><span class="p">=</span><span class="s">"4"</span> 
+  					<span class="na">th</span><span class="err">:</span><span class="na">field</span><span class="p">=</span><span class="s">"*{content}"</span> <span class="na">th</span><span class="err">:</span><span class="na">id</span><span class="p">=</span><span class="s">"'content'+${postForm.id}"</span> 
+  					<span class="na">placeholder</span><span class="p">=</span><span class="s">"Content"</span> <span class="na">class</span><span class="p">=</span><span class="s">"form-control"</span>
+            <span class="na">autocomplete</span><span class="p">=</span><span class="s">"off"</span><span class="p">&gt;&lt;/</span><span class="nt">textarea</span><span class="p">&gt;</span>
+</code></pre></div>                </div>
+              </li>
+              <li>
+                <p>추가로 그에 맞게 simpleMDE를 심어줄 때도 <code class="language-plaintext highlighter-rouge">content+post.id</code> 로 찾아오고 심을 수 있도록 설정 → unique id이기 때문에 겹칠일도 없으며, 제대로된 위치에 생성 가능</p>
+
+                <p><code class="language-plaintext highlighter-rouge">new SimpleMDE({element: document.getElementById(\"content\"+id.toString()),spellChecker: false})</code></p>
+              </li>
+            </ul>
+          </li>
+          <li>submit 하면 이전에 열었던 post에 fragment가 replacement되고 현재 post는 replacement되지 않음 (postEditForm의 postEdit_container의 id가 unique하지 않아 발생하는 문제, 2번과 동일한 이유로 발생하는 문제)
+            <ul>
+              <li>eidt 요청 시 postEditForm의 postEdit_container를 찾아와 교체해 준 후</li>
+              <li>해당 postEdit_container id값을 <code class="language-plaintext highlighter-rouge">postEdit_container + post.id</code> 로 가질 수 있도록 설정 → 미리 id값으로 렌더링 후 찾으면 찾아와지지 않기 때문에 가져온 후 id 값을 변경</li>
+              <li>
+                <p>코드</p>
+
+                <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">function</span> <span class="nx">edit_post</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+          <span class="na">url</span><span class="p">:</span> <span class="dl">'</span><span class="s1">/posts/edit/</span><span class="dl">'</span> <span class="o">+</span> <span class="nx">id</span><span class="p">,</span>
+          <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">GET</span><span class="dl">"</span><span class="p">,</span>
+      <span class="p">})</span>
+          <span class="p">.</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">fragment</span><span class="p">)</span> <span class="p">{</span>
+              <span class="nx">$</span><span class="p">(</span><span class="dl">'</span><span class="s1">#postModal_content</span><span class="dl">'</span> <span class="o">+</span> <span class="nx">id</span><span class="p">).</span><span class="nx">replaceWith</span><span class="p">(</span><span class="nx">fragment</span><span class="p">);</span>
+              <span class="p">...</span>
+              <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">"</span><span class="s2">postEdit_container</span><span class="dl">"</span><span class="p">).</span><span class="nx">setAttribute</span><span class="p">(</span><span class="dl">"</span><span class="s2">id</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">postEdit_container</span><span class="dl">"</span> <span class="o">+</span> <span class="nx">id</span><span class="p">.</span><span class="nx">toString</span><span class="p">());</span>
+              <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">"</span><span class="s2">postEdit_container</span><span class="dl">"</span><span class="o">+</span><span class="nx">id</span><span class="p">.</span><span class="nx">toString</span><span class="p">()).</span><span class="nx">scrollIntoView</span><span class="p">();</span>
+          <span class="p">});</span>
+  <span class="p">}</span>
+</code></pre></div>                </div>
+              </li>
+              <li>마지막으로 post 시 <code class="language-plaintext highlighter-rouge">postEdit_container + post.id</code> 로 결과 fragment로 replace. → unique ID를 가지고 있기 때문에 제대로된 위치로 replace 됨</li>
+            </ul>
+          </li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="220807">&lt;220807&gt;</h3>
+
+<blockquote>
+  <p>#83 <code class="language-plaintext highlighter-rouge">Bug</code> : 시간 변경 오류</p>
+
+</blockquote>
+
+<ul>
+  <li>#83
+    <ul>
+      <li>기존 문제점
+        <ul>
+          <li>오늘이 아닌 이전 post에서 시간 수정 시 오류 발생</li>
+          <li>오늘 작성 중인 Post가 아닌데, <strong>‘현재시간을 넘는 시간이 발생했다’ 는 validation</strong> 작동</li>
+          <li>또한 00시, 01시 등 0~4시에 대한 시간계산 오류 → 23시보다 00시, 01시가 더 큰 값인데, 단순하게 23&gt;0 이므로 0~4시가 더 작은 시간으로 판별되는 오류</li>
+        </ul>
+      </li>
+      <li>해결
+        <ul>
+          <li>0~4 시에 대한 추가적인 처리
+            <ul>
+              <li>하루 시간의 기준을 4시로 잡있기 때문에 0~4시에 대해선 24를 더 추가해주어야 함</li>
+              <li><code class="language-plaintext highlighter-rouge">if (hour &lt; 4) {hour+=24}</code> 추가하여 전체적인 시간 계산이 정상적으로 이루어질 수 있도록 수정</li>
+            </ul>
+          </li>
+          <li>오늘 post에 대해서만 시간확인(1) 검증 실행
+            <ul>
+              <li>이전 post들에 대해선 시간확인(1-현재시간과 비교)을 진행해선 안됨</li>
+              <li><code class="language-plaintext highlighter-rouge">if (id == focusedPostId) {...}</code> 를 통해 오늘 post에 대해서만 해당 검증 진행</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
 
 <h3 id="220806">&lt;220806&gt;</h3>
 
