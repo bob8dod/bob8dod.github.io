@@ -2,7 +2,7 @@
 layout: post
 title:  "Persistence Context"
 date:   2022-08-04
-image:  /posts/jpa2.jpeg
+image:  /posts/jpa.png
 tags:   SpringBoot JPA
 ---
 
