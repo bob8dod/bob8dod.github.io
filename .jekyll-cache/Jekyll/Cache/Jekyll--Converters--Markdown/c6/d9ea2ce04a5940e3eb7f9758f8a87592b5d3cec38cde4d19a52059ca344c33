@@ -1,0 +1,286 @@
+I"�N<h2 id="연관관계-기초">연관관계 기초</h2>
+
+<h3 id="연관관계는-왜-필요한가"><strong>연관관계는 왜 필요한가?</strong></h3>
+
+<ul>
+  <li>객체를 테이블에 맞추어 모델링(외래키를 field로 설정 → ex) teamId) 하면 자유자재로 객체 그래프를 이용할 수 없음! → 객체 지향적 설계 불가능</li>
+  <li>즉, 협력 관계를 만들 수 없음.</li>
+  <li><strong>테이블과 객체 사이</strong>에는 이런 <strong>큰 간격이 존재</strong></li>
+  <li>이 간격을 <strong>JPA는 연관관계로 해결</strong>하고자 하는 것!</li>
+</ul>
+
+<aside>
+⚠️ <strong>연관관계 주요 목표</strong>
+<ul>
+<li> 객체와 테이블 <b>연관관계의 차이를 이해</b> </li>
+<li> 객체의 <b>참조(Reference)</b> ↔ 테이블의 <b>외래키(Foriegn Key)</b> <b>매핑</b> </li>
+</ul>
+</aside>
+
+<aside>
+⚠️ <strong>연관관계 속성</strong>
+<ul>
+<li> <b>방향</b> : 단방향, 양방향(<code>mappedBy</code>) </li>
+<li> <b>다중성</b> : 다대일(<code>@ManyToOne</code>), 일대다(<code>@OneToMany</code>), 일대일(<code>@OneToOne</code>), 다대다(<code>@ManyToMany</code>)</li>
+<li> <b>연관관계의 주인</b> : 객체 <b>양방향</b> 연관관계에서의 <b>관계 관리자</b></li>
+</ul>
+</aside>
+
+<h2 id="연관관계">연관관계</h2>
+
+<h3 id="단방향-연관관계">단방향 연관관계</h3>
+
+<ul>
+  <li><strong>객체 지향 모델링</strong>
+    <ul>
+      <li>객체를 테이블에 맞추어 모델링하는 것이 아닌, 테이블에 초점되지 않고 <strong>객체가 협력관계를 이용할 수 있도록 모델링</strong>하는 것 → <strong>객체 연관관계</strong> 사용</li>
+      <li>즉, <strong>외래키값을 그대로 갖는 것이 아닌</strong>, 해당 연관관계를 가지고 있는 <strong>객체 자체를 참조(Reference)</strong>로 가질 수 있도록 설정하는 것</li>
+      <li>ex) <code class="language-plaintext highlighter-rouge">private Long teamId;</code> → <code class="language-plaintext highlighter-rouge">private Team team;</code> : 객체 그래프 탐색이 가능해짐</li>
+    </ul>
+  </li>
+  <li><strong>단방향 연관관계</strong>
+    <ul>
+      <li><strong>Entity 의 입장</strong>.  Table의 입장이 아님</li>
+      <li>두 객체의 연관관계가 있을 때, <strong>객체의 이동이 한 객체에서밖에 하지 못하는 경우</strong></li>
+      <li>즉, <strong>참조(Reference)가 한곳에만</strong> 있는 것.</li>
+      <li><strong>[주의] Table에서는 단방향은 존재하지 않음. →  Join으로 양방향으로 이동 가능!</strong></li>
+    </ul>
+  </li>
+  <li>
+    <p>연관관계 예시 (단방향)</p>
+
+    <p><img src="/images/posts/post-220809/Untitled.png" alt="Untitled" /></p>
+
+    <ul>
+      <li>참조가 Member에만 있음 → <strong>단방향</strong></li>
+      <li>
+        <p>Member Class 참조 부분</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">// Class Member</span>
+  <span class="nd">@ManyToOne</span> 
+  <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">"TEAM_ID"</span><span class="o">)</span> 
+  <span class="kd">private</span> <span class="nc">Team</span> <span class="n">team</span><span class="o">;</span>
+</code></pre></div>        </div>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">@ManyToOne</code>
+        <ul>
+          <li>다대일(N:1)</li>
+          <li><strong>참조된 객체(Reference)와 어떤 관계인지</strong>를 알려주는 것</li>
+          <li>즉, <strong>DB 입장</strong>에서 현재 Class의 <strong>Entity와 Referecne된 Entity가 어떤 연관관계인지</strong>를 알려주는 것 (DB에는 연관관계라는 개념이 없으므로!)</li>
+          <li>
+            <table>
+              <tbody>
+                <tr>
+                  <td>Member 입장 : Many</td>
+                  <td>Team 입장 : One  ⇒ ManyToOne</td>
+                </tr>
+              </tbody>
+            </table>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">@JoinColumn(name = "TEAM_ID")</code></p>
+
+        <p><img src="/images/posts/post-220809/Untitled 1.png" alt="Untitled" /></p>
+
+        <ul>
+          <li><strong>Member Entity 의 team(Reference)과 Member Table 의 team_id(foreign key)를 매핑한다</strong>는 것</li>
+          <li><strong>연관관계의 주인</strong>이 갖는 어노태이션 (↔ <code class="language-plaintext highlighter-rouge">mappedBy</code>)</li>
+        </ul>
+      </li>
+      <li>즉, <strong>두 객체의 관계</strong>가 무엇인지(일대다, 다대일, …), 그리고 이 객체를 <strong>Table 의 입장에선 어떤 Column 과 매핑</strong>할 것인지를 설정만 해주면 이를 통해 연관관계를 설정하고 결과적으로 <strong>객체 지향적인 설계가 가능</strong>함!</li>
+      <li>결국 참조를 사용하여 연관된 객체를 찾을 수 있음 → <strong>협력관계 설정 가능</strong></li>
+      <li>객체 지향적인 설계(사용)를 위해 <strong>DB Table 입장에서의 상황을 알려주는 것</strong></li>
+      <li>
+        <p>이렇게 연관관계를 설정하면</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Member</span> <span class="n">member</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1L</span><span class="o">);</span>
+  <span class="nc">Team</span> <span class="n">team</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="nc">Team</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">member</span><span class="o">.</span><span class="na">getTeamId</span><span class="o">());</span>
+</code></pre></div>        </div>
+
+        <p>이렇게 할 필요 없이 바로 <strong>참조(협력관계)를 이용</strong>하여</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Member</span> <span class="n">member</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1L</span><span class="o">);</span>
+  <span class="nc">Team</span> <span class="n">team</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="na">getTeam</span><span class="o">();</span>
+</code></pre></div>        </div>
+
+        <p>로 해당 <strong>연관관계의 객체를 접근</strong>할 수 있음! → <strong>객체 지향적인 설계</strong></p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="양방향-연관관계와-연관관계의-주인">양방향 연관관계와 연관관계의 주인</h3>
+
+<ul>
+  <li><strong>양방향 연관관계</strong>
+    <ul>
+      <li><strong>Entity 의 입장</strong>.  Table의 입장이 아님</li>
+      <li>두 객체의 연관관계가 있을 때, 객체의 이동이 <strong>두 객체 모두에서 할 수 있는</strong> 경우</li>
+      <li>즉, <strong>참조(Reference)가 양쪽</strong>에 있는 것. (양쪽으로 참조해서 갈 수 있는 것)</li>
+      <li>사실 <strong>양방향은 단방향이 두개로 되어 있는 것</strong>을 말하는 것</li>
+      <li><strong>[주의] Table에서는 항상 양방향이 가능!</strong> 즉, Table은 <strong>단뱡향이든 양방향이든 Table은 전혀 변화가 없음</strong> (Join이 존재하기 때문! → 방향이란 개념이 없음)</li>
+    </ul>
+  </li>
+  <li>
+    <p>양방향 연관관계 예시</p>
+
+    <p><img src="/images/posts/post-220809/Untitled 2.png" alt="Untitled" /></p>
+
+    <ul>
+      <li>참조가 Member, Team 둘 다에 있음 → <strong>양방향</strong></li>
+      <li><strong>중요한 건 단방향이든 양방향이든 Table에 변화는 없음!</strong> → Table에는 방향이라는 것이 없음 (즉, 당방향이든 양방향이든 모든 가능!)</li>
+      <li>
+        <p>Team Class 참조 부분 (Member Class 는 단방향에서와 동일)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">mappedBy</span> <span class="o">=</span> <span class="s">"team"</span><span class="o">)</span>
+  <span class="kd">private</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">members</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@OneToMany(mappedBy = "team")</code>
+            <ul>
+              <li><strong>해당 객체와 어떤 관계</strong>인지를 알려주는 것 (DB입장에서 어떤 관계인지 알려주는 것)</li>
+              <li>
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>Team 입장 : One</td>
+                      <td>Member 입장 : Many ⇒ OneToMany</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </li>
+              <li><code class="language-plaintext highlighter-rouge">mappedBy = "team"</code> : <strong>MEMBER 객체의 어떤 Field 와 연관</strong>이 있는가 (DB 의 입장은 아님. DB 는 단방향이든 양방향이든 연결 가능! 객체 지향적인 설계를 위한 설정임!)</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>이렇게 되면 Team에서도 연관된 Member들을 List로 확인이 가능함 → 객체지향적인 설계(객체그래프탐색 가능)</li>
+      <li>하지만, <strong>양방향이 항상 좋은 것은 아님</strong>. 객체는 단방향이어야 객체그래프 자체가 순환되지 않고 좋음 → <strong>필수적인 상황(역추적)에서만 사용하는 것</strong>이 좋음</li>
+    </ul>
+  </li>
+  <li><strong>연관관계의 주인</strong>
+    <ul>
+      <li>객체와 테이블간에 연관관계를 맺는 차이를 이해해야 됨</li>
+      <li>차이
+        <ul>
+          <li><strong>객체의 연관관계 = 2개 (양방향)</strong>
+            <ul>
+              <li>사실 양방향 관계가 아니라 서로 다른 방향의 단뱡향 관계 2개</li>
+              <li>A → B 1개 (단방향)</li>
+              <li>B → A 1개 (단방향)</li>
+            </ul>
+          </li>
+          <li><strong>테이블 연관관계 = 1개 (양방향)</strong>
+            <ul>
+              <li>테이블은 <strong>외래 키 하나로</strong> 두 테이블의 연관관계를 관리</li>
+              <li>A ↔ B 1개 (양방향)</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">mappedBy</code>
+        <ul>
+          <li>객체의 양방향 관계는 사실 양방향 관계가 아니라 서로 다른 방향의 단뱡향 관계 2개!</li>
+          <li>즉, 객체를 양방향으로 참조하려면 단방향 연관관계를 2개 만들어 줘야 함!</li>
+          <li>반면에, <strong>테이블은 외래 키 하나로 두 테이블의 연관관계를 관리하고 있음</strong> (외래 키 하나로 A→B 로, B→A로 갈 수 있음)</li>
+          <li>즉, 외래 키 하나로 양방향 연관관계를 가짐! (양 쪽으로 JOIN 가능!)</li>
+          <li>
+            <p>여기서 딜레마 발생! → <strong>A에서 B를 바꿨을 때 Table 에 반영(외래키 변경)을 해야 되는지, B에서 A가 변경되었을 때 Table 에 반영(외래키 변경)해야 될 지 딜레마</strong>에 빠지게 됨 (객체로 보면 <strong>A,B 둘 다에 참조값이 있지만 Table 에는 A에만 FK</strong> 가 있으니!)</p>
+
+            <p><img src="/images/posts/post-220809/Untitled 3.png" alt="Untitled" /></p>
+
+            <p>예를 들어 Member에서 Team 을 바꿨을 때 Member의 변경된 Team으로 Member Table의 외래 키를 바꿔야 할지, Team에서 members의 Member가 변경되었을 때 변경된 Team으로 Member Table의 외래 키를 변경해야될지 딜레마에 빠지게 되는것.</p>
+          </li>
+          <li><strong>딜레마 해결! → 둘 중에 하나로 외래 키를 관리</strong>하자! ⇒ “<strong>연관관계의 주인</strong>” → <strong>외래 키가 있는 놈으로 주인을 설정</strong>하자! (다대일 관계에서 “<strong>다</strong>“에 해당하는 객체!)</li>
+          <li>즉, <code class="language-plaintext highlighter-rouge">mappedBy</code> 는 <strong>관계 상의 ‘을’을 지칭</strong>하는 것 (변경 권한이 없는 것!)</li>
+          <li><strong>[참고] 관계 상의 ‘을’은 비지니스 로직에서의 중요도를 말하는 것이 아닌 오직 관계에 있어서의 권한</strong>을 이야기하는 것</li>
+        </ul>
+      </li>
+      <li><strong>연관관계 주인 설정</strong>
+        <ul>
+          <li>객체의 두 관계 중 하나를 연관관계의 주인으로 지정 (Table FK는 한 Table에만 존재하므로)</li>
+          <li><strong>연관관계의 주인만이 외래 키를 관리</strong> (등록, 수정)</li>
+          <li>주인이 아닌쪽(<code class="language-plaintext highlighter-rouge">mappedBy</code>)은 <strong>읽기만 가능</strong></li>
+          <li>주인은 mappedBy 속성 사용 X</li>
+          <li>주인이 아니면 mappedBy 속성으로 주인이 아닌 것을 표현</li>
+          <li><strong>그럼 누가 연관관계의 주인??</strong>
+            <ul>
+              <li><strong>외래 키(FK)</strong>가 있는 곳 (정해진 것은 없지만 권장하는 것)</li>
+              <li>Table 의 입장에서 외래키가 있는 곳은 다대일(N:1)관계에서 “다”</li>
+              <li>즉, “다” 쪽이 연관관계의 주인으로 설정하는 것이 좋음</li>
+              <li>만약 외래 키가 있지 않은 <strong>반대 편의 Table을 연관관계의 주인공으로 설정</strong>한다면, 수정 시 <strong>다른 Table에 update query가 나가는 일이 발생!!</strong> → 너무 복잡해짐
+  ex) A에 외래키가 있는데, B가 연관관계의 주인이 된다면, B의 A값이 변경된다고 할 때 B Table에 update query가 나가는 것이 아닌 A Table에 UPDATE query가 나감. 즉, B를 수정했는데 B Table이 아닌 A Table이 수정되는 것!! → 복잡해~ 헷갈려~</li>
+            </ul>
+          </li>
+          <li><strong>[주의] 연관관계의 주인이라고 비지니스적으로 우위에 있는 것이 아닌 그냥 관계상의 주인</strong></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>연관관계의 주인에서 <strong>주의해야할 것들</strong>
+    <ul>
+      <li>연관관계의 주인에 값을 입력하지 않는 경우
+        <ul>
+          <li>
+            <p>문제</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Member</span> <span class="n">member</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Member</span><span class="o">();</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">"park"</span><span class="o">);</span>
+  <span class="c1">// member.setTeam(team) 을 까먹은 것</span>
+            
+  <span class="n">team</span><span class="o">.</span><span class="na">getMembers</span><span class="o">().</span><span class="na">add</span><span class="o">(</span><span class="n">member</span><span class="o">);</span> <span class="c1">// 역방향(주인X)만 연관관계 설정</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p>해결</p>
+            <ul>
+              <li>
+                <p><strong>연관관계 편의 매서드</strong>를 따로 지정하자!</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">changeTeam</span><span class="o">(</span><span class="nc">Team</span> <span class="n">team</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// changeTeam</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">team</span> <span class="o">=</span> <span class="n">team</span><span class="o">;</span>
+      <span class="n">team</span><span class="o">.</span><span class="na">getMembers</span><span class="o">().</span><span class="na">add</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li>연관관계의 주인을 기준으로 <strong>이와 연관된 객체까지 놓치지 않도록 메서드</strong>를 만들어주는 것</li>
+                  <li>member의 team을 변경하거나 설정할 때, <strong>항상 역방향의 객체에도 해당 사항을 적용</strong>해주는 것!</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>양방향 매핑시의 <strong>무한루프</strong>
+        <ul>
+          <li>문제
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">toString()</code>, <strong>Lombok</strong> , <strong>JSON 생성 라이브러리</strong> 사용 시 <strong>해당 되는 모든 값들을 가져와 적용</strong>하기 때문에 양방향 매핑을 해두었다면 계속해서 순환되는 <strong>무한루프</strong>에 빠지게 됨</li>
+              <li>ex) Member.getTeam() → Team.getMembers() → 해당 결과(Member List)의 각 Member.getTeam() → 해당 결과 객체(Team)의 Team.getMembers() → …</li>
+            </ul>
+          </li>
+          <li>해결
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">toString()</code> 이나 <strong>Lombok</strong> 사용 시 <strong>해당 양방향을 반환하지 않도록 따로 설정</strong> 필요!</li>
+              <li><strong>JSON 생성 라이브러리</strong> 같은 경우 Conroller의 return 반환 값으로 자주 사용 되는데, 그 때 Entity를 직접 반환하지 말고 양방향관계의 객체를 제외한 DTO를 사용하여 반<strong>환</strong>해라!</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>양방향 매핑 때 고려해야될 점 (TIP)</strong>
+<ul>
+<li> 단방향 매핑만으로도 이미 연관관계 매핑은 완료. 즉, <b>단방향 매핑만으로도 모든 Entity의 설계를 완료</b>할 수 있고, 처음 설계 작업에서는 그렇게 해야만 함. </li>
+<li> <b>양방향 매핑</b>은 <b>그저 반대 방향으로 조회(객체 그래프 탐색) 기능만 추가된 것</b> 뿐!! → <b>Table은 동일</b>함! Application단에서만 적용되는 것 </li>
+<li> 즉, 일단 <b>단방향 매핑을 잘해두고</b> 필수적으로 <b>역방향 탐색이 필요한 경우에만 양방향 매핑을 걸어</b>주는 것이 좋음 (JPQL에서 역방향 탐색이 필요한 경우가 종종 있음) </li>
+&lt;/aside&gt;
+</ul></aside>
+:ET
