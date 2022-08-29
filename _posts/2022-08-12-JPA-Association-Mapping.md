@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Entity Association Mapping - Basic"
-date:   2022-08-09
+date:   2022-08-12
 image:  /posts/jpa2.jpeg
 tags:   SpringBoot JPA
 ---
