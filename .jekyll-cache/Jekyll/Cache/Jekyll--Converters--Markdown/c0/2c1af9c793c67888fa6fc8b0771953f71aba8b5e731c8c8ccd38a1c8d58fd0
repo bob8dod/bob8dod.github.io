@@ -1,0 +1,206 @@
+I"�:<h2 id="영속성-관리-이해---기본">영속성 관리 이해 - 기본</h2>
+
+<h3 id="엔티티-매니저-팩토리와-엔티티-매니저">엔티티 매니저 팩토리와 엔티티 매니저</h3>
+
+<ul>
+  <li>
+    <p>동작 원리</p>
+
+    <p><img src="/images/posts/post-220804/Untitled.png" alt="Untitled" /></p>
+
+    <ul>
+      <li>사용자의 요청이 들어오면 EntityMangerFactory 에서 <strong>EntityManger를 생성</strong>하고</li>
+      <li><strong>EntityManger</strong>는 내부적으로 <strong>DB를 사용</strong>하게 됨</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="영속성-컨텍스트">영속성 컨텍스트</h3>
+
+<ul>
+  <li>개념
+    <ul>
+      <li><strong>JPA</strong>를 이해하는데 <strong>가장 중요</strong>한 용어</li>
+      <li><strong>엔티티</strong>를 <strong>영구 저장하는 환경</strong> (논리적인 개념, 눈에 보이지 않음)</li>
+      <li>엔티티 매니저를 통해 접근 가능</li>
+      <li>영속성 컨텍스트로써의 <code class="language-plaintext highlighter-rouge">em.persist(entity)</code> : DB에 객체를 저장하라? X ⇒ <strong>영속성 컨텍스트에 객체를 저장하라 O</strong></li>
+    </ul>
+  </li>
+  <li>엔티티의 <strong>생명주기</strong>
+    <ul>
+      <li><strong>비영속</strong>
+        <ul>
+          <li>영속성 컨텍스트와 전혀 <strong>관계가 없는</strong> 새로운 상태</li>
+          <li>즉, 객체를 그냥 생성만 한 상태 (<code class="language-plaintext highlighter-rouge">em.persist(…)</code>를 하지 않은 객체)</li>
+        </ul>
+      </li>
+      <li><strong>영속</strong>
+        <ul>
+          <li>영속성 컨텍스트에 <strong>관리되는 상태</strong></li>
+          <li>객체를 생성하여 <strong>영속성 컨텍스트에 넣은 상태</strong> (<code class="language-plaintext highlighter-rouge">em.persist(…)</code> 를 통해 객체를 영속성 컨텍스트에 담은 것)</li>
+          <li>해당 객체는 <strong>트랜섹션(Transaction)이라는 하나의 단위</strong>에서 영속성 컨텍스트에 의해 관리됨</li>
+          <li><strong>[주의]</strong> 영속성 컨테스트에 담긴다고 바로 query가 나가는 것은 아님 → <strong>Transaction이 commit 되는 시점</strong>[<code class="language-plaintext highlighter-rouge">tx.commit()]</code>에 <strong>DB에 query</strong>가 나감!</li>
+        </ul>
+      </li>
+      <li><strong>준영속</strong>
+        <ul>
+          <li>영속성 컨텍스트에 <strong>저장되었다가 분리</strong>된 상태</li>
+          <li><code class="language-plaintext highlighter-rouge">em.detach(…)</code> : 영속성 컨텍스트에서 해당 객체를 지움</li>
+        </ul>
+      </li>
+      <li><strong>삭제</strong>
+        <ul>
+          <li>객체가 삭제된 상태</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>영속성 컨텍스트의 이점
+    <ul>
+      <li><strong>1차 캐시</strong>
+        <ul>
+          <li>영속성 컨텍스트로 생각하면 됨</li>
+          <li><code class="language-plaintext highlighter-rouge">em.persist()</code> 하는 순간 <strong>1차 캐시에 저장</strong>됨</li>
+          <li><strong>map</strong>으로 되어 있음 <strong>(key: <code class="language-plaintext highlighter-rouge">@Id</code> 로 설정한 값(식별자), value : Entity)</strong></li>
+          <li>이런 방식을 사용하면 <strong>조회</strong>에서 이점 발생</li>
+          <li>조회 시 DB에서 먼저 해당 Entity를 가져오는 것이 아니라, 1차 캐시에 존재한지 확인 후 있으면 해당 Entity를 반환해주고, 없다면 DB에서 가져옴
+            <ul>
+              <li>
+                <p>1차 캐시에 해당 Entity가 존재한 경우 (<strong>1차 캐시에서 조회</strong>)</p>
+
+                <p><img src="/images/posts/post-220804/Untitled 1.png" alt="Untitled" /></p>
+              </li>
+              <li>
+                <p>1차 캐시에 해당 Entity가 존재하지 않는 경우 (<strong>DB에서 조회</strong>)</p>
+
+                <p><img src="/images/posts/post-220804/Untitled 2.png" alt="Untitled" /></p>
+              </li>
+            </ul>
+          </li>
+          <li><strong>[참고] 2차 캐시</strong> : <strong>Application 전체</strong>에서 공유하는 캐시. <strong>1차 캐시</strong>는 <strong>Transaction 하나</strong>에서 존재</li>
+          <li>해당 기능은 성능적인 측면에서 우월한 이득을 준다기 보다는 컨셉적인 측면에서 이득을 줌 (객체 지향적인 설계를 위함)</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>Entity 조회 시 동일성 보장</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Member</span> <span class="n">member1</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1L</span><span class="o">);</span>
+  <span class="nc">Member</span> <span class="n">member2</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1L</span><span class="o">);</span>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">member1</span> <span class="o">==</span> <span class="n">member2</span><span class="o">);</span> <span class="c1">// true</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>한번 조회한 후로는 영속성 컨텍스트의 똑같은 객체(주소) 를 가져오기 때문에 당연히 동일성 보장</li>
+          <li><strong>마치 Java Collection에서 조회하는 듯</strong>한 느낌을 줌</li>
+        </ul>
+      </li>
+      <li><strong>Entity 등록 시 “트랜잭션을 지원하는 쓰기 지연” 가능</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">em.persist(member1); em.persist(member2);</code> 매 순간마다 INSERT query가 나가는 것이 아닌, <strong>Transaction을 커밋하는 순간에 DB에 INSERT query를 한번에 보냄</strong></li>
+          <li>“<strong>쓰기 지연 SQL 저장소</strong>”가 존재하기에 가능한 것.</li>
+          <li>
+            <p><code class="language-plaintext highlighter-rouge">em.persist(member1);</code> 순간, 영속성 컨텍스트에 해당 Entity를 넣음과 동시에 해당 INSERT query를 SQL저장소에 쌓아둠 (<code class="language-plaintext highlighter-rouge">em.persist(member2);</code>도 마찬가지)</p>
+
+            <p><img src="/images/posts/post-220804/Untitled 3.png" alt="Untitled" /></p>
+          </li>
+          <li>
+            <p><strong>Transaction이 commit 하는 순간</strong>(<code class="language-plaintext highlighter-rouge">tx.commit()</code>) 쌓아뒀던 SQL query들을 DB로 보냄(<code class="language-plaintext highlighter-rouge">flush()</code>). → 이때 <strong>DB에 반영</strong>이 되는 것</p>
+
+            <p><img src="/images/posts/post-220804/Untitled 4.png" alt="Untitled" /></p>
+          </li>
+          <li>SQL 저장소를 이용해서 한방에 query를 날리는 이유는 “<strong>최적화</strong>”를 위함 → 버퍼링 (최적화의 여지를 주는 것!), JDBC Batch 기능 (<code class="language-plaintext highlighter-rouge">&lt;property name="hibernate.jdbc.batch_size" value="10" /&gt;</code>한방에 10개를 모아서 query를 보내는 것)</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>Entity 수정 시 변경감지(Dirty Checking)</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Member</span> <span class="n">member</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1L</span><span class="o">);</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">"Edited"</span><span class="o">)</span>
+  <span class="c1">// em.update() 가 필요없나???</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>이렇게 <strong>영속성 컨텍스트로 해당 Entity를 가져온</strong> 후</li>
+          <li><strong>Entity를 수정만 해주면</strong> 직접 update할 필요없이 <strong>EntityManger가 알아서 commit 시점에 UPDATE query를 날려줌 (변경 감지)</strong></li>
+          <li><strong>Java Collection에서의 객체 수정이라 생각</strong>하면 됨 (Collection의 요소 객체를 수정하고 다시 해당 객체를 Collection에 넣지 않는다는 점 중요)</li>
+          <li>
+            <p>동작 원리</p>
+
+            <p><img src="/images/posts/post-220804/Untitled 5.png" alt="Untitled" /></p>
+
+            <ul>
+              <li>JPA는 커밋 시점에 <strong>Entity와 스냅샷 비교</strong> (스냅샷 : 처음 Entity를 영속성 컨텍스트로 가져올 때의 Entity 상태. 즉, <strong>최초 시점의 Entity</strong>)</li>
+              <li>비교했을 때 <strong>달라진 점에 대해서 UPDATE query를 생성하여 SQL 저장소에 저장</strong></li>
+              <li><strong>[중요]</strong> 이런 기능들 때문에 당연히 <strong>모든 데이터 변경은 Transaction 단위 내에서 진행</strong>되어야 함!!!</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="영속성-관리-이해---심화">영속성 관리 이해 - 심화</h2>
+
+<h3 id="플러시">플러시</h3>
+
+<ul>
+  <li><strong>영속성 컨텍스트가 변경내용을 데이터베이스에 반영</strong></li>
+  <li>영속성 컨텍스트의 <strong>변경사항과</strong> 데이터베이스를 <strong>맞추는 작업</strong></li>
+  <li>보통 T<strong>ransaction 이 commit 될 때 flush가 일어남</strong> (혹은 <code class="language-plaintext highlighter-rouge">em.flush()</code> 로 플러시 강제 실행 가능)</li>
+  <li><strong>[주의]</strong> 플러시한다고 <strong>1차 캐시가 지워지는 것은 아님</strong> (강제 영속성컨텍스트 비움 : <code class="language-plaintext highlighter-rouge">em.clear()</code>)</li>
+  <li>플러시 발생 시
+    <ul>
+      <li>변경 감지 (스냅샷과의 비교를 통해)</li>
+      <li>수정된 Entity 를 “쓰기 지연 SQL 저장소”에 등록</li>
+      <li>최종 <strong>쓰기 지연 SQL 저장소</strong>의 <strong>쿼리를 데이터베이스에 전송</strong> [등록, 수정, 삭제 query. not 조회 query]</li>
+    </ul>
+  </li>
+  <li>플러시 방법
+    <ul>
+      <li>직접 호출 : <code class="language-plaintext highlighter-rouge">em.flush()</code></li>
+      <li>자동 호출 : <strong>Transaction commit</strong> (<code class="language-plaintext highlighter-rouge">tx.commit()</code>)</li>
+      <li>자동 호출 : <strong>JPQL 쿼리 실행</strong>
+        <ul>
+          <li>JPQL은 “쓰기 지연 SQL 저장소”와 독립적으로 실행됨. (SQL 그 자체로 실행)</li>
+          <li><strong>JPQL은 영속성 컨텍스트를 거치지 않고 바로 DB로 SQL 자체가 실행(query를 보내는)되는 것</strong>이기 때문에 DB에 이전의 데이터들의 변경이 반영되지 않으면 원치 않은 결과를 얻을 수 있음.</li>
+          <li>그러기에 <strong>JPQL이 실행되기 전에 자동으로 플러시가 호출</strong>됨 → <strong>현재까지 변경된 부분을 반영해주기 위해 (영속성 컨텍스트와 DB의 싱크를 맞추기 위함)</strong></li>
+          <li>
+            <p>ex)</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">em</span><span class="o">.</span><span class="na">persist</span><span class="o">(</span><span class="n">memberA</span><span class="o">);</span> <span class="c1">// DB query가 나가지 않은 상태. (영속성 컨텍트스에 저장)</span>
+  <span class="n">em</span><span class="o">.</span><span class="na">persist</span><span class="o">(</span><span class="n">memberB</span><span class="o">);</span> <span class="c1">// DB query가 나가지 않은 상태. (영속성 컨텍트스에 저장)</span>
+            
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">members</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">"select m from Member m"</span><span class="o">,</span> <span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">)</span><span class="n">getResultList</span><span class="o">();</span> <span class="c1">// DB에서 저장된 Member들을 가져오는 것</span>
+</code></pre></div>            </div>
+
+            <p>에서 만약 JPQL이 발동할때 <strong>자동으로 Flush가 호출되지 않는다면</strong>, JPQL 결과는 빈 List가 됨. 이런 것들을 방지하기 위해서 <strong>JPQL이 실행되기 전 Flush를 실행</strong>해주어 <strong>DB에 데이터 변경을 반영</strong>하고 그 결과를 가져와 주는 것</p>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ **Flush 주의점!**
+
+- 영속성 컨텍스트를 **비우지 않음**
+- 영속성 컨텍스트의 **변경내용**을 데이터베이스에 **동기화**
+- Transaction 이라는 **작업 단위**가 중요! → 커밋 직전에만 동기화하면 됨
+</aside>
+
+<h3 id="준영속-상태">준영속 상태</h3>
+
+<ul>
+  <li>영속 상태의 엔티티가 연속성 컨텍스트에서 분리(detached)</li>
+  <li><strong>영속성 컨텍스트가 제공하는 기능(변경 감지, … )을 사용하지 못함</strong></li>
+  <li>준영속 상태로 만드는 방법
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">em.detach(Entity)</code> : <strong>지정</strong>된 엔티티를 <strong>준용속 상태로 전환</strong> (일부)</li>
+      <li><code class="language-plaintext highlighter-rouge">em.clear()</code> : <strong>영속성 컨텍스트를 완전히 초기화</strong>. 영속성 컨텍스트의 1차 캐시를 통째로 비우는 것 (전체)</li>
+      <li><code class="language-plaintext highlighter-rouge">em.close()</code> : 영속성 컨텍스트를 <strong>종료</strong> (전체)</li>
+    </ul>
+  </li>
+</ul>
+:ET
