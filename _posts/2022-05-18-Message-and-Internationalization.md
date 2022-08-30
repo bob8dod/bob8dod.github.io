@@ -43,7 +43,7 @@ tags:   SpringBoot
     - `setBasenames` : **메시지 설정 파일의 이름 지정**
         - messages로 지정하면 `messages.properties` 파일을 읽어서 사용
         - 국제화 설정 :  `_en`, `_ko` 처럼 **뒤에 언어 정보**를 넣어 주어 생성해주면 됨(`messages_en.properties`, …) 지정되어 있지 않은 언어에 대해선 default인 `messages.properties` 이용
-        - 메시지 설정 **파일의 위치**는 `**/resources` 하위**에 두면 됨
+        - 메시지 설정 **파일의 위치**는 **`/resources` 하위**에 두면 됨
         - 여러 파일 한번에 지정 가능 (`messages`, `errors`, …)
     - `setDefaultEncoding` : 인코딩 정보 지정
 - **Spring Boot**에서의 메시지 소스 설정

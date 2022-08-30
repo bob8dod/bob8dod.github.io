@@ -49,7 +49,7 @@ tags:   SpringBoot Servlet Exception
 - 과거에는 xml 파일을 통해 오류화면을 등록
 - 여기서는 **스프링부트가 제공하는 기능을 통해 서블릿 오류 페이지를 등록**
 - 서블릿 오류 페이지 등록 (`WebServerFactoryCustomizer` interface 이용)
-    - `WebServerFactoryCustomizer<ConfigurableWebServerFactory>` : web 오류에 따른 오류 화면 처리 기능을 이용할 떄 사용하는 설정같은 느낌 (Spring Boot에서 지정한 설정 Interface). `**customize` method overriding 필요**
+    - `WebServerFactoryCustomizer<ConfigurableWebServerFactory>` : web 오류에 따른 오류 화면 처리 기능을 이용할 떄 사용하는 설정같은 느낌 (Spring Boot에서 지정한 설정 Interface). **`customize` method overriding 필요**
     
     ```java
     @Component
@@ -180,7 +180,7 @@ tags:   SpringBoot Servlet Exception
 ### 오류 페이지 처리 with Spring Boot
 
 - Spring Boot가 자동으로 처리하는 기능들
-    - `**ErrorPage` 자동으로 등록** ( “/error” 라는 경로로 기본 오류 페이지를 설정. path = “/error”) →  서블릿 밖으로 **예외가 발생(`Exception`)**하거나, `**response.sendError(...)` 가 호출**되면 모든 오류는 “/error” 라는 path를 가진 Controller 를 호출하게 됨
+    - **`ErrorPage` 자동으로 등록** ( “/error” 라는 경로로 기본 오류 페이지를 설정. path = “/error”) →  서블릿 밖으로 **예외가 발생(`Exception`)**하거나, **`response.sendError(...)` 가 호출**되면 모든 오류는 “/error” 라는 path를 가진 Controller 를 호출하게 됨
     - `BasicErrorController` 라는 예외 처리용 Controller 자동 등록 (`ErrorPage`를 통해 등록한 “/error” 를 매핑해서 처리하는 컨트롤러)
 - 즉, **개발자는 오류 페이지만 등록** 하면 됨!! (Spring Boot에서 지정한 **경로 규칙을 따라서**)
 - 경로 규칙

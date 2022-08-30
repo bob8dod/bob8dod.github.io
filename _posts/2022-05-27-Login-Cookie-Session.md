@@ -269,7 +269,7 @@ tags:   SpringBoot Login
             ```
             
             - UUID 를 통한 추정 불가능한 임의의 `sessionId` 생성
-            - **세션 저장소(**`sessionStore`**)**에 `sessionId`와 보관할 값(`value`) 저장
+            - 세션 저장소(**`sessionStore`**)에 `sessionId`와 보관할 값(`value`) 저장
             - `sessionId`로 응답 쿠키(`mySessionCookie`)를 생성해서 클라이언트에 전달(`response.addCookie(mySessionCookie)`)
         - 세션 조회
             

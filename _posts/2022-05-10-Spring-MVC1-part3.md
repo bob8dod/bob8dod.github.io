@@ -342,7 +342,7 @@ tags:   SpringBoot MVC
 
 ### HTTP 요청 메시지 - 단순 텍스트
 
-- HTTP 메시지 바디에 직접 데이터가 담겨 오는 경우 (요청 파라미터와 다른 방식), `**@RequestParam`, `@ModelAttribute` 는 사용할 수 없음 (Form 제외)**
+- HTTP 메시지 바디에 직접 데이터가 담겨 오는 경우 (요청 파라미터와 다른 방식), **`@RequestParam`, `@ModelAttribute` 는 사용할 수 없음 (Form 제외)**
 - Servlet 의 reqeust를 사용하여 조회 → `public void requestBodyStringV1(HttpServletRequest request, ...) throws IOException`
     - 이전과 동일하게 `request.getInputStream()` 과 `StreamUtils.copyToString()`을 통해 body에 담겨진 text를 가져 올 수 있음
 - **InputStream** 사용 → `public void requestBodyStringV2(InputStream inputStream, Writer responseWriter) throws...`
@@ -352,7 +352,7 @@ tags:   SpringBoot MVC
     - HttpEntity를 통해 HttpMessageConverter 기반으로 받아온 데이터가 text라면 이를 자동으로 String 으로 변환해줌.
     - 스프링 MVC 내부에서 HTTP 메시지 바디를 읽어서 문자나 객체로 변환해서 전달. 이때 HTTP 메시지 컨버터(HttpMessageConverter)라는 기능을 사용
     - 즉, `StreamUtils.copyToString()`가 따로 필요 없음. (자동으로 변환해주기 때문)
-- `**@RequestBody` 사용 (실무에서 사용)** → `public String requestBodyStringV4(@RequestBody String messageBody)`
+- **`@RequestBody` 사용 (실무에서 사용)** → `public String requestBodyStringV4(@RequestBody String messageBody)`
     - HttpEntity의 역할을 하지만 훨씬 쉽게 이용할 수 있도록 annotation 기반으로 만든 것.
     - 똑같이 응답도 `@ResponseBody`를 사용하면 됨
     - 얘 또한 HTTP 메시지 컨버터(HttpMessageConverter) 이용
@@ -366,7 +366,7 @@ tags:   SpringBoot MVC
         - 이전과 동일하게 request의 input stream을 받아와 string으로 변환하고 `objectMapper.readValue(messageBody, HelloData.class)` 를 통해 Json string을 HelloData 객체에 Mapping 시켜줌
     - @RequestBody
         - @RequestBody (with HttpMessageConverter) 를 통해 바로 String을 받아오고 `objectMapper.readValue(messageBody, HelloData.class)` 사용
-- ObjectMapper 없이 `**@RequestBody**` 만을 사용하기 (with **HttpMessageConverter**)
+- ObjectMapper 없이 **`@RequestBody**` 만을 사용하기 (with **HttpMessageConverter**)
     - `@RequestBody` 를 통해 바로 HelloData에 Mapping 시킬 수 잇음 → HttpMessageConverter 덕분
     - `public String requestBodyJsonV3(@RequestBody HelloData helloData)`,  `helloData.getUsername(), helloData.getAge()`
     - 또한 Response도 `@ResponseBody`를 이용하여 변환없이 바로 Json으로 보낼 수 있음

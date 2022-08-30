@@ -1,0 +1,1004 @@
+I"�<h2 id="thymeleaf-타임리프">Thymeleaf (타임리프)</h2>
+
+<h3 id="타임리프">타임리프</h3>
+
+<ul>
+  <li><strong>타임리프</strong> 란?
+    <ul>
+      <li>서버 사이드 자바 <strong>템플릿 엔진</strong></li>
+      <li>공식 사이트 : <a href="https://www.thymeleaf.org/">https://www.thymeleaf.org/</a></li>
+      <li>공식 메뉴얼 - 기본 기능: <a href="https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html">https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html</a></li>
+      <li>공식 메뉴얼 - 스프링 통합: <a href="https://www.thymeleaf.org/doc/tutorials/3.0/thymeleafspring.html">https://www.thymeleaf.org/doc/tutorials/3.0/thymeleafspring.html</a></li>
+    </ul>
+  </li>
+  <li>타임리프 특징
+    <ul>
+      <li>
+        <p><strong>서버 사이드 HTML 렌더링 (SSR)</strong></p>
+
+        <p><img src="/images/posts/post-220514/Untitled.png" alt="" /></p>
+
+        <ul>
+          <li><strong>동적</strong>으로 <strong>HTML 최종 결과를 서버에서 만들</strong>어서 웹 브라우저에 전달 (Thymeleaf, JSP, …)</li>
+        </ul>
+
+        <aside>
+  ⚠️<strong> 클라이언트 사이드 렌더링(CSR) </strong> <br />
+  HTML 결과를 자바스크립트를 사용해 <b>웹 브라우저</b>에서 동적으로 생성해서 적용 (서버에서 생성된 HTML 결과를 받아오는 것이 아닌) (React, Vue.js, …)
+        
+  </aside>
+      </li>
+      <li><strong>네추럴 탬플릿</strong>
+        <ul>
+          <li>순수 <strong>HTML을 최대한 유지</strong>하면서 뷰 템플릿도 사용할 수 있음</li>
+          <li>즉, 서버를 거치지 않고도 형식을 갖춘 HTML 결과물을 확인할 수 있음 (동적인 결과는 서버를 거쳐서 확인해야됨)</li>
+          <li>(JSP와 같은 다른 view template 들은 JSP 코드와 HTML 코드가 섞여 있어 서버릴 거치지 않고 확인할 경우 다 깨져서 확인 불가능)</li>
+        </ul>
+      </li>
+      <li><strong>스프링 통합 지원</strong>
+        <ul>
+          <li>스프링과 자연스럽게 통합되고, 스프링의 다양한 기능을 타임리프 안에서 편리하게 사용할 수 있음.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>타임리프 사용 선언
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">&lt;html xmlns:th="http://www.thymeleaf.org"&gt;</code></li>
+      <li>HTML 파일에 위와 같이 선언해주면 <code class="language-plaintext highlighter-rouge">th:…</code> 와 같이 사용할 수 있음</li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+💡 <strong> 결국 CSR을 이용할 건데, SSR을 해야 될 필요가 있을까? </strong> <br />
+Admin 페이지나, CSR 적용 전의 <b>기본 동작이 되는 서비스</b>같은 경우 <b>SSR</b>이 필요함! 따라서 백엔드 개발자는 깊게, 유연하게 사용할 수 있는 정도는 아니더라도 어느정도 SSR에서 사용되는 View Template 하나 정도는 알고 사용할 수 있는게 좋음!
+
+</aside>
+
+<h2 id="타임리프-기본-기능-문법">타임리프 기본 기능 (문법)</h2>
+
+<h3 id="텍스트-text-utext">텍스트 (text, utext)</h3>
+
+<ul>
+  <li><strong>텍스트를 출력하는 기능</strong></li>
+  <li><code class="language-plaintext highlighter-rouge">th:text</code> : HTML의 <strong>콘텐츠(content)에</strong> 원하는 <strong>데이터를 출력</strong>할 때 사용
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">&lt;span th:text="${data}"&gt; 데이터 &lt;/span&gt;</code></li>
+      <li>th:text 에 원하는 값 할당. 값은 Controller의 Model에 담겨져 온 속성 값. (<code class="language-plaintext highlighter-rouge">model.addAttribute(”data”,”렌더링 데이터”)</code>)</li>
+      <li>렌더링 시 해당 data의 값을 <strong>기존</strong>의 ‘데이터’라는 <strong>값을 그대로 치환</strong>하여 보여줌.</li>
+      <li>만약 서버(렌더링)를 거치지 않는다면 HTML을 본다면 해당 항목은 기존의 ‘데이터’ 라는 값을 가지게 됨 → <strong>내추럴 템플릿 특징</strong></li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">[[ ]]</code> : HTML 테그의 속성이 아니라 <strong>HTML 콘텐츠 영역안에서 직접</strong> 데이터를 출력하고 싶을 때 사용
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">&lt;span&gt; 직접 출력 : [[${data}]] &lt;/span&gt;</code></li>
+      <li>말 그대로 HTML 콘텐츠 영역 안에 직접 데이터를 넣어 출력하는 것.</li>
+      <li>얘는 Default text가 없기에 서버(렌더링)을 거치지 않고 HTML을 뿌리면 <code class="language-plaintext highlighter-rouge">직접 출력 : [[${data}]]</code> 의 text 그대로 나오게 됨 (”깨지진 않는다”는 점이 핵심 → <strong>내추럴 템플릿 특징</strong> )</li>
+      <li>추후 <strong>자바스크립트에서 model의 속성(변수)를 사용할 때</strong> 해당 문법 이용</li>
+    </ul>
+  </li>
+  <li><strong>Escape (text)</strong>
+    <ul>
+      <li>HTML에서 사용하는 <strong>특수 문자를 HTML 엔티티로 출력하는 것</strong></li>
+      <li>HTML은 <code class="language-plaintext highlighter-rouge">&lt;</code>, <code class="language-plaintext highlighter-rouge">&gt;</code> 와 같은 특수 문자 기반.</li>
+      <li>그렇다면 만약 데이터에 해당 <code class="language-plaintext highlighter-rouge">&lt;</code>, <code class="language-plaintext highlighter-rouge">&gt;</code> 와 같은 특수문자가 있다면? → 그 <strong>text 그대로 출력</strong>됨.
+        <ul>
+          <li>ex) <code class="language-plaintext highlighter-rouge">data = “&lt;b&gt; Hello! &lt;/b&gt;”</code> , <code class="language-plaintext highlighter-rouge">&lt;span&gt; 직접 출력 : [[${data}]] &lt;/span&gt;</code></li>
+          <li>렌더링 후 → <code class="language-plaintext highlighter-rouge">직접 출력 : &lt;b&gt; Hello! &lt;/b&gt;</code></li>
+          <li>즉, Hello가 b 태그를 먹어서 강조되는 것이 아닌, 그 html 문법 자체의 text가 그대로 나오게 됨.</li>
+          <li>HTML 렌더링 결과의 코드를 보면 <code class="language-plaintext highlighter-rouge">&amp;lt;b&amp;gt;Hello!&amp;lt;/b&amp;gt</code> 와 같이 되어 있음. 즉, 그냥 <strong>text로써 인식할 수 있게 HTML 엔티티로 바꿔서 출력</strong>.이게 바로 <strong>ESCAPE</strong></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Unescape (utext)</strong>
+    <ul>
+      <li>Escape 기능을 사용하지 않은채로 출력하는 방법</li>
+      <li>Thymeleaf에서의 Escape → Unescape
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:text</code> → <code class="language-plaintext highlighter-rouge">th:utext</code></li>
+          <li><code class="language-plaintext highlighter-rouge">[[ … ]]</code> → <code class="language-plaintext highlighter-rouge">[( … )]</code></li>
+        </ul>
+      </li>
+      <li>Unescape을 사용하게 되면 <strong>HTML 코드 그대로 적용</strong> 시킬 수 있음!
+        <ul>
+          <li>ex) <code class="language-plaintext highlighter-rouge">data = “&lt;b&gt; Hello! &lt;/b&gt;”</code>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">&lt;span th:utext="${data}"&gt; 데이터 &lt;/span&gt;</code> → <strong>Hello!</strong></li>
+              <li><code class="language-plaintext highlighter-rouge">&lt;span&gt; 직접 출력 : [(${data})] &lt;/span&gt;</code> → 직접 출력 : <strong>Hello!</strong></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>마크다운 적용 시 이용 가능!</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="변수---springel">변수 - SpringEL</h3>
+
+<ul>
+  <li><strong>변수 표현식</strong>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">${ … }</code></li>
+      <li>타임리프에서 <strong>Model로 받아 온 변수</strong> 사용하기</li>
+      <li>즉, 타임리프를 통해 HTML 코드 안에서 Model로 받아 온 변수를 사용할 수 있게끔 하는 표현식</li>
+      <li>추가로 이 변수 표현식에는 <strong>SpringEL</strong>이라는 <strong>스프링이 제공하는 표현식</strong>(ex_ <code class="language-plaintext highlighter-rouge">item.getName()</code>) 사용 가능 → <strong>스프링 통합 지원 특징</strong></li>
+    </ul>
+  </li>
+  <li>사용
+    <ul>
+      <li>
+        <p>username, age 의 속성을 가지고 있는 User 객체 하나, 이런 2개의 User를 담은 List, Map 를 Model에 담아서 View Template으로 넘긴다고 가정</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">"user"</span><span class="o">,</span> <span class="n">userA</span><span class="o">);</span>
+  <span class="n">model</span><span class="o">.</span><span class="na">addAtribute</span><span class="o">(</span><span class="s">"users"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;</span><span class="nc">User</span><span class="o">&gt;(</span><span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(...)));</span>
+  <span class="n">model</span><span class="o">.</span><span class="na">addAtribute</span><span class="o">(</span><span class="s">"userMap"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">User</span><span class="o">&gt;(...));</span>
+</code></pre></div>        </div>
+      </li>
+      <li><strong>Object (User 하나)</strong>
+        <ul>
+          <li>속성 접근 (Java : <code class="language-plaintext highlighter-rouge">user.getUsername()</code>)
+            <ul>
+              <li><strong>SpringEL (in Thymeleaf)</strong>
+                <ul>
+                  <li><code class="language-plaintext highlighter-rouge">${user.username}</code></li>
+                  <li><code class="language-plaintext highlighter-rouge">${user[’username’]}</code></li>
+                  <li><code class="language-plaintext highlighter-rouge">${user.getUsername()}</code></li>
+                </ul>
+              </li>
+              <li>모두 **<code class="language-plaintext highlighter-rouge">user.getUsername()**</code> 으로 property를 가져오는 것</li>
+            </ul>
+
+            <aside>
+  🚨 <strong> SpringEL Obejct property 접근 주의! </strong> <br />
+  Getter로 가져오는 것이기 때문에, Spring 안에서의 Object에서 Getter가 열려 있지 않으면 가져올 수 없음!! → 스프링 통합 지원 특징
+            
+  </aside>
+          </li>
+        </ul>
+      </li>
+      <li><strong>List</strong>
+        <ul>
+          <li>인덱스 및 속성 접근 (Java : <code class="language-plaintext highlighter-rouge">list.get(0).getUsername()</code>)
+            <ul>
+              <li>SpringEL (in Thymeleaf)
+                <ul>
+                  <li><code class="language-plaintext highlighter-rouge">users[0].username</code></li>
+                  <li><code class="language-plaintext highlighter-rouge">users[0]['username']</code></li>
+                  <li><code class="language-plaintext highlighter-rouge">users[0].getUsername()</code></li>
+                </ul>
+              </li>
+              <li>모두 <strong><code class="language-plaintext highlighter-rouge">list.get(0)</code></strong> 으로 요소를 가져오는 것</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>Map
+        <ul>
+          <li>접근 (Java: <code class="language-plaintext highlighter-rouge">map.get("userA").getUsername()</code>)
+            <ul>
+              <li>SpringEL (in Thymeleaf)
+                <ul>
+                  <li><code class="language-plaintext highlighter-rouge">userMap['userA'].username</code></li>
+                  <li><code class="language-plaintext highlighter-rouge">userMap['userA']['username']</code></li>
+                  <li><code class="language-plaintext highlighter-rouge">userMap['userA'].getUsername()</code></li>
+                </ul>
+              </li>
+              <li>모두 <strong>map.get(“userA”)`</strong> 으로 요소를 가져오는 것</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>지역변수 사용
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">th:with = "변수=${…}"</code></li>
+      <li>지역 변수를 <strong>선언한 영역 내에서만 사용 가능</strong>함 (지역 변수 특징)</li>
+      <li>
+        <p>Ex) <code class="language-plaintext highlighter-rouge">first</code> 라는 지역 변수 선언</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;div</span> <span class="na">th:with=</span><span class="s">"first=${users[0]}"</span><span class="nt">&gt;</span>
+  	<span class="nt">&lt;p&gt;</span>처음 사람의 이름은 <span class="nt">&lt;span</span> <span class="na">th:text=</span><span class="s">"${first.username}"</span><span class="nt">&gt;&lt;/span&gt;&lt;/p&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>이렇게 되면 선언된 div 영역 안(하위)에서만 <code class="language-plaintext highlighter-rouge">first</code> 사용 가능 → 지역 변수</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="기본-객체들">기본 객체들</h3>
+
+<ul>
+  <li>식 기본 객체 (Expression Basic Objects)
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">${#request}</code> : HttpServletRequest 객체 접근
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#request.getParameter(...)}</code> 와 같이 쿼리 파라미터 접근 가능</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#response}</code> : HttpServletResponse 객체 접근</li>
+      <li><code class="language-plaintext highlighter-rouge">${#session}</code> : <strong>session 접근</strong>
+        <ul>
+          <li>중요!</li>
+          <li>로그인 판단 상황에서 사용 가능</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#servletContext}</code> : ApplicationContext 객체 접근</li>
+      <li><code class="language-plaintext highlighter-rouge">${#locale}</code> : 언어 접근 → ex) ko, en, …</li>
+    </ul>
+  </li>
+  <li><strong>편의 객체</strong>
+    <ul>
+      <li>많이 사용되는 기능들을 쉽게 접근할 수 있도록 지원</li>
+      <li><code class="language-plaintext highlighter-rouge">${param}</code> : HTTP 요청 파라미터(query parameter, @RequestParm) 접근
+        <ul>
+          <li>…?paramData=Hello → <code class="language-plaintext highlighter-rouge">${param.paramData}</code> 로 접근 가능</li>
+          <li><code class="language-plaintext highlighter-rouge">${#request.getParameter("paramData")}</code> 와 동일</li>
+          <li>쿼리 파라미터를 워낙 많이 사용하기 때문에 param을 통해 편하게 접근하도록 지원</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${session}</code> : HTTP Session 접근
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">session.setAttribute("sessionData", "Hello Session");</code> → <code class="language-plaintext highlighter-rouge">${session.sessionData}</code></li>
+          <li>로그인 여부에 대해 Session을 자주 사용하기 때문에 session을 통해 편하게 접근하도록 지원</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">{@..}</code> : 스프링 빈(Bean) 및 메서드 접근
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@Component("helloBean")...</code> → <code class="language-plaintext highlighter-rouge">${@helloBean.hello('Spring!')}</code></li>
+          <li>Component(Bean)로 등록된 스프링 빈을 더 편리하게 사용할 수 있음. 즉, <strong>해당 Bean의 메서드 및 속성</strong>을 사용할 수 있는 것 → <strong>스프링 통합 지원 특징</strong></li>
+          <li>이걸 통해서 thymeleaf에서 지원하지 않는 수식, 기능 등을 Bean을 통해서 사용할 수 있음! (굉장히 유용함)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="유틸리티-객체와-날짜">유틸리티 객체와 날짜</h3>
+
+<ul>
+  <li>유틸리티 객체들 (날짜 포함)
+    <ul>
+      <li>공식 문서 (설명 및 사용법):
+        <ul>
+          <li><a href="https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html#appendix-b-expression-utility-objects">https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html#appendix-b-expression-utility-objects</a></li>
+          <li>아래의 유틸리티 객체들에 대한 설명과 사용법</li>
+          <li>필요할 때마다 공식 문서 확인해가며 쓰면 됨</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#message}</code> : 메시지, 국제화 처리
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#messages.msg('msgKey')}</code> : messages.properties에서 msgKey와 관련된 message를 가져오는 것</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#uris}</code> : URI 이스케이프 지원
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#uris.escapePath(uri)}</code> : 앞서 본 HTML escape과 같이 불러온 uri를 URL Escape 처리 해주는 것</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#dates}</code> : java.util.Date 서식 지원
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#dates.format(date, 'dd/MMM/yyyy HH:mm')}</code> : 불러온 date 형식을 지정된 형식에 맞게 표기할 때</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#calendars}</code> : java.util.Calendar 서식 지원
+        <ul>
+          <li>Date와 기능은 동일</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#temporals}</code> : 자바8 날짜 서식 지원
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#temporals.day(localDateTime)}</code>, <code class="language-plaintext highlighter-rouge">${#temporals.hour(localDateTime)}</code>, … :  Java8 날짜 서식 지원</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#numbers}</code> : 숫자 서식 지원
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#numbers.formatInteger(num,3)}</code> : 최소 digits 설정</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#strings}</code> : 문자 관련 편의 기능
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#strings.toString(obj)}</code> : String으로 변환</li>
+          <li><code class="language-plaintext highlighter-rouge">${#strings.isEmpty(name)}</code> : 빈 문자열 체크</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#objects}</code> : 객체 관련 기능 제공
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#objects.nullSafe(obj,default)}</code> : Null이면 default 반환</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#bools}</code> : boolean 관련 기능 제공
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#bools.isTrue(obj)}</code> : th:if 와 같은 기능</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#arrays}</code> : 배열 관련 기능 제공
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">${#arrays.length(array)}</code> : 배열 길이 반환</li>
+          <li><code class="language-plaintext highlighter-rouge">${#arrays.isEmpty(array)}</code> : 빈 배열 확인</li>
+          <li><code class="language-plaintext highlighter-rouge">${#arrays.contains(array, element)}</code> : 요소 포함 여부 확인</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">${#lists}</code>  , <code class="language-plaintext highlighter-rouge">${#sets}</code> , <code class="language-plaintext highlighter-rouge">${#maps}</code> : 컬렉션 관련 기능 제공
+        <ul>
+          <li>array와 기능은 동일</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="url-링크">URL 링크</h3>
+
+<ul>
+  <li>URL in Thymeleaf
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">th:herf = “@{...}"</code></li>
+      <li>단순 URL
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:herf = "@{/hello}"</code> 
+  → /hello</li>
+          <li>사실 단순 URL에서는 굳이 th문법을 사용하지 않아도 됨 (<code class="language-plaintext highlighter-rouge">herf=”/hello”</code>)</li>
+        </ul>
+      </li>
+      <li>쿼리 파라미터
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:herf = "@{/hello(param1=${param1}, param2=${param2})}"</code> 
+  → /hello<strong>?</strong>param1=data1&amp;param2=data2</li>
+          <li>경로 상에 <strong>변수가 없는 상태</strong>에서 괄호_() 안에 있는 부분이 <strong>쿼리 파라미터로 처리</strong>됨 (자동으로 ‘?’ 도 넣어줌 → 쿼리 파라미터 형식)</li>
+          <li>Model로 받아온 속성값을 통해 쿼리파라미터를 요청할 수 있는 것</li>
+        </ul>
+      </li>
+      <li>경로 변수
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:herf = "@{/hello/{param1}/{param2}(param1=${param1}, param2=${param2})}"</code> 
+  → /hello/data1/data2</li>
+          <li>URL <strong>경로상에 변수</strong>가 있으면 () 부분은 <strong>경로 변수로 처리</strong>됨</li>
+        </ul>
+      </li>
+      <li>경로 변수 + 쿼리 파라미터
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:herf = "@{/hello/{param1}(param1=${param1}, param2=${param2})}"</code> 
+  → /hello/data1?param2=data2</li>
+          <li>경로 변수와 쿼리 파라미터를 함께 사용 가능 → URL 경로 상에 있는 건 <strong>경로 변수</strong>로, 없는 변수는 자동으로 <strong>쿼리 파라미터</strong>로 설정 됨</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="리터럴-literals">리터럴 (Literals)</h3>
+
+<ul>
+  <li><strong>리터럴</strong>
+    <ul>
+      <li>소스 코드상에 <strong>고정된 값</strong>. (변수가 아닌)
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">String a = “Hello”</code> 
+  → a : 변수, <strong>“Hello” : 리터럴</strong></li>
+        </ul>
+      </li>
+      <li>Thymeleaf 리터럴 문법 : 변수를 th 문법으로 사용하는 것이 아닌 고정된 문자, 문자열, 숫자를 th 문법으로 사용할 때 쓰는 것</li>
+      <li><strong>항상 <code class="language-plaintext highlighter-rouge">‘ ’</code>(작은따옴표) 로 감싸</strong>야 함.</li>
+      <li>하지만 <strong>공백 없이 쭉 이어진다</strong>면 하나의 의미있는 토큰으로 인지해서 작은 따옴표 생략 가능 (<code class="language-plaintext highlighter-rouge">A-Z</code> , <code class="language-plaintext highlighter-rouge">a-z</code> , <code class="language-plaintext highlighter-rouge">0-9</code> , <code class="language-plaintext highlighter-rouge">[]</code> , <code class="language-plaintext highlighter-rouge">.</code> , <code class="language-plaintext highlighter-rouge">-</code> , <code class="language-plaintext highlighter-rouge">_</code> 에 해당하는 리터럴들만)</li>
+      <li>즉, <strong>공백이 들어간 리터럴</strong> <code class="language-plaintext highlighter-rouge">th:text="hello world!"</code> 는 오류 발생 -&gt;  <code class="language-plaintext highlighter-rouge">th:text="'hello world!'"</code> 처럼 <strong>작은따옴표로 감싸</strong>줘야 함</li>
+    </ul>
+  </li>
+  <li><strong>리터럴 대체 문법</strong>
+    <ul>
+      <li>대체 문법 없이 리터럴을 변수와 같이 사용할 때의 문법
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">&lt;span th:text="'hello '+${data}"&gt;</code></li>
+          <li>이런 식으로 작은따옴표와 같이 하나의 리터럴로 만들어 줘야 함 → 공백도 직접 지정해줘야 하고 복잡하며 귀찮음!</li>
+        </ul>
+      </li>
+      <li><strong>대체 문법 사용</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:text = “| … |”</code></li>
+          <li><code class="language-plaintext highlighter-rouge">&lt;span th:text="|hello ${data} world|"&gt;</code></li>
+          <li><code class="language-plaintext highlighter-rouge">| … |</code> 로 감싸주기만 하면 <strong>‘리터럴과 변수 조합’</strong>을 굉장히 편하고 자유롭게 사용 가능!</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="연산">연산</h3>
+
+<ul>
+  <li>비교 연산
+    <ul>
+      <li>&lt; , &gt; , .. 와 같이 <strong>HTML 엔티티의 형식</strong>이 사용되기 때문에 주의!</li>
+      <li>근데, 연산 시에는 그냥 써주면 됨. → HTML 태그로 사용할 것이 아니기 때문!</li>
+      <li>즉, th:text 안에서 그냥 사용해도 그에 따른 판별 결과가 나옴
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">&lt;span th:text = “1 &lt; 10”&gt; result &lt;/span&gt;</code> → true</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">&gt; (gt), &lt; (lt), &gt;= (ge), &lt;= (le), ! (not), == (eq), != (neq, ne)</code> 연산자 사용 가능!</li>
+    </ul>
+  </li>
+  <li><strong>조건식</strong>
+    <ul>
+      <li>비교 연산과 똑같이 <strong>자바 문법에 맞는 조건식</strong>을 사용하면 됨</li>
+      <li><code class="language-plaintext highlighter-rouge">&lt;span th:text="(10 % 2 == 0)? '짝수':'홀수'"&gt; &lt;/span&gt;</code> → 짝수</li>
+    </ul>
+  </li>
+  <li><strong>Elvis 연산자 [중요]</strong>
+    <ul>
+      <li>조건식의 편의 버전</li>
+      <li>데이터가 있으면 그 데이터가 나오고, 없으면 설정된 값이 나옴</li>
+      <li><code class="language-plaintext highlighter-rouge">&lt;span th:text="${data}?: '데이터가 없습니다.'"&gt;&lt;/span&gt;</code>
+        <ul>
+          <li>data 가 null이 아닐 때 → data에 들어 있는 값</li>
+          <li>data 가 null일 때 → ‘데이터가 없습니다.’</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>No-Operation</strong>
+    <ul>
+      <li>조건에 따라 <code class="language-plaintext highlighter-rouge">_</code>인 경우 <strong>마치 타임리프가 실행되지 않는 것 처럼 동작</strong></li>
+      <li>즉, <code class="language-plaintext highlighter-rouge">_</code> 가 선택되면 <strong>렌더링 전의 HTML 코드</strong>가 그대로 실행됨. (타임리프 문법이 설정이 안된 것 마냥)</li>
+      <li><code class="language-plaintext highlighter-rouge">&lt;span th:text="${data}?: _"&gt; 데이터가 없습니다. &lt;/span&gt;</code>
+        <ul>
+          <li>data 가 null이 아닐 때 → data에 들어 있는 값</li>
+          <li>data 가 <strong>null</strong>일 때 → ‘데이터가 없습니다.’ (Elvis와는 다르게 <code class="language-plaintext highlighter-rouge">_</code> 가 선택되었기 때문에 해당 부분은 <strong>Thymeleaf가 적용되지 않고 마치 Thymelaef가 없이 기존 설정된 기본 HTML 태그</strong>(<code class="language-plaintext highlighter-rouge">&lt;span&gt; 데이터가 없습니다. &lt;/span&gt;</code>)로 <strong>실행</strong> 됨)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="기본-표현식-한방-정리">기본 표현식 한방 정리</h3>
+
+<aside>
+💡 <strong>Thymeleaf Basic Use</strong>
+
+<ul>
+<li> 간단한 표현 <br />
+◦ 변수 표현식: ${...} <br />
+◦ 선택 변수 표현식: *{...} <br />
+◦ 메시지 표현식: #{...} <br />
+◦ 링크 URL 표현식: @{...} <br />
+◦ 조각 표현식: ~{...}
+</li>
+<li> 리터럴 <br />
+◦ 텍스트: 'one text', 'Another one!',… <br />
+◦ 숫자: 0, 34, 3.0, 12.3,… <br />
+◦ 불린: true, false <br />
+◦ 널: null <br />
+◦ 리터럴 토큰: one, sometext, main,…
+</li>
+<li>문자 연산: <br />
+◦ 문자 합치기: + <br />
+◦ 리터럴 대체: |The name is ${name}|
+</li>
+<li>산술 연산: <br />
+◦ Binary operators: +, -, *, /, % <br />
+◦ Minus sign (unary operator): - 
+</li>
+<li>불린 연산: <br />
+◦ Binary operators: and, or <br />
+◦ Boolean negation (unary operator): !, not 
+</li>
+<li>비교와 동등: <br />
+◦ 비교: &gt;, &lt;, &gt;=, &lt;= (gt, lt, ge, le) <br />
+◦ 동등 연산: ==, != (eq, ne)
+</li>
+<li>조건 연산: <br />
+◦ If-then: (if) ? (then) <br />
+◦ If-then-else: (if) ? (then) : (else) <br />
+◦ Default: (value) ?: (defaultvalue) 
+</li>
+<li>특별한 토큰: <br />
+◦ No-Operation: _
+</li>
+</ul>
+</aside>
+
+<h3 id="속성-설정-및-추가">속성 설정 및 추가</h3>
+
+<ul>
+  <li>속성 (attribute) : &lt;div class=”” name=””&gt; 에서 class, name이 속성(attribute)</li>
+  <li>속성 설정
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">th:</code>속성은 항상 <strong>기존 속성보다 우선순위</strong>를 가짐</li>
+      <li>즉, 기존 속성과 <code class="language-plaintext highlighter-rouge">th:</code>속성이 있으면 기존 속성은 <code class="language-plaintext highlighter-rouge">th:</code>속성으로 <strong>대체</strong>됨</li>
+      <li>만약 기존 속성이 없으면 <code class="language-plaintext highlighter-rouge">th:</code>속성에 따른 속성을 <strong>새로 생성</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">&lt;input type="text" name="mock" th:name="userA"/&gt;</code> 를 Thymeleaf로 렌더링 하게 된다면 → <code class="language-plaintext highlighter-rouge">&lt;input type="text" name="userA"/&gt;</code>. 즉, 기존 속성을 대체함. (결국 대체하거나 새로 생성)</li>
+    </ul>
+  </li>
+  <li>속성 추가
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">th:attrappend</code> : 속성 값의 <strong>뒤에</strong> 값을 <strong>추가</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">&lt;input type="text" class="text" th:attrappend="class=' large'"/&gt;</code> → <code class="language-plaintext highlighter-rouge">&lt;input type="text" class="text large'"/&gt;</code></li>
+          <li><code class="language-plaintext highlighter-rouge">"class=' large'"</code> : <strong>앞의 공백</strong> 주의! <strong>리터럴 그대로 뒤에 추가</strong> 되는 것이기 때문에 공백을 넣어줘야 됨</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">th:attrprepend</code> : 속성 값의 <strong>앞에</strong> 값을 <strong>추가</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">&lt;input type="text" class="text" th:attrprepend="class='large '"/&gt;</code> → <code class="language-plaintext highlighter-rouge">&lt;input type="text" class="large text'"/&gt;</code></li>
+          <li><code class="language-plaintext highlighter-rouge">"class='large '"</code> : <strong>뒤의 공백</strong> 주의! <strong>리터럴 그대로 앞에 추가</strong> 되는 것이기 때문에 공백을 넣어줘야 됨</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">th:classappend</code> : class 속성에 <strong>자연스럽게 추가</strong> <strong>[자주 쓰임]</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">&lt;input type="text" class="text" th:classappend="large"/&gt;&lt;br/&gt;</code></li>
+          <li><code class="language-plaintext highlighter-rouge">th:attr</code> 과는 다르게 공백을 넣지 않아도 되고 리터럴 형식을 고려할 필요 없이 쉽게 추가 가능</li>
+          <li><strong>class 속성 추가</strong>가 필요할 때는 해당 기능을 사용하는 것 추천</li>
+          <li>나머지 속성 추가는 <code class="language-plaintext highlighter-rouge">th:attr</code> 을 리터럴 형식을 고려해서 사용해야 됨</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>checked 속성</strong>
+    <ul>
+      <li>특징 : checked = ‘true’, checked=’false’ 두 값 모두 checked 처리가 됨</li>
+      <li>즉, checked가 어떤 값이든 간에 checked라는 속성이 있으면 해당 부분은 checked 처리가 됨</li>
+      <li><code class="language-plaintext highlighter-rouge">th:checked</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">= “true”</code> : checked 속성을 <strong>추가</strong>해 주고</li>
+          <li><code class="language-plaintext highlighter-rouge">= “false”</code> : checked 속성을 <strong>제거</strong>해 줌!</li>
+          <li>즉, <code class="language-plaintext highlighter-rouge">th</code> 문법의 <code class="language-plaintext highlighter-rouge">checked</code>는 <strong>boolean 형식</strong>으로 돌아가도록 지원해줌! → 개발자 입장에서 BEST</li>
+          <li><code class="language-plaintext highlighter-rouge">th:checked=”${isChecked}”</code> 와 같이 true false 값으로 checked를 설정할 수 있음</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="반복문-반복">반복문 (반복)</h3>
+
+<ul>
+  <li>Java에서와 같이 반복문을 Thymeleaf에서 사용하는 방법</li>
+  <li><strong>반복</strong> 뿐만 아니라, 추가로 <strong>반복에서 사용할 수 있는 여러 상태 값</strong>을 지원</li>
+  <li><code class="language-plaintext highlighter-rouge">th:each</code> : 반복 기능
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">&lt;li th:each="user : ${users}"&gt;...&lt;/li&gt;</code></li>
+      <li><code class="language-plaintext highlighter-rouge">users</code> 라는 컬렉션의 값을 하나씩 꺼내서 <code class="language-plaintext highlighter-rouge">user</code> 에 담아 해당 태그를 반복하는 것 → <code class="language-plaintext highlighter-rouge">li</code> 태그가  <code class="language-plaintext highlighter-rouge">users</code> 의 길이만큼 생김</li>
+      <li>그 후 <code class="language-plaintext highlighter-rouge">user</code> 를 SringEL(변수 표현식)에 맞게 사용하면됨
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:text="${user.username}"</code> , <code class="language-plaintext highlighter-rouge">th:text="${user.age}"</code> , …</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">List</code> 뿐만 아니라 배열, <code class="language-plaintext highlighter-rouge">java.util.Iterable</code> , <code class="language-plaintext highlighter-rouge">java.util.Enumeration</code> 을 구현한 모든 객체를 반복에 사용 가능. <code class="language-plaintext highlighter-rouge">Map</code>의 경우 변수에 담기는 값은 <code class="language-plaintext highlighter-rouge">Map.Entry</code></li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">th:each</code> + <strong><code class="language-plaintext highlighter-rouge">Stat</code></strong>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">&lt;li th:each="user, userStat : ${users}"&gt;</code></li>
+      <li><code class="language-plaintext highlighter-rouge">userStat</code> : 반복의 두번째 파라미터를 설정해서 <strong>반복의 상태</strong>를 확인 (each 문에서 생략하고 바로 사용 가능 → 그냥 “<strong>지정한 변수명( user ) + Stat</strong>” 으로 사용하면 됨 → <code class="language-plaintext highlighter-rouge">userStat</code>)</li>
+      <li><code class="language-plaintext highlighter-rouge">.index</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:text="${userStat.index}"</code></li>
+          <li><strong>0부터 시작</strong>하는 값, 현재 반복되는 놈의 인덱스 반환</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">.count</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:text="${userStat.count}</code></li>
+          <li><strong>1부터 시작</strong>하는 값, 현재 반복되는 놈이 몇번째 놈인지 확인 가능</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">.size</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:text="${userStat.size}"</code></li>
+          <li>전체 사이즈, 현재 반복과 상관없이 해당 반복의 대상 컬렉션의 크기 확인</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">.even</code> , <code class="language-plaintext highlighter-rouge">.odd</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:text="${userStat.even}"</code> , <code class="language-plaintext highlighter-rouge">th:text="${userStat.odd}"</code></li>
+          <li>count의 <strong>홀수, 짝수 여부</strong>. boolean 값으로 반환됨</li>
+          <li>odd : 홀수면 true, 짝수면 false</li>
+          <li>even : 홀수면 false, 짝수면 true</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">.first</code> , <code class="language-plaintext highlighter-rouge">.last</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:text="${userStat.first}"</code> , <code class="language-plaintext highlighter-rouge">th:text="${userStat.last}"</code></li>
+          <li><strong>처음, 마지막 여부</strong>. boolean 값으로 반환됨</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">.current</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">th:text="${userStat.current}"</code> → User(username=userA, age=10)</li>
+          <li><strong>현재 객체</strong></li>
+          <li>위의 user 객체는 @ToString으로 만들어줬기에 저런 식으로 출력</li>
+          <li>@ToString이 없으면 객체의 주소값 반환</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="조건부-평가">조건부 평가</h3>
+
+<ul>
+  <li>타임리프에서 조건식을 사용할 수 있게끔 하는 기능</li>
+  <li><code class="language-plaintext highlighter-rouge">if</code> , <code class="language-plaintext highlighter-rouge">unless</code> (if의 반대)
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">th:if="${...}"</code> , <code class="language-plaintext highlighter-rouge">th:unless="${...}"</code></li>
+      <li>해당 조건이 맞지 않으면 태그 자체를 렌더링하지 않고 삭제함. 즉, <strong>조건에 맞는 것만 렌더링하여 보여줌!</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">&lt;span th:text="'미성년자'" th:if="${user.age &lt; 20}"&gt;&lt;/span&gt;</code>
+  <code class="language-plaintext highlighter-rouge">&lt;span th:text="'성인'" th:if="${user.age &gt;= 20}"&gt;&lt;/span&gt;</code>
+        <ul>
+          <li>user.age 가 18 이면 위의 if절(<code class="language-plaintext highlighter-rouge">미성년자</code>, true)만 렌더링, 밑의 if절(<code class="language-plaintext highlighter-rouge">성인</code>, false)은 삭제됨.</li>
+          <li>user.age 가 22 이면 위의 if절(<code class="language-plaintext highlighter-rouge">미성년자</code>, false)은 제거, 밑의 if절(<code class="language-plaintext highlighter-rouge">성인</code>, true)만 렌더링.</li>
+        </ul>
+      </li>
+      <li>굉장히 유용하게 쓰임!!</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">switch</code>
+    <ul>
+      <li>기존 switch와 동일. 해당하는 case만 렌더링 후 보여짐.</li>
+      <li>
+        <p>Ex)</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;td</span> <span class="na">th:switch=</span><span class="s">"${user.age}"</span><span class="nt">&gt;</span>
+  	<span class="nt">&lt;span</span> <span class="na">th:case=</span><span class="s">"10"</span><span class="nt">&gt;</span>10살<span class="nt">&lt;/span&gt;</span>
+  	<span class="nt">&lt;span</span> <span class="na">th:case=</span><span class="s">"20"</span><span class="nt">&gt;</span>20살<span class="nt">&lt;/span&gt;</span>
+  	<span class="nt">&lt;span</span> <span class="na">th:case=</span><span class="s">"*"</span><span class="nt">&gt;</span>기타<span class="nt">&lt;/span&gt;</span>
+  <span class="nt">&lt;/td&gt;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">*</code>은 만족하는 조건이 없을 때 사용하는 디폴트</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="주석">주석</h3>
+
+<ul>
+  <li>
+    <p>표준 HTML 주석 (<code class="language-plaintext highlighter-rouge">&lt;!-- --&gt;</code>)</p>
+
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c">&lt;!--
+  &lt;span th:text="${data}"&gt;html data&lt;/span&gt;
+  --&gt;</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>렌더링 하지 않고 이 그대로 주석된 상태로 HTML로 보내짐</li>
+    </ul>
+  </li>
+  <li>
+    <p>타임리프 파서 주석 (<code class="language-plaintext highlighter-rouge">&lt;!--/* /-→</code>)</p>
+
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c">&lt;!--/* [[${data}]] */--&gt;</span>
+  <span class="c">&lt;!--/*--&gt;</span>
+  <span class="nt">&lt;span</span> <span class="na">th:text=</span><span class="s">"${data}"</span><span class="nt">&gt;</span>html data<span class="nt">&lt;/span&gt;</span>
+  <span class="c">&lt;!--*/--&gt;</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>타임리프의 진짜 주석</li>
+      <li><strong>렌더링을 할때 해당 주석 부분을 아예 제거</strong>해버림</li>
+      <li>즉, 렌더링하지 않고 HTML을 보내면 그냥 보여짐</li>
+    </ul>
+  </li>
+  <li>
+    <p>타임리프 프로토타입 주석</p>
+
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c">&lt;!--/*/
+  &lt;span th:text="${data}"&gt;html data&lt;/span&gt;
+  /*/--&gt;</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>HTML 파일을 그대로 열어보면 주석처리가 되지만, 타임리프를 렌더링 한 경우에만 보이는 기능</li>
+      <li>자주 안 쓰임</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="블록">블록</h3>
+
+<ul>
+  <li>HTML 태그가 아닌 <strong>타임리프 자체 태그</strong></li>
+  <li>HTML 태그에 <strong>th문법을 사용하기 애매한 경우</strong>에 사용.</li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">&lt;th:block&gt;</code></p>
+
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;th:block</span> <span class="na">th:each=</span><span class="s">"user : ${users}"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;div&gt;</span>
+  		 사용자 이름1 <span class="nt">&lt;span</span> <span class="na">th:text=</span><span class="s">"${user.username}"</span><span class="nt">&gt;&lt;/span&gt;</span>
+  		 사용자 나이1 <span class="nt">&lt;span</span> <span class="na">th:text=</span><span class="s">"${user.age}"</span><span class="nt">&gt;&lt;/span&gt;</span>
+  	 <span class="nt">&lt;/div&gt;</span>
+  	 <span class="nt">&lt;div&gt;</span>
+  		 요약 <span class="nt">&lt;span</span> <span class="na">th:text=</span><span class="s">"${user.username} + ' / ' + ${user.age}"</span><span class="nt">&gt;&lt;/span&gt;</span>
+  	 <span class="nt">&lt;/div&gt;</span>
+  <span class="nt">&lt;/th:block&gt;</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>위의 상황 처럼 HTML 태그 안에 th 문법 (특히 <code class="language-plaintext highlighter-rouge">each</code> 문)을 사용하기 애매할 때 사용.</li>
+      <li><strong>렌더링시 제거</strong>됨. 즉, 반복 기능만 실행</li>
+      <li><code class="language-plaintext highlighter-rouge">th:each</code> 문에서 자주 사용!!</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="자바스크립트-인라인">자바스크립트 인라인</h3>
+
+<ul>
+  <li>자바스크립트에서 타임리프를 편리하게 사용할 수 있는 <strong>자바스크립트 인라인 기능</strong></li>
+  <li>Thymeleaf in JavaScript
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">&lt;script th:inline="javascript"&gt;</code></li>
+      <li><strong>텍스트 렌더링</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">var username = [[${user.username}]];</code>
+            <ul>
+              <li>인라인 사용 전 → <code class="language-plaintext highlighter-rouge">var username = userA;</code></li>
+              <li>인라인 사용 후 → <code class="language-plaintext highlighter-rouge">var username = "userA";</code></li>
+            </ul>
+          </li>
+          <li>인라인 사용 전에는 문자 형식이 아닌 userA라는 변수로 할당이 됨 → 오류.</li>
+          <li>인라인 사용 후에는 <code class="language-plaintext highlighter-rouge">user.username</code> 가 문자라는 것을 인식하고 <strong>문자의 형식으로 변수에 할당 됨</strong> → 정상 동작</li>
+          <li>즉, <code class="language-plaintext highlighter-rouge">th:inline="javascript"</code> 을 사용하게 되면 <strong>렌더링 결과를 판단해서 해당 타입에 맞게</strong> 자동으로 <code class="language-plaintext highlighter-rouge">“”</code> 를 포함하는 등, 그 타입에 맞게 동작함</li>
+          <li>추가로 자바스크립트에서 문제가 될 수 있는 문자가 포함되어 있으면 <strong>이스케이프 처리</strong>까지 진행</li>
+        </ul>
+      </li>
+      <li>자바스크립트 <strong>내추럴 템플릿</strong>
+        <ul>
+          <li>Thymeleaf의 내추럴 템플릿 기능 활용</li>
+          <li>자바스크립트 인라인 기능을 사용하면 <strong>주석을 활용해서 이 기능을 사용 가능</strong>하게 함</li>
+          <li><code class="language-plaintext highlighter-rouge">var username2 = /*[[${user.username}]]*/ "test username";</code>
+            <ul>
+              <li>인라인 사용 전 →  <code class="language-plaintext highlighter-rouge">var username2 = /*userA*/ "test username";</code></li>
+              <li>인라인 사용 후 → <code class="language-plaintext highlighter-rouge">var username2 = "userA";</code></li>
+            </ul>
+          </li>
+          <li>인라인 사용 전에는 내추럴 템플릿 기능 동작 X, 그냥 test username이 할당됨</li>
+          <li>인라인 사용 후에는 주석 부분이 제거되고, “userA” 값이 할당 됨 → <strong>내추럴 탬플릿 기능</strong> (렌더링 하지 않으면 “test username”, 렌더링 하면 “userA”)</li>
+        </ul>
+      </li>
+      <li><strong>객체</strong>
+        <ul>
+          <li>객체를 JSON으로 자동으로 변환</li>
+          <li><code class="language-plaintext highlighter-rouge">var user = [[${user}]];</code>
+            <ul>
+              <li>인라인 사용 전 →  <code class="language-plaintext highlighter-rouge">var user = BasicController.User(username=userA, age=10);</code></li>
+              <li>인라인 사용 후 → <code class="language-plaintext highlighter-rouge">var user = {"username":"userA","age":10};</code></li>
+            </ul>
+          </li>
+          <li>인라인 사용 전은 객체의 <code class="language-plaintext highlighter-rouge">toString()</code> 으로 호출된 값</li>
+          <li>인라인 사용 후는 객체를 JSON으로 변환해준 결과 → 이렇게 되면 좀 더 효율적으로 객체의 속성에 접근할 수 있음</li>
+        </ul>
+      </li>
+      <li><strong>자바스크립트 인라인 each</strong>
+        <ul>
+          <li>자바스크립트에서 반복문과 같이 <strong>each</strong>를 사용할 수 있음</li>
+          <li>
+            <p>th:each in JavaScript</p>
+
+            <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="p">[</span><span class="err">#</span> <span class="nx">th</span><span class="p">:</span><span class="nx">each</span><span class="o">=</span><span class="dl">"</span><span class="s2">user, stat : ${users}</span><span class="dl">"</span><span class="p">]</span>
+  <span class="kd">var</span> <span class="nx">user</span><span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">stat</span><span class="p">.</span><span class="nx">count</span><span class="p">}]]</span> <span class="o">=</span> <span class="p">[[</span><span class="nx">$</span><span class="p">{</span><span class="nx">user</span><span class="p">}]];</span>
+  <span class="p">[</span><span class="sr">/</span><span class="err">]
+</span></code></pre></div>            </div>
+
+            <ul class="task-list">
+              <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />와 # 을 이용해서 기존 th문법과 동일하게 적용 가능</li>
+            </ul>
+
+            <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">var</span> <span class="nx">user1</span> <span class="o">=</span> <span class="p">{</span><span class="dl">"</span><span class="s2">username</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">userA</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">age</span><span class="dl">"</span><span class="p">:</span><span class="mi">10</span><span class="p">};</span>
+  <span class="kd">var</span> <span class="nx">user2</span> <span class="o">=</span> <span class="p">{</span><span class="dl">"</span><span class="s2">username</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">userB</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">age</span><span class="dl">"</span><span class="p">:</span><span class="mi">20</span><span class="p">};</span>
+  <span class="kd">var</span> <span class="nx">user3</span> <span class="o">=</span> <span class="p">{</span><span class="dl">"</span><span class="s2">username</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">userC</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">age</span><span class="dl">"</span><span class="p">:</span><span class="mi">30</span><span class="p">};</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>결과를 보면 <strong>변수를 개수에 맞게 생성하는 것</strong>처럼 굉장히 유용하게 쓸 수 있다는 것을 알 수 있음!</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="템플릿-조각">템플릿 조각</h3>
+
+<ul>
+  <li>웹에서 <strong>공통적으로 보여지는 부분에 대한 처리</strong></li>
+  <li>상단 영역(header), 하단 영역(footer) 등 여러 페이지에서 함께 사용하는 영역을 <strong>공통적인 HTML 파일로 불러와 사용</strong>할 수 있도록 하는 것</li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">/resources/templates/template/fragment/footer.html</code></p>
+
+    <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="p">&lt;</span><span class="err">!</span><span class="na">DOCTYPE</span> <span class="na">html</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">html</span> <span class="na">xmlns</span><span class="err">:</span><span class="na">th</span><span class="p">=</span><span class="s">"http://www.thymeleaf.org"</span><span class="p">&gt;</span>
+  	<span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+  		<span class="p">&lt;</span><span class="nt">footer</span> <span class="na">th</span><span class="err">:</span><span class="na">fragment</span><span class="p">=</span><span class="s">"copy"</span><span class="p">&gt;</span>
+  			 푸터 영역
+  		<span class="p">&lt;/</span><span class="nt">footer</span><span class="p">&gt;</span>
+  		<span class="p">&lt;</span><span class="nt">footer</span> <span class="na">th</span><span class="err">:</span><span class="na">fragment</span><span class="p">=</span><span class="s">"copyParam (param1, param2)"</span><span class="p">&gt;</span>
+  			 <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>파라미터를 사용한 푸터 영역<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+  			 <span class="p">&lt;</span><span class="nt">p</span> <span class="na">th</span><span class="err">:</span><span class="na">text</span><span class="p">=</span><span class="s">"${param1}"</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+  			 <span class="p">&lt;</span><span class="nt">p</span> <span class="na">th</span><span class="err">:</span><span class="na">text</span><span class="p">=</span><span class="s">"${param2}"</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+  		<span class="p">&lt;/</span><span class="nt">footer</span><span class="p">&gt;</span>
+  	<span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>fragment로써 외부에서 사용할 영역은 <code class="language-plaintext highlighter-rouge">th:fragment=”이름”</code> 으로 지정해 줌</li>
+      <li>공통적으로 사용은 하지만 각 사용에서 다른 용도로 사용할 수도 있기에 <strong>파라미터</strong>까지 지원함. → 파라미터를 사용하는 fragment는 함수처럼 선언 (<code class="language-plaintext highlighter-rouge">th:fragment="copyParam (param1, param2)"</code>)</li>
+      <li>이제 공통적인 부분은 이 HTML 속 Fragment를 불러와 사용하면 됨</li>
+    </ul>
+  </li>
+  <li>Fragment 사용
+    <ul>
+      <li><strong>어떻게 포함</strong>할 것(<code class="language-plaintext highlighter-rouge">th:*</code>)인지, 어느 위치의 <strong>어떤 fragment</strong>(<code class="language-plaintext highlighter-rouge">~{경로 :: 이름}</code>)인지 지정해주면 됨</li>
+      <li><strong>insert</strong> (<code class="language-plaintext highlighter-rouge">th:insert</code>)
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">&lt;div th:insert="~{template/fragment/footer :: copy}"&gt;&lt;/div&gt;</code></li>
+          <li><code class="language-plaintext highlighter-rouge">&lt;div&gt;</code> 영역 <strong>안으로</strong> fragment가 들어감 (<code class="language-plaintext highlighter-rouge">&lt;div&gt; &lt;footer&gt; … &lt;/footer&gt; &lt;/div&gt;</code>)</li>
+        </ul>
+      </li>
+      <li><strong>replace (</strong><code class="language-plaintext highlighter-rouge">th:replace</code><strong>)</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">&lt;div th:replace="template/fragment/footer :: copy"&gt;&lt;/div&gt;</code></li>
+          <li><code class="language-plaintext highlighter-rouge">&lt;div&gt;</code> 영역을 <strong>대체하여</strong> fragment가 들어감 (<code class="language-plaintext highlighter-rouge">&lt;footer&gt; … &lt;/footer&gt;</code>)</li>
+        </ul>
+      </li>
+      <li><strong>단순 표현식</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">~{...}</code> 을 생략하여 사용하는 것</li>
+          <li>템플릿 조각을 사용하는 코드가 단순할 때만 사용 가능</li>
+          <li><code class="language-plaintext highlighter-rouge">&lt;div th:insert="template/fragment/footer :: copy"&gt;&lt;/div&gt;</code></li>
+        </ul>
+      </li>
+      <li><strong>파라미터 사용</strong>
+        <ul>
+          <li>공통으로 사용하지만 각 용도에 맞게 사용하기 위함</li>
+          <li>파라미터를 전달해서 동적으로 fragment를 렌더링</li>
+          <li><code class="language-plaintext highlighter-rouge">&lt;div th:replace="~{template/fragment/footer :: copyParam ('데이터1', '데이터2')}"&gt;&lt;/div&gt;</code></li>
+          <li>해당 인자에 맞는 fragment를 생성</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="템플릿-레이아웃">템플릿 레이아웃</h3>
+
+<ul>
+  <li>Fragment 는 말 그대로 일부 코드 조각을 가지고 와서 넣거나, 대체하는 것</li>
+  <li>Layout 은 개념을 더 확장해서 코드 조각을 레이아웃에 넘겨서 그 레이아웃을 받아오는 것 → 즉, 일부만 교체하고 그런 것이 아니라, 거의 전부를 넘겨 받아 사용하는 것</li>
+</ul>
+
+<aside>
+💡 <strong> Fragment 와 Layout 둘 중 어떤 것을 사용해야 하나? </strong> <br />
+페이지가 적을 때는 그냥 간단하고 사용하기 편한 <b>Fragment</b>를 사용, 하지만 페이지가 많고 공통적인 부분이 많다 하면 <b>Layout</b>을 사용하는 게 유지 보수에 좋음
+
+</aside>
+
+<ul>
+  <li><strong>base layout (일부 layout)</strong>
+    <ul>
+      <li>시나리오 :&lt;head&gt; 에 공통으로 사용하는 css , javascript 같은 정보들이 있는데, 이러한 공통 정보들을 한 곳에 모아두고, 공통으로 사용하지만, 각 페이지마다 필요한 정보를 더 추가해서 사용하는 상황</li>
+      <li>
+        <p>base layout (<code class="language-plaintext highlighter-rouge">/resources/templates/template/layout/base.html</code>)</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">&lt;html</span> <span class="na">xmlns:th=</span><span class="s">"http://www.thymeleaf.org"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;head</span> <span class="na">th:fragment=</span><span class="s">"common_header(title,links)"</span><span class="nt">&gt;</span>
+  	<span class="c">&lt;!-- 개별 타이틀 --&gt;</span>
+  	<span class="nt">&lt;title</span> <span class="na">th:replace=</span><span class="s">"${title}"</span><span class="nt">&gt;</span>레이아웃 타이틀<span class="nt">&lt;/title&gt;</span>
+        	
+  	<span class="c">&lt;!-- 공통 --&gt;</span>
+  	<span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">type=</span><span class="s">"text/css"</span> <span class="na">media=</span><span class="s">"all"</span> <span class="na">th:href=</span><span class="s">"@{/css/awesomeapp.css}"</span><span class="nt">&gt;</span>
+  	...
+        	
+  	<span class="c">&lt;!-- 개별 추가 --&gt;</span>
+  	<span class="nt">&lt;th:block</span> <span class="na">th:replace=</span><span class="s">"${links}"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/head&gt;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>개별 html에서 base의 공통 head layout(fragment)를 사용하는 것</li>
+          <li>여기서 인자로 받아온 값을 통해 개별 html의 <strong>개별 요구사항을 만족</strong></li>
+          <li>즉, 인자로 받아온 값을 통해 공통 head를 개별 head layout으로 만들어 보내 주는 것</li>
+        </ul>
+      </li>
+      <li>
+        <p>base layout 사용 (<code class="language-plaintext highlighter-rouge">/resources/templates/template/layout/layoutMain.html</code>)</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  ...
+  <span class="nt">&lt;head</span> <span class="na">th:replace=</span><span class="s">"template/layout/base :: common_header(~{::title},~{::link})"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;title&gt;</span>메인 타이틀<span class="nt">&lt;/title&gt;</span>
+  	 <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">th:href=</span><span class="s">"@{/css/bootstrap.min.css}"</span><span class="nt">&gt;</span>
+  	 <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">th:href=</span><span class="s">"@{/themes/smoothness/jquery-ui.css}"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;/head&gt;</span>
+  ...
+</code></pre></div>        </div>
+
+        <ul>
+          <li>현재 html의 개별 title과 추가 link를 인자로 넘겨줘서 base head layout을 만들어서 replace를 통해 head를 대체함
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">~{::title}</code> : 현재 페이지의 title 태그들</li>
+              <li><code class="language-plaintext highlighter-rouge">~{::link}</code> : 현재 페이지의 link 태그들</li>
+            </ul>
+          </li>
+          <li>그럼 layout을 통해 현재 title과 추가 link를 설정할 수 있음</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>base html layout (전체 layout)</strong>
+    <ul>
+      <li>상황 : &lt;head&gt; 정도에만 적용하는게 아니라 &lt;html&gt; <strong>전체에 적용 하는 확장</strong>해야 되는 상황</li>
+      <li>
+        <p>base html layout (<code class="language-plaintext highlighter-rouge">/resources/templates/template/layoutExtend/layoutFile.html</code>)</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="cp">&lt;!DOCTYPE html&gt;</span>
+  <span class="nt">&lt;html</span> <span class="na">th:fragment=</span><span class="s">"layout (title, container)"</span> <span class="na">xmlns:th=</span><span class="s">"http://www.thymeleaf.org"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;head&gt;</span>
+   <span class="nt">&lt;title</span> <span class="na">th:replace=</span><span class="s">"${title}"</span><span class="nt">&gt;</span>레이아웃 타이틀<span class="nt">&lt;/title&gt;</span>
+  <span class="nt">&lt;/head&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+  	<span class="nt">&lt;h1&gt;</span>레이아웃 H1<span class="nt">&lt;/h1&gt;</span>
+  	<span class="nt">&lt;div</span> <span class="na">th:replace=</span><span class="s">"${container}"</span><span class="nt">&gt;</span>
+  		 <span class="nt">&lt;p&gt;</span>레이아웃 컨텐츠<span class="nt">&lt;/p&gt;</span>
+  	<span class="nt">&lt;/div&gt;</span>
+  	<span class="nt">&lt;footer&gt;</span>
+  		 레이아웃 푸터
+  	<span class="nt">&lt;/footer&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+  <span class="nt">&lt;/html&gt;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>개별 title 과 container(전체 내용)을 받아와 layout을 만들어 줌</li>
+          <li>html 자체를 통으로 주는 것! (진정한 레이아웃)</li>
+        </ul>
+      </li>
+      <li>
+        <p>base html layout 사용 (<code class="language-plaintext highlighter-rouge">/resources/templates/template/layoutExtend/layoutExtendMain.html</code>)</p>
+
+        <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="cp">&lt;!DOCTYPE html&gt;</span>
+  <span class="nt">&lt;html</span> <span class="na">th:replace=</span><span class="s">"~{template/layoutExtend/layoutFile :: layout(~{::title},~{::section})}"</span> <span class="na">xmlns:th=</span><span class="s">"http://www.thymeleaf.org"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;head&gt;</span>
+  	 <span class="nt">&lt;title&gt;</span>메인 페이지 타이틀<span class="nt">&lt;/title&gt;</span>
+  <span class="nt">&lt;/head&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+  	<span class="nt">&lt;section&gt;</span>
+  		 <span class="nt">&lt;p&gt;</span>메인 페이지 컨텐츠<span class="nt">&lt;/p&gt;</span>
+  		 <span class="nt">&lt;div&gt;</span>메인 페이지 포함 내용<span class="nt">&lt;/div&gt;</span>
+  	<span class="nt">&lt;/section&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+  <span class="nt">&lt;/html&gt;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>현재 html의 개별 title과 내용을 담은 section을 인자로 넘겨줘서 base html layout을 만들어서 replace를 통해 html를 대체함
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">~{::title}</code> : 현재 페이지의 title 태그들</li>
+              <li><code class="language-plaintext highlighter-rouge">~{::section}</code> : 현재 페이지의 section(container,내용) 태그</li>
+            </ul>
+          </li>
+          <li>그럼 layout을 통해 현재 title과 내용을 담은 html을 설정할 수 있음</li>
+        </ul>
+
+        <aside>
+  ⚠️ <strong> replace → replace … </strong> <br />
+  둘 다 replace를 사용해서 값을 대체하고 있음! 고로 replace의 흐름과 순서를 통해 대체되는 순서를 파악하면 됨
+        
+  </aside>
+      </li>
+    </ul>
+  </li>
+</ul>
+:ET

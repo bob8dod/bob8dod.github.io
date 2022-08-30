@@ -193,7 +193,7 @@ tags:   SpringBoot JPA
         
     - 그래서 **다대다 관계**가 가능하도록 **JPA 에서 지원**하는 것
     - **하지만 해당 관계는 사용하면 안됨!!**
-    - 즉, `@ManyToMany`를 사용하지 말고 **연결 객체 Entity를 생성**해서 `**@OneToMany` + `@ManyToOne`** 으로 풀어내야함
+    - 즉, `@ManyToMany`를 사용하지 말고 **연결 객체 Entity를 생성**해서 **`@OneToMany` + `@ManyToOne`** 으로 풀어내야함
 - 지원되는 다대다 **(실무에선 사용X)**
 
   ![Untitled]({{site.baseurl}}/images/posts/post-220812/Untitled 7.png)

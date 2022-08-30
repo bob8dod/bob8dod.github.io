@@ -102,7 +102,7 @@ Admin 페이지나, CSR 적용 전의 <b>기본 동작이 되는 서비스</b>�
                 - `${user.username}`
                 - `${user[’username’]}`
                 - `${user.getUsername()}`
-            - 모두 `**user.getUsername()**` 으로 property를 가져오는 것
+            - 모두 **`user.getUsername()**` 으로 property를 가져오는 것
             
             <aside>
             🚨 <strong> SpringEL Obejct property 접근 주의! </strong> <br>
@@ -116,14 +116,14 @@ Admin 페이지나, CSR 적용 전의 <b>기본 동작이 되는 서비스</b>�
                 - `users[0].username`
                 - `users[0]['username']`
                 - `users[0].getUsername()`
-            - 모두 `**list.get(0)**` 으로 요소를 가져오는 것
+            - 모두 **`list.get(0)`** 으로 요소를 가져오는 것
     - Map
         - 접근 (Java: `map.get("userA").getUsername()`)
             - SpringEL (in Thymeleaf)
                 - `userMap['userA'].username`
                 - `userMap['userA']['username']`
                 - `userMap['userA'].getUsername()`
-            - 모두 `**map.get("userA")**` 으로 요소를 가져오는 것
+            - 모두 **map.get("userA")`** 으로 요소를 가져오는 것
 - 지역변수 사용
     - `th:with = "변수=${…}"`
     - 지역 변수를 **선언한 영역 내에서만 사용 가능**함 (지역 변수 특징)
@@ -348,7 +348,7 @@ Admin 페이지나, CSR 적용 전의 <b>기본 동작이 되는 서비스</b>�
     - 그 후 `user` 를 SringEL(변수 표현식)에 맞게 사용하면됨
         - `th:text="${user.username}"` , `th:text="${user.age}"` , …
     - `List` 뿐만 아니라 배열, `java.util.Iterable` , `java.util.Enumeration` 을 구현한 모든 객체를 반복에 사용 가능. `Map`의 경우 변수에 담기는 값은 `Map.Entry`
-- `th:each` + `**Stat**`
+- `th:each` + **`Stat`**
     - `<li th:each="user, userStat : ${users}">`
     - `userStat` : 반복의 두번째 파라미터를 설정해서 **반복의 상태**를 확인 (each 문에서 생략하고 바로 사용 가능 → 그냥 “**지정한 변수명( user ) + Stat**” 으로 사용하면 됨 → `userStat`)
     - `.index`

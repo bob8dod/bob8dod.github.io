@@ -150,7 +150,7 @@ tags:   SpringBoot JPA
 
 - 주문 Entity 개발
     - Order Class
-        1. Order에는 양방향 연관관계가 있으며 Order가 그 양방향 연관관계에서 우위를 점하고 있는 것들이 많음. → 생성 메서드를 Entity 자체에 만들어주면 좋음! → `**static** Order createOrder(Member member, Delivery delivery, OrderItem... orderItems)`
+        1. Order에는 양방향 연관관계가 있으며 Order가 그 양방향 연관관계에서 우위를 점하고 있는 것들이 많음. → 생성 메서드를 Entity 자체에 만들어주면 좋음! → **`static** Order createOrder(Member member, Delivery delivery, OrderItem... orderItems)`
             - Order가 생성될 때 무조건 호출되어야 하는 놈
             - 연관관계 매핑 및 값을 설정하는 역할
 
