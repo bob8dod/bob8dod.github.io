@@ -1,0 +1,436 @@
+I"}<h2 id="확장-기능">확장 기능</h2>
+
+<h3 id="사용자-정의-repo-구현">사용자 정의 REPO 구현</h3>
+
+<ul>
+  <li>현재 스프링 데이터 JPA를 사용하는 REPO에서 JPA를 직접 사용하거나 JDBC Template, MyBatis 를 사용하는 등 <strong>스프링 데이터 JPA가 아닌 메서드를 직접 구현하고 싶을 때</strong>의 방법 (<strong>특히 QueryDSL</strong>을 사용해야 할 때)</li>
+  <li>만약 해당 방법을 사용하지 않고 현재 REPO의 <strong>구현체를 만들어 메서드를 추가한다면?</strong> →  Spring Data Jpa가 구현해주는 모든 메서드들을 직접 구현해준 후에 메서드를 추가해주어야 함! <strong>너무나 복잡!</strong></li>
+  <li><strong>사용자 정의 Repository</strong> 구현
+    <ol>
+      <li>
+        <p>사용자 정의 <strong>인터페이스</strong> 생성</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">MemberRepositoryCustom</span> <span class="o">{</span>
+ 	 <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findMemberCustom</span><span class="o">();</span>
+ <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">List&lt;Member&gt; findMemberCustom();</code> : <strong>Spring Data Jpa 를 사용하지 않은</strong> 사용자 정의 메서드 → <strong>JPA를 직접 사용하거나 QueryDSL 등을 사용</strong>하고자 하는 메서드</li>
+        </ul>
+      </li>
+      <li>
+        <p>사용자 정의 <strong>인터페이스의 구현체</strong> 생성 (구현체의 <strong>이름은 정해진 규칙에 따라 생성</strong>)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nd">@RequiredArgsConstructor</span>
+ <span class="kd">public</span> <span class="kd">class</span> <span class="nc">MemberRepositoryImpl</span> <span class="kd">implements</span> <span class="nc">MemberRepositoryCustom</span> <span class="o">{</span>
+ 	 <span class="kd">private</span> <span class="kd">final</span> <span class="nc">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+ 	 <span class="nd">@Override</span>
+ 	 <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findMemberCustom</span><span class="o">()</span> <span class="o">{</span>
+ 			 <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">"select m from Member m"</span><span class="o">)</span>
+ 					 <span class="o">.</span><span class="na">getResultList</span><span class="o">();</span>
+ 	 <span class="o">}</span>
+ <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>해당 Interface의 <strong>메서드를 구현</strong> (<code class="language-plaintext highlighter-rouge">@Override</code>)</li>
+          <li>해당 구현체는 <strong>JPA를 직접 사용(JPQL)하기 위한 메서드</strong></li>
+          <li>구현체의 이름은 현재 Spring Data JPA를 사용(JpaRepository&lt;&gt;)하는 Interface(<code class="language-plaintext highlighter-rouge">MeberRepository</code>)에 “<code class="language-plaintext highlighter-rouge">Impl</code>” 이라는 키워드를 붙여줘야함 (<code class="language-plaintext highlighter-rouge">MeberRepositoryImpl</code>) → 정해진 규칙 (<strong>규칙: 리포지토리 인터페이스 이름 + Impl or 사용자 정의 인터페이스 명 + “Impl” →</strong> <code class="language-plaintext highlighter-rouge">MeberRepositoryCustomImpl</code>)</li>
+          <li>이렇게 규칙에 따라 구현 클래스를 만들어주면 따로 <strong>스프링 빈으로 등록할 필요 없이 스프링 데이터 JPA가 인식하여 스프링 빈으로 등록!</strong> → 따라서 규칙에 따라야하는 것은 필수!!</li>
+        </ul>
+      </li>
+      <li>
+        <p>해당 사용자 정의 인터페이스를 현재 <strong>Spring Data JPA를 사용(JpaRepository&lt;&gt;)하는 Interface에 상속</strong>을 줌</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">MemberRepository</span>
+ 			 <span class="kd">extends</span> <span class="nc">JpaRepository</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">,</span> <span class="nc">Long</span><span class="o">&gt;,</span> <span class="nc">MemberRepositoryCustom</span> <span class="o">{}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>사용자 정의 메서드 호출 및 사용</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findMemberCustom</span><span class="o">();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>이질감 없이 그냥 <strong>바로 memberRepository 에서 호출해서 사용</strong> 가능</li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>언제 사용해야 되나?</strong>
+<br />
+실무에서는 주로 <b>QueryDSL</b>이나 <b>SpringJdbcTemplate</b>을 <b>함께 사용</b>할 때 사용자 정의 리포지토리 기능 자주 사용
+
+</aside>
+
+<aside>
+⚠️ <strong>사용자 정의 리포 주의점!</strong>
+항상 사용자 정의 리포지토리가 필요한 것은 아님. <b>그냥 임의의 레포를 생성해서 사용해도 됨!!</b> 예를들어 MemberRepositoryForQuerydsl를 별도의 클래스로 만들고 스프링 빈으로 등록해서 그냥 직접 사용해도 됨 → <b>핵심 비지니스에 속하는 REPO랑 화면에 맞춘 REPO는 분리해주는 것이 좋음!</b>
+
+</aside>
+
+<h3 id="auditing">Auditing</h3>
+
+<ul>
+  <li>Entity를 생성하고 변경할 때 <strong>자동으로 변경한 사람과 시간을 추적</strong>하게 해줄 수 있는 기능</li>
+  <li>등록일, 수정일, (등록자, 수정자) 는 실무에 있어서 필수 Col→ <strong>추적</strong>을 위해</li>
+  <li>즉, 이들은 <strong>공통적으로 들어가는 Field</strong> 이고, 이들에 대해서 <strong>자동으로 기록해주는 수단이 필요!</strong> → 해당 Entity가 등록되기 직전, 자동으로 등록일과 등록자를 기록해주고, 수정되기 직전, 자동으로 수정일과 수정자를 기록해주는 수단</li>
+  <li>
+    <p>순수 JPA에서의 Auditing (<code class="language-plaintext highlighter-rouge">@PrePersist</code>, <code class="language-plaintext highlighter-rouge">@PreUpdate</code>)</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@MappedSuperclass</span>
+  <span class="nd">@Getter</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">JpaBaseEntity</span> <span class="o">{</span>
+  		<span class="nd">@Column</span><span class="o">(</span><span class="n">updatable</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+  		<span class="kd">private</span> <span class="nc">LocalDateTime</span> <span class="n">createdDate</span><span class="o">;</span>
+  		<span class="kd">private</span> <span class="nc">LocalDateTime</span> <span class="n">updatedDate</span><span class="o">;</span>
+    
+  		<span class="nd">@PrePersist</span>
+  		<span class="kd">public</span> <span class="kt">void</span> <span class="nf">prePersist</span><span class="o">()</span> <span class="o">{...}</span>
+  		<span class="nd">@PreUpdate</span>
+  		<span class="kd">public</span> <span class="kt">void</span> <span class="nf">preUpdate</span><span class="o">()</span> <span class="o">{...}</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">JpaBaseEntity</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@MappedSuperclass</code> : 해당 Class의 Field를 <strong>공통 Field</strong>로 만들겠다는  뜻. → 다른 Entity들은 해당 Class 를 상속받고 공통 Field를 사용할 수 있음</li>
+          <li>등록일과 수정일 Field 보유 (공통 Field)</li>
+          <li>ex) <code class="language-plaintext highlighter-rouge">public class Member extends JpaBaseEntity {}</code> → Member는 createdDate, updatedDate Field를 보유하게 됨</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">@PrePersist</code>
+        <ul>
+          <li>해당 class 를 상속받은 Entity가 <strong>저장되기 직전</strong>에 해당 <strong>어노테이션이 달린 메서드(createdDate, updatedDate 설정) 실행</strong></li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">@PreUpdate</code>
+        <ul>
+          <li>해당 class 를 상속받은 Entity가 <strong>수정되기 직전</strong>에 해당 <strong>어노테이션이 달린 메서드(updatedDate 설정) 실행</strong></li>
+        </ul>
+      </li>
+      <li>JPA 주요 이벤트 어노테이션
+        <ul>
+          <li><strong>저장</strong> 관련 : <code class="language-plaintext highlighter-rouge">@PrePersist</code>, <code class="language-plaintext highlighter-rouge">@PostPersist</code></li>
+          <li><strong>수정</strong> 관련 : <code class="language-plaintext highlighter-rouge">@PreUpdate</code>, <code class="language-plaintext highlighter-rouge">@PostUpdate</code></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>스프링 데이터 JPA 에서의 Auditing</strong> (<code class="language-plaintext highlighter-rouge">@CreatedDate</code>, <code class="language-plaintext highlighter-rouge">@LastModifiedDate</code>) 사용
+    <ol>
+      <li>
+        <p><strong>스프링 부트 설정 클래스</strong>에 <code class="language-plaintext highlighter-rouge">@EnableJpaAuditing</code> 적용 (추가로 등록자, 수정자 처리를 원한다면, <code class="language-plaintext highlighter-rouge">AuditorAware</code>를 스프링 빈 등록)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nd">@EnableJpaAuditing</span> <span class="c1">// Auditing기능을 사용하기 위한 설정</span>
+ <span class="nd">@SpringBootApplication</span>
+ <span class="kd">public</span> <span class="kd">class</span> <span class="nc">DataJpaApplication</span> <span class="o">{</span>
+        
+ 	<span class="o">...</span> 
+ 	<span class="nd">@Bean</span> <span class="c1">// 등록자, 수정자를 처리해주는 AuditorAware 스프링 빈 등록</span>
+ 	<span class="kd">public</span> <span class="nc">AuditorAware</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="nf">auditorProvider</span><span class="o">()</span> <span class="o">{</span>
+ 		<span class="k">return</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="nc">Optional</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="no">UUID</span><span class="o">.</span><span class="na">randomUUID</span><span class="o">().</span><span class="na">toString</span><span class="o">());</span>
+ 	<span class="o">}</span> <span class="c1">// 내부 getCurrentAuditor() 를 람다로 구현한 것</span>
+        
+ <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>여기서는 UUID를 통해서 진행했지만, <strong>실무에선 세션 정보나, 스프링 시큐리티 로그인 정보에서 ID를 받아와 저장</strong>해줌 (<code class="language-plaintext highlighter-rouge">@CreatedBy</code>, <code class="language-plaintext highlighter-rouge">@LastModifiedBy</code> 가 달린 Field에)</li>
+        </ul>
+      </li>
+      <li>
+        <p>Auditing을 사용하고자 하는 (등록일, 수정일 등을 가진) <strong>엔티티에</strong>  <code class="language-plaintext highlighter-rouge">@EntityListeners(AuditingEntityListener.class)</code> (<strong>이벤트 기반으로 동작한다</strong>는 것을 명시) 적용한 후 <code class="language-plaintext highlighter-rouge">@CreatedDate</code>(등록일), <code class="language-plaintext highlighter-rouge">@LastModifiedDate</code>(변경일), <code class="language-plaintext highlighter-rouge">@CreatedBy</code>(등록자), <code class="language-plaintext highlighter-rouge">@LastModifiedBy</code>(변경자)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nd">@EntityListeners</span><span class="o">(</span><span class="nc">AuditingEntityListener</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+ <span class="nd">@MappedSuperclass</span>
+ <span class="nd">@Getter</span>
+ <span class="kd">public</span> <span class="kd">class</span> <span class="nc">BaseEntity</span> <span class="o">{</span>
+ 		 <span class="nd">@CreatedDate</span>
+ 		 <span class="nd">@Column</span><span class="o">(</span><span class="n">updatable</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+ 		 <span class="kd">private</span> <span class="nc">LocalDateTime</span> <span class="n">createdDate</span><span class="o">;</span>
+        
+ 		 <span class="nd">@LastModifiedDate</span>
+ 		 <span class="kd">private</span> <span class="nc">LocalDateTime</span> <span class="n">lastModifiedDate</span><span class="o">;</span>
+        
+ 		 <span class="nd">@CreatedBy</span>
+ 		 <span class="nd">@Column</span><span class="o">(</span><span class="n">updatable</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+ 		 <span class="kd">private</span> <span class="nc">String</span> <span class="n">createdBy</span><span class="o">;</span>
+        
+ 		 <span class="nd">@LastModifiedBy</span>
+ 		 <span class="kd">private</span> <span class="nc">String</span> <span class="n">lastModifiedBy</span><span class="o">;</span>
+ <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+    </ol>
+
+    <ul>
+      <li>이렇게 설정하게 되면 순수 JPA처럼 직접 Method를 짤 필요 없이 <strong>자동으로 등록, 수정과 관련된 필드를</strong> 마치 순수 JPA에서의 Auditing 동작과 동일하게 <strong>저장</strong>해줌</li>
+      <li>등록자, 변경자 등은 필수적이지 않는 경우가 더 많음 → Base 타입을 분리하고, 원하는 타입을 선택해서 상속하는 방법으로 진행하면 효율적</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="페이징과-정렬---web-확장">페이징과 정렬 - web 확장</h3>
+
+<ul>
+  <li>스프링 데이터에서 제공하는 <strong>Paging과 Sorting 기능</strong>을 <strong>스프링 MVC에서 편리하게 사용</strong> 가능</li>
+  <li>스프링 MVC에서 <strong>파라미터를</strong> <strong>Pageable</strong>로 받고, 해당 <strong>Pageable을 그대로 사용하여 조건에 맞는 페이지 결과를 얻</strong>어낼 수 있음</li>
+  <li>
+    <p>예시)</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@RestController</span>
+  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/members"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">MemberDto</span><span class="o">&gt;</span> <span class="nf">list</span><span class="o">(</span><span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">)</span> <span class="o">{</span>
+  	 <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">page</span> <span class="o">=</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findAll</span><span class="o">(</span><span class="n">pageable</span><span class="o">);</span>
+  	 <span class="k">return</span> <span class="n">page</span><span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="nl">MemberDto:</span><span class="o">:</span><span class="k">new</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>파라미터 : <code class="language-plaintext highlighter-rouge">Pageable</code>
+        <ul>
+          <li><strong>Request로써</strong> 받아올 수 있음</li>
+          <li>Pageable은 Interface이고, 요청파라미터를 넣어주게 되면 <strong>스프링부트에서 자동으로 이에 대한 구현체인</strong> <code class="language-plaintext highlighter-rouge">PageRequest</code> <strong>객체를 생성</strong>해줌 (PageRequest  는 이전 페이징과 정렬에서 <code class="language-plaintext highlighter-rouge">PageRequest.of(page,size,Sort)</code> 의 그 PageRequest)</li>
+          <li>참고 : Spring Data Jpa 에서의 “공통 인터페이스 기능(method)들, 메서드이름으로 쿼리 생성”은 모두 PageRequest를 인자로 받을 수 있음</li>
+        </ul>
+      </li>
+      <li>반환 : <code class="language-plaintext highlighter-rouge">Page&lt;MemberDto&gt;</code>
+        <ul>
+          <li>조건에 따른 결과 <strong>List Content 포함</strong></li>
+          <li>부가적인 <strong>페이지 정보</strong> 포함</li>
+          <li>주의 : 항상 <strong>Controller의 반환</strong>은 Entity가 아닌 <strong>DTO</strong>로 해야되는 점!</li>
+        </ul>
+      </li>
+      <li>요청 파라미터 예시
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">/members?page=0&amp;size=3&amp;sort=id,desc&amp;sort=username,desc</code></li>
+          <li><strong>page</strong>
+            <ul>
+              <li>focus할 페이지 (주의 : 0부터 시작)</li>
+              <li>값을 넣지 않으면 default=0</li>
+            </ul>
+          </li>
+          <li><strong>size</strong>
+            <ul>
+              <li>해당 페이지에 가져올 데이터의 개수</li>
+              <li>값을 넣지 않으면 default = 20</li>
+            </ul>
+          </li>
+          <li><strong>sort</strong>
+            <ul>
+              <li>정렬 조건</li>
+              <li>값을 넣지 않으면 정렬 X</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>요청 파라미터 Default 값 설정
+    <ul>
+      <li><strong>Global</strong>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">spring.data.web.pageable.max-page-size=2000</code> : 최대 페이지 사이즈 설정</li>
+          <li><code class="language-plaintext highlighter-rouge">spring.data.web.pageable.default-page-size=20</code> : size default 값 설정</li>
+        </ul>
+      </li>
+      <li><strong>개별 설정</strong>
+        <ul>
+          <li>
+            <p><code class="language-plaintext highlighter-rouge">@PageableDefault</code> 어노테이션 사용</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">list</span><span class="o">(</span>
+  		<span class="nd">@PageableDefault</span><span class="o">(</span><span class="n">size</span> <span class="o">=</span> <span class="mi">12</span><span class="o">,</span> <span class="n">sort</span> <span class="o">=</span> <span class="err">“</span><span class="n">username</span><span class="err">”</span><span class="o">,</span>
+  		<span class="n">direction</span> <span class="o">=</span> <span class="nc">Sort</span><span class="o">.</span><span class="na">Direction</span><span class="o">.</span><span class="na">DESC</span><span class="o">)</span> <span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">)</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>접두사
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">@Qualifier</code></li>
+      <li>페이징 <strong>정보가 둘 이상</strong>일 때 사용</li>
+      <li><code class="language-plaintext highlighter-rouge">@Qualifier</code> 에는 접두사명 부여(<code class="language-plaintext highlighter-rouge">@Qualifier("member")</code>), 요청파라미터에는 접두사로 구분(<code class="language-plaintext highlighter-rouge">"{접두사명}_xxx”</code>)</li>
+      <li>ex)
+        <ul>
+          <li><strong>요청 파라미터</strong> : <code class="language-plaintext highlighter-rouge">/members?member_page=0&amp;order_page=1</code></li>
+          <li>
+            <p><strong>Controller 파라미터</strong></p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">list</span><span class="o">(</span>
+   <span class="nd">@Qualifier</span><span class="o">(</span><span class="s">"member"</span><span class="o">)</span> <span class="nc">Pageable</span> <span class="n">memberPageable</span><span class="o">,</span>
+   <span class="nd">@Qualifier</span><span class="o">(</span><span class="s">"order"</span><span class="o">)</span> <span class="nc">Pageable</span> <span class="n">orderPageable</span><span class="o">,</span> <span class="o">...)</span> <span class="o">{}</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="부가-기능">부가 기능</h2>
+
+<h3 id="projections">Projections</h3>
+
+<ul>
+  <li>엔티티 대신, <strong>DTO를 편리하게 조회</strong>할 때 사용</li>
+  <li><strong>단순한 DTO 조회 시 유용</strong></li>
+  <li>단점 : 연관관계를 포함한 DTO 조회 시 최적화 불가능 + LEFT OUTER JOIN만 사용 가능</li>
+  <li>예시)
+    <ul>
+      <li>회원 이름만 조회하고 싶은 상황</li>
+      <li>
+        <p>일반 스프링 데이터 JPA</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="s">"select m.name from Member m where m.name = :name"</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="nf">findNamesByName</span><span class="o">(</span><span class="nd">@Param</span><span class="o">(</span><span class="s">"name"</span><span class="o">)</span> <span class="nc">String</span> <span class="n">name</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@Query</code> 를 통해 <strong>직접 jpql문을 작성</strong>해줘야 하고, <strong>바인딩도 직접</strong>해주는 <strong>번거러움</strong> 존재</li>
+          <li>다른 조건으로 검색 시 JPQL을 또 name으로 반환할 수 있도록 작성해주어야 함</li>
+        </ul>
+      </li>
+      <li><strong>스프링 데이터 JPA에서 Projections 사용</strong> <strong>(Closed Projections)</strong>
+        <ul>
+          <li>
+            <p>Interface 생성</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">NameOnly</span> <span class="o">{</span>
+  	 <span class="nc">String</span> <span class="nf">getName</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>해당 Interface로 <strong>Projection의 결과</strong>를 받음</li>
+              <li><code class="language-plaintext highlighter-rouge">getName()</code> 을 통해서 <strong>이름만</strong> 받아옴</li>
+            </ul>
+          </li>
+          <li>
+            <p>MemberRepository에 메서드 추가</p>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">List&lt;NameOnly&gt; findProjectionsByName(String name);</code></li>
+              <li><strong>반환 타입을 방금 생성한 Interface로 설정</strong></li>
+              <li>Member Entity의 모든 Field를 select해서 가져오는 것이 아닌 <strong>name field만 select해서 가져옴 → 최적화</strong></li>
+              <li>반환 타입으로 인지하기에 <code class="language-plaintext highlighter-rouge">find…By</code>~ 에서 … 은 자유</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>스프링 데이터 JPA에서 Projections 사용 (Open Proejctions)</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">UsernameOnly</span> <span class="o">{</span>
+  	 <span class="nd">@Value</span><span class="o">(</span><span class="s">"#{target.username + ' ' + target.age + ' ' + target.team.name}"</span><span class="o">)</span>
+  	 <span class="nc">String</span> <span class="nf">getUsername</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@Value</code> 를 통해서 <strong>직접 select 해올 field를 지정하고 해당 결과를 어떻게 표현</strong>해 낼지 지정 가능</li>
+          <li>하지만 이렇게 할 경우 DB에서 <strong>엔티티 필드를 다 조회해온 다음에 계산</strong> → JPQL SELECT 절 <strong>최적화 불가능</strong></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>DTO class Projection</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Getter</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">NameOnlyDto</span> <span class="o">{</span>
+  	 <span class="kd">private</span> <span class="kd">final</span> <span class="nc">String</span> <span class="n">name</span><span class="o">;</span>
+  	 <span class="kd">private</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">age</span><span class="o">;</span>
+    
+  	 <span class="kd">public</span> <span class="nf">NameOnlyDto</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="kt">int</span> <span class="n">age</span><span class="o">)</span> <span class="o">{</span>
+  		 <span class="k">this</span><span class="o">.</span><span class="na">name</span><span class="o">=</span> <span class="n">username</span><span class="o">;</span>
+  		 <span class="k">this</span><span class="o">.</span><span class="na">age</span> <span class="o">=</span> <span class="n">age</span><span class="o">;</span>
+  	 <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><strong>구체적인 DTO 형식으로 Projection</strong></li>
+      <li>생성자의 <strong>파라미터 이름으로 매칭</strong> → <code class="language-plaintext highlighter-rouge">public NameOnlyDto(String name, int age)</code></li>
+    </ul>
+  </li>
+  <li>동적 class Projections
+    <ul>
+      <li>
+        <p>MemberRepository의 Spring Data JPA의 method에서 <strong>Generic Type을 부여해주면 동적으로도 프로젝션 변경 가능</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nc">List</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nf">findProjectionsByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">username</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">type</span><span class="o">);</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>사용</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">UsernameOnly</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findProjectionsByUsername</span><span class="o">(</span><span class="s">"m1"</span><span class="o">,</span> <span class="nc">UsernameOnly</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="네이티브-쿼리">네이티브 쿼리</h3>
+
+<ul>
+  <li><strong>SQL 언어로 직접 query를 작성</strong>하는 것 (Spring Data Jpa의 페이징 기능 지원)</li>
+  <li>네이티브 쿼리는 가급적 사용하지 않는게 좋음 → <strong>반환타입도 제한되고 제약조건이 많음</strong>
+    <ul>
+      <li>반환 타입
+        <ul>
+          <li>Object[], Tuple, DTO(스프링 데이터 인터페이스 Projections 지원)</li>
+        </ul>
+      </li>
+      <li>제약
+        <ul>
+          <li>Sort 파라미터를 통한 <strong>정렬이 정상 동작하지 않을 수 있음</strong></li>
+          <li>JPQL처럼 애플리케이션 <strong>로딩 시점에 문법 확인 불가</strong></li>
+          <li><strong>동적 쿼리 불가</strong></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>네이티브 쿼리 + Projections</strong>
+    <ul>
+      <li>네이티브 쿼리가 Projections를 통해 DTO로 어렵지 않게 반환 가능 → 그나마 유용한 기능</li>
+      <li>
+        <p>MemberProjection Interface</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">MemberProjection</span> <span class="o">{</span>
+  	<span class="nc">Long</span> <span class="nf">getId</span><span class="o">();</span>
+  	<span class="nc">String</span> <span class="nf">getName</span><span class="o">();</span>
+  	<span class="nc">String</span> <span class="nf">getTeamName</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>NativeQuery with Projections</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">"SELECT m.member_id as id, m.username, t.name as teamName "</span> <span class="o">+</span>
+  	 <span class="s">"FROM member m left join team t"</span><span class="o">,</span>
+  	 <span class="n">countQuery</span> <span class="o">=</span> <span class="s">"SELECT count(*) from member"</span><span class="o">,</span>
+  	 <span class="n">nativeQuery</span> <span class="o">=</span> <span class="kc">true</span><span class="o">)</span>
+  <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">MemberProjection</span><span class="o">&gt;</span> <span class="nf">findByNativeProjection</span><span class="o">(</span><span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">);</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ <strong>Native Query가 필요하다면?</strong> <br />
+스프링 데이터 JPA를 사용하기보다는 스프링 JdbcTemplate, myBatis 등을 통해 해결하는 것이 훨씬 나음!
+
+</aside>
+:ET

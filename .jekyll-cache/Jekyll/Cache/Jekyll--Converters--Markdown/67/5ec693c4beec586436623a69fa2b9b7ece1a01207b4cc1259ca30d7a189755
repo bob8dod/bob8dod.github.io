@@ -1,0 +1,321 @@
+I":W<h2 id="순수-jpa-기반-repository">순수 JPA 기반 Repository</h2>
+
+<ul>
+  <li>스프링 데이터 JPA를 사용하지 않고, <strong>순수한 JPA</strong>를 통해 기본 CRUD를 만든 다음, 이 CRUD들이 <strong>스프링 데이터 JPA에서는 어떻게 사용</strong>되는지 비교</li>
+</ul>
+
+<h3 id="사용-도메인">사용 도메인</h3>
+
+<ul>
+  <li>
+    <p>엔티티</p>
+
+    <p><img src="/images/posts/post-220905/Untitled.png" alt="Untitled" /></p>
+  </li>
+  <li>
+    <p>ERD(Entity Relationship Diagram)</p>
+
+    <p><img src="/images/posts/post-220905/Untitled 1.png" alt="Untitled" /></p>
+  </li>
+  <li>
+    <p>연관관계 정의</p>
+    <ul>
+      <li>Member ↔ Team
+        <ul>
+          <li>다대일↔일대다 양방향 관계</li>
+        </ul>
+      </li>
+      <li>
+        <p>Member Entity</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">fetch</span> <span class="o">=</span> <span class="nc">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
+  <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">"team_id"</span><span class="o">)</span>
+  <span class="kd">private</span> <span class="nc">Team</span> <span class="n">team</span><span class="o">;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@ManyToOne(fetch = FetchType.LAZY)</code> : Team Entity와 <strong>다대일 관계</strong>를 표시, <strong>지연로딩</strong>을 통해 Proxy객체가 설정될 수 있도록 세팅</li>
+          <li><code class="language-plaintext highlighter-rouge">@JoinColumn(name = "team_id")</code> : DB Table의 team_id col과 매핑하여 <strong>PK로 사용</strong>하겠다는 뜻. → <strong>연관관계의 주인</strong> 설정</li>
+        </ul>
+      </li>
+      <li>
+        <p>Team Entity</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">mappedBy</span> <span class="o">=</span> <span class="s">"team"</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">members</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@OneToMany(mappedBy = "team")</code> : Member Entity와 <strong>일대다 관계</strong>. 연관관계의 주인이 아니며 Member의 team에 의해 <strong>매핑된 field</strong> 라고 선언</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="기본-crud">기본 CRUD</h3>
+
+<ul>
+  <li>
+    <p>필수 Dependency Injection</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PersistenceContext</span>
+  <span class="kd">private</span> <span class="nc">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+</code></pre></div>    </div>
+  </li>
+  <li>저장
+    <ul>
+      <li>method : <code class="language-plaintext highlighter-rouge">save(Entity)</code></li>
+      <li>code : <code class="language-plaintext highlighter-rouge">em.persist(Entity);</code></li>
+    </ul>
+  </li>
+  <li>삭제 :
+    <ul>
+      <li>method : <code class="language-plaintext highlighter-rouge">delete(Entity)</code></li>
+      <li>code : <code class="language-plaintext highlighter-rouge">em.remove(Entity);</code></li>
+    </ul>
+  </li>
+  <li>전체 조회 (<strong>JPQL</strong>)
+    <ul>
+      <li>method : <code class="language-plaintext highlighter-rouge">findAll()</code></li>
+      <li>code : <code class="language-plaintext highlighter-rouge">em.createQuery("select e from Entity e", Entity.class).getResultList();</code></li>
+    </ul>
+  </li>
+  <li>단건 조회
+    <ul>
+      <li>method : <code class="language-plaintext highlighter-rouge">findById(Long id)</code> , <code class="language-plaintext highlighter-rouge">find(Long id)</code></li>
+      <li>code : <code class="language-plaintext highlighter-rouge">em.find(Entity.class, id);</code></li>
+    </ul>
+  </li>
+  <li>전체 개수 조회 (<strong>JPQL</strong>)
+    <ul>
+      <li>method : <code class="language-plaintext highlighter-rouge">count()</code></li>
+      <li>code : <code class="language-plaintext highlighter-rouge">em.createQuery("select count(m) from Member m", Long.class).getSingleResult();</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="spring-data-jpa-사용하기-공통-인터페이스-기능">Spring Data JPA 사용하기 (공통 인터페이스 기능)</h2>
+
+<h3 id="공통-인터페이스-설정">공통 인터페이스 설정</h3>
+
+<ul>
+  <li>Spring Data JPA 사용 전 설정
+    <ul>
+      <li>Config 에서 <code class="language-plaintext highlighter-rouge">@EnableJpaRepositories(basePackages = "...")</code> 와 같이 Annotation으로 Spring Data JPA 를 사용할 패키지 위치를 지정해주어야 했음</li>
+      <li>적용하게 되면 해당 패키지 및 하위 패키지에 적용</li>
+      <li>하지만, <strong>Spring Boot 에서는 자동으로 설정</strong>됨 → main Application 이 위치해 있는 패키지 및 하위 패키지에서 Spring Data Jpa를 사용할 수 있는 것</li>
+    </ul>
+  </li>
+  <li>공통 인터페이스 기능 사용하기
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">public interface MemberRepository extends JpaRepository&lt;Member, Long&gt; {}</code></li>
+      <li><code class="language-plaintext highlighter-rouge">public interface TeamRepository extends JpaRepository&lt;Team, Long&gt; {}</code></li>
+      <li><code class="language-plaintext highlighter-rouge">JpaRepository&lt;Team, Long&gt;</code> Interface
+        <ul>
+          <li><strong>공통 CRUD 제공</strong></li>
+          <li>제네릭 : &lt;<strong>엔티티 타입</strong>, <strong>식별자 타입</strong>&gt;</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">JpaRepository</span><span class="o">&lt;</span><span class="no">T</span><span class="o">,</span> <span class="no">ID</span> <span class="kd">extends</span> <span class="nc">Serializable</span><span class="o">&gt;</span>
+  <span class="kd">extends</span> <span class="nc">PagingAndSortingRepository</span><span class="o">&lt;</span><span class="no">T</span><span class="o">,</span> <span class="no">ID</span><span class="o">&gt;</span> <span class="o">{...}</span>
+</code></pre></div>        </div>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">JpaRepository&lt;Entity, PK Type&gt;</code> 의 Entity 와 Pk Type 을 지정해주고 <strong>해당 인터페이스를 상속</strong>(<code class="language-plaintext highlighter-rouge">extends</code>) 받아 <strong>Repository Interface</strong>를 만들면 바로 Spring Data Jpa의 공통 인터페이스 기능 <strong>사용 가능!</strong></li>
+      <li>해당 인터페이스를 <strong>따로 구현하지 않아도 공통 인터페이스에서 제공하는 기등들을 사용할 수 있</strong>게 되는 것!</li>
+      <li>Class단에 <code class="language-plaintext highlighter-rouge">@Repository</code> 생략 가능
+        <ul>
+          <li><strong>컴포넌트 스캔</strong>을 스프링 데이터 JPA가 <strong>자동으로 처리</strong></li>
+          <li><strong>JPA 예외를 스프링의 공통예외로 변환</strong>하는 과정도 자동으로 처리</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>원리</strong></p>
+
+        <p><img src="/images/posts/post-220905/Untitled 2.png" alt="Untitled" /></p>
+
+        <ul>
+          <li><strong>구현체가 없는데 어떻게 동작</strong>하지?</li>
+          <li><strong>Interface(<code class="language-plaintext highlighter-rouge">JpaRepository</code>)와 Entity, Pk Type</strong>을 보고 <strong>Spring Data JPA가 구현 Class 를 자동으로 생성</strong>해주는 것!</li>
+          <li>즉, 해당 interface 를 사용하는 시점에 Spring Data Jpa가 해당 Repo Interface가 <strong>JpaRepository를 extends</strong> 하고 있는 것을 확인하고 <strong>Entity, Pk Type</strong>을 통해 <strong>자기가 만든 구현체로 꽂아주</strong>는 것 (Proxy 기술을 통해)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="공통-인터페이스-적용-기본-crud">공통 인터페이스 적용 (기본 CRUD)</h3>
+
+<ul>
+  <li><strong>이미 Spring Data Jpa가 구현</strong>해주었기 때문에 복잡하지 않은 <strong>기본 공통 인터페이스 기능</strong>에 한해서 따로 해줄 것 없이 <strong>사용만 하면 됨</strong></li>
+  <li>필수 Dependency Injection → 없음! <strong>이미</strong> <code class="language-plaintext highlighter-rouge">JpaRepository&lt;Entity, Pk Type&gt;</code> 에서 <strong>EntityManger를 DI</strong> 하고 있으므로!</li>
+  <li>저장
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">memberRepository.save(Entity)</code></li>
+      <li><del>code : <code class="language-plaintext highlighter-rouge">em.persist(Entity);</code></del></li>
+    </ul>
+  </li>
+  <li>삭제
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">memberRepository.delete(Entity)</code></li>
+      <li><del>code : <code class="language-plaintext highlighter-rouge">em.remove(Entity);</code></del></li>
+    </ul>
+  </li>
+  <li>전체 조회
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">memberRepository.findAll()</code></li>
+      <li><del>code : <code class="language-plaintext highlighter-rouge">em.createQuery("select e from Entity e", Entity.class).getResultList();</code></del></li>
+    </ul>
+  </li>
+  <li>단건 조회
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">memberRepository.findById(Long id)</code> , <code class="language-plaintext highlighter-rouge">memberRepository.find(Long id)</code></li>
+      <li><del>code : <code class="language-plaintext highlighter-rouge">em.find(Entity.class, id);</code></del></li>
+    </ul>
+  </li>
+  <li>전체 개수 조회
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">memberRepository.count()</code></li>
+      <li><del>code : <code class="language-plaintext highlighter-rouge">em.createQuery("select count(m) from Member m", Long.class).getSingleResult();</code></del></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="공통-인터페이스-분석">공통 인터페이스 분석</h3>
+
+<p><img src="/images/posts/post-220905/Untitled 3.png" alt="Untitled" /></p>
+
+<ul>
+  <li><strong>스프링 데이터 부분</strong>
+    <ul>
+      <li>JPA만을 위한 부분이 아닌 <strong>공통 부분</strong>!</li>
+      <li>즉, Redis, NoSQL 등도 사용할 수 있는 interface라는 것</li>
+      <li><code class="language-plaintext highlighter-rouge">CrudRepository</code> :  기본 공통 CRUD 기능 제공</li>
+      <li><code class="language-plaintext highlighter-rouge">PagingAndSortingRepository</code> : 페이지, 정렬 기능 제공</li>
+    </ul>
+  </li>
+  <li>스프링 데이터 JPA
+    <ul>
+      <li><strong>JPA에 특화된 기술</strong>을 제공</li>
+      <li>아무리 공통화된 기술을 제공한다 해도 한계가 있기에, JPA에 특화되어 사용할 수 있는 기술 제공</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="스프링-데이터-jpa-분석">스프링 데이터 JPA 분석</h2>
+
+<h3 id="스프링-데이터-jpa-구현체-분석">스프링 데이터 JPA 구현체 분석</h3>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">org.springframework.data.jpa.repository.support.SimpleJpaRepository</code></li>
+  <li>스프링 데이터 JPA가 제공하는 <strong>공통 인터페이스의 구현체</strong></li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Repository</span>
+<span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span> <span class="o">=</span> <span class="kc">true</span><span class="o">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SimpleJpaRepository</span><span class="o">&lt;</span><span class="no">T</span><span class="o">,</span> <span class="no">ID</span><span class="o">&gt;</span> <span class="o">...</span> <span class="o">{</span>
+	 <span class="nd">@Transactional</span>
+	 <span class="kd">public</span> <span class="o">&lt;</span><span class="no">S</span> <span class="kd">extends</span> <span class="no">T</span><span class="o">&gt;</span> <span class="no">S</span> <span class="nf">save</span><span class="o">(</span><span class="no">S</span> <span class="n">entity</span><span class="o">)</span> <span class="o">{</span>
+		 <span class="k">if</span> <span class="o">(</span><span class="n">entityInformation</span><span class="o">.</span><span class="na">isNew</span><span class="o">(</span><span class="n">entity</span><span class="o">))</span> <span class="o">{</span>
+				 <span class="n">em</span><span class="o">.</span><span class="na">persist</span><span class="o">(</span><span class="n">entity</span><span class="o">);</span>
+				 <span class="k">return</span> <span class="n">entity</span><span class="o">;</span>
+			<span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+				 <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">merge</span><span class="o">(</span><span class="n">entity</span><span class="o">);</span>
+			<span class="o">}</span>
+	 <span class="o">}</span>
+	<span class="o">...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">@Repository</code>
+    <ul>
+      <li>두가지 기능
+        <ol>
+          <li><strong>컴포넌트 스캔 항목</strong>에 포함되어 <strong>스프링 빈으로 등록</strong></li>
+          <li>해당 어노테이션이 달린 Class 에서 발생되는 Exception을 <strong>Spring에서 알아들을 수 있는 Exception으로 변경</strong> (Repo에서 사용하는 것들은 JPA나 JDBC Template 등 서로 다른 하루 기술을 사용하는 일이 많은데 이 하부 기술이 변경되어도 <strong>Exception 처리는 동일하게 진행되는 이점</strong>을 얻음 → <strong>하부 구현 기술을 바꾸어도</strong> <strong>기존 비지니스 로직에 영향이 거의 미치지 않음</strong>)</li>
+        </ol>
+      </li>
+      <li>이렇게 구현체에 이미 <code class="language-plaintext highlighter-rouge">@Repository</code> 어노테이션이 달려있기 때문에, 우리가 사용하고자 하는 스프링 데이터 JPA Repository Interface에 <code class="language-plaintext highlighter-rouge">@Repository</code> <strong>가 필요 없는 것</strong></li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">@Transactional(readOnly = true)</code>
+    <ul>
+      <li>기본적으로 <strong>모든 Repo의 과정은 Transaction 단위로</strong> 이루어지게 끔 설정 (서비스 계층에서 트랜잭션을 시작하지 않으면 리파지토리에서 트랜잭션 시작, 서비스 계층에서 트랜잭션을 시작하면 리파지토리는 해당 트랜잭션을 전파 받아서 사용 )</li>
+      <li>기본값 : <code class="language-plaintext highlighter-rouge">readOnly = true</code> → <strong>기본적으로 읽기전용으로 사용한다</strong>는 뜻 (스냅샷X(플러시 생략) → 성능 향상. <strong>쓰기 전용</strong>은 각 <strong>메서드에</strong> <code class="language-plaintext highlighter-rouge">@Transactional</code> 을 통해 <strong>세부적인(상세한) 설정</strong>으로 가져가줌) ⇒ 즉, Spring Data Jpa 를 사용하면 기본적으로 읽기전용이 알아서 실행됨 (쓰기모드가 필요한 애들은 알아서 쓰기모드로 설정됨)</li>
+      <li>But, 이건 기본 기능인 것(혹시 모르니 세팅해준 것). 즉 <strong>Transaction의 생명주기</strong>를 고려한다면 <strong>Service 단에서 Transaction을 시작해주고 Repo에 들어오는 것이 좋음!</strong></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="스프링-데이터-jpa-구현체의-save-메서드-분석">스프링 데이터 JPA 구현체의 <code class="language-plaintext highlighter-rouge">save</code> 메서드 분석</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Transactional</span>
+<span class="kd">public</span> <span class="o">&lt;</span><span class="no">S</span> <span class="kd">extends</span> <span class="no">T</span><span class="o">&gt;</span> <span class="no">S</span> <span class="nf">save</span><span class="o">(</span><span class="no">S</span> <span class="n">entity</span><span class="o">)</span> <span class="o">{</span>
+ <span class="k">if</span> <span class="o">(</span><span class="n">entityInformation</span><span class="o">.</span><span class="na">isNew</span><span class="o">(</span><span class="n">entity</span><span class="o">))</span> <span class="o">{</span>
+		 <span class="n">em</span><span class="o">.</span><span class="na">persist</span><span class="o">(</span><span class="n">entity</span><span class="o">);</span>
+		 <span class="k">return</span> <span class="n">entity</span><span class="o">;</span>
+	<span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+		 <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">merge</span><span class="o">(</span><span class="n">entity</span><span class="o">);</span>
+	<span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">save</code>
+    <ul>
+      <li><strong>새로운 Entity</strong> → <code class="language-plaintext highlighter-rouge">persist</code></li>
+      <li><strong>새로운 Entity X</strong> → <code class="language-plaintext highlighter-rouge">merge</code>
+        <ul>
+          <li>해당 Entity를 <strong>DB에서 가져와</strong> 현재 내용으로 <strong>바꿔치기(덮어쓰기)</strong>함</li>
+          <li>데이터 변경을 merge로 하는 경우가 있는데, <strong>데이터 변경은 변경감지</strong>를 통해 이루어져야함</li>
+          <li>merge는 영속상태에서 벗어난 Entity를 <strong>다시 영속상태로 만들어줘야 할때</strong> 사용</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>새로운 Entity를 판단</strong>하는 기본 전략
+    <ul>
+      <li><strong>식별자</strong>가 객체(String, Long, … )일 때 <code class="language-plaintext highlighter-rouge">null</code> 로 판별될 때</li>
+      <li><strong>식별자</strong>가 자바 기본 타입(long, int, … )일 때 <code class="language-plaintext highlighter-rouge">0</code>으로 판별될 때</li>
+    </ul>
+  </li>
+  <li>만약 <code class="language-plaintext highlighter-rouge">@GeneratedValue</code> 를 사용하지 않고 직접 ID를 부여한다면?
+    <ul>
+      <li>기본 로직에 따르면 직접 부여하게 되면 <strong>새로운 Entity로 판단되지 않아 persist 가 아닌 merge 가 동작</strong>하게 됨</li>
+      <li>이때 필요한 것이 <code class="language-plaintext highlighter-rouge">Persistable&lt;ID&gt;</code> <strong>Interface</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">Persistable&lt;ID&gt;</code>
+        <ul>
+          <li>새로운 엔티티 확인 여부를 직접 구현할 수 있게하는 Interface</li>
+        </ul>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">// extends Persistable&lt;ID&gt;</span>
+  <span class="nd">@Id</span>
+  <span class="kd">private</span> <span class="nc">String</span> <span class="n">id</span><span class="o">;</span>
+  <span class="nd">@CreatedDate</span>
+  <span class="kd">private</span> <span class="nc">LocalDateTime</span> <span class="n">createdDate</span><span class="o">;</span>
+        
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getId</span><span class="o">()</span> <span class="o">{</span>
+  <span class="k">return</span> <span class="n">id</span><span class="o">;</span>
+  <span class="o">}</span>
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">isNew</span><span class="o">()</span> <span class="o">{</span>
+  <span class="k">return</span> <span class="n">createdDate</span> <span class="o">==</span> <span class="kc">null</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong><code class="language-plaintext highlighter-rouge">Persistable</code> Interface의 <code class="language-plaintext highlighter-rouge">isNew()</code> 를 구현</strong>하여 완성 → 새로운 Entity인지 아닌지에 대한 <strong>판별을 직접 구현</strong>하는 것</li>
+          <li>이때 <code class="language-plaintext highlighter-rouge">isNew()</code> 에는 <code class="language-plaintext highlighter-rouge">@CreatedDate</code>를 사용한 Field를 통해 판별하는 것이 좋음
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">@CreatedDate</code> 는 persist 직전에 해당 Entity가 저장된 시각을 기록함.</li>
+              <li><code class="language-plaintext highlighter-rouge">null</code> : persist 되지 않은 새로운 Entity. <code class="language-plaintext highlighter-rouge">null</code> X : persist가 되었던 Entity</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+:ET

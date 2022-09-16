@@ -1,0 +1,640 @@
+I"��<h2 id="복잡한-crud에-대한-spring-data-jpa-처리">복잡한 CRUD에 대한 Spring Data JPA 처리</h2>
+
+<ul>
+  <li>기본 공통 인터페이스에서 제공하는 기능들은 말 그대로 기본 공통 CRUD</li>
+  <li>즉, <strong>복잡한 CRUD에 대해선 직접 쿼리를 생성</strong>해줘야 함</li>
+  <li>그럼 해당 <strong>인터페이스를</strong> <strong>직접 구현해야 되는 것인가?</strong> → 구현해야 되는 부분이 너무나도 많으며, 이미 Spring Data Jpa에서 구현체를 자동으로 만들어주고 있음</li>
+  <li>이때 필요한 것들이 하위 기능들
+    <ul>
+      <li><strong>메소드 이름으로 쿼리 생성</strong></li>
+      <li><strong>NamedQuery</strong></li>
+      <li><strong>@Query</strong></li>
+    </ul>
+  </li>
+  <li>부가 설정 가능 부분
+    <ul>
+      <li>페이징과 정렬</li>
+      <li>벌크성 수정 쿼리</li>
+      <li>@EntityGraph</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="복잡한-crud-처리-공통이-아닌-부분">복잡한 CRUD 처리 (공통이 아닌 부분)</h2>
+
+<h3 id="메소드-이름으로-쿼리-생성">메소드 이름으로 쿼리 생성</h3>
+
+<ul>
+  <li><strong>메소드 이름을 분석</strong>해서 <strong>JPQL 쿼리 생성 및 실행</strong></li>
+  <li><strong>정해진 규칙</strong>에 따라 Spring Data Jpa가 메서드 이름을 <strong>분석</strong>하여 이에 맞는 <strong>JPQL 쿼리를 생성하고 실행</strong>해주는 것!</li>
+  <li>메서드 명에 Entity 에서 설정된 <strong>필드명과 정해진 조건명 규칙에 따라 작성</strong>만 해주면 되는 것 (정말 복잡한 조건이 아닌 이상 웬만한건 다 됨!) → <a href="https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#jpa.query-methods.query-creation">공식 문서</a></li>
+  <li>But, 조건이 길어질 수록 메서드 명이 길어지고, 메서드의 목적을 한눈에 파악하기가 어려움 (가독성 저하) → <strong>조건이 많아지면 다른 방법을 선택</strong>할 수 있음(<strong>NamedQuery, @Query,</strong> …)</li>
+  <li>예시
+    <ul>
+      <li>회원 조회 by 이름, 나이</li>
+      <li><strong>순수 JPA (not Spring Data Jpa)</strong>
+        <ul>
+          <li>method : <code class="language-plaintext highlighter-rouge">findByUsernameAndAgeGreaterThan(String username, int age)</code></li>
+          <li>
+            <p>code</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">"select m from Member m where m.username = :username and m.age &gt; :age"</span><span class="o">,</span> <span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+  	 <span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="s">"username"</span><span class="o">,</span> <span class="n">username</span><span class="o">)</span>
+  	 <span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="s">"age"</span><span class="o">,</span> <span class="n">age</span><span class="o">)</span>
+  	 <span class="o">.</span><span class="na">getResultList</span><span class="o">();</span>
+</code></pre></div>            </div>
+          </li>
+          <li><strong>직접 JPQL을 짜야</strong>되는 불편함과 <strong>파라미터 바인딩, 반환 결과 설정</strong> 등 <strong>생각보다 많은 작업</strong>을 해주어야 함</li>
+          <li>또한 JPQL을 <strong>직접 짜면서 오류 발생 가능성</strong> 존재</li>
+        </ul>
+      </li>
+      <li><strong>스프링 데이터 JPA</strong>
+        <ul>
+          <li>method : <code class="language-plaintext highlighter-rouge">findByUsernameAndAgeGreaterThan(String username, int age)</code></li>
+          <li>code : <strong>스프링 데이터 JPA 가 자동으로 해당 메서드 이름을 분석해서 생성</strong>해줌 
+  → <code class="language-plaintext highlighter-rouge">find**By(**Name**And**(Age**GreaterThan**))</code> ⇒ <code class="language-plaintext highlighter-rouge">"select m from Member m where m.username = :name and m.age &gt; :age"</code>
+            <ul>
+              <li>find → <code class="language-plaintext highlighter-rouge">select</code></li>
+              <li>by → <code class="language-plaintext highlighter-rouge">where</code>
+                <ul>
+                  <li>name → <code class="language-plaintext highlighter-rouge">member.name = :name</code></li>
+                  <li>and → <code class="language-plaintext highlighter-rouge">and</code></li>
+                  <li>age → <code class="language-plaintext highlighter-rouge">member.age</code></li>
+                  <li>greater than → <code class="language-plaintext highlighter-rouge">&gt; :age</code></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>주요 규칙
+        <ul>
+          <li><strong>조회</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">find…By</code>, <code class="language-plaintext highlighter-rouge">read…By</code>, <code class="language-plaintext highlighter-rouge">query…By</code>, <code class="language-plaintext highlighter-rouge">get…By</code></li>
+              <li><code class="language-plaintext highlighter-rouge">…</code> 부분에는 해당 메서드가 어떤 목적으로 조회되고 있는 것인지에 대한 <strong>설명(내용)이 들어가도 됨</strong> → ex) <code class="language-plaintext highlighter-rouge">findTempBy…</code></li>
+              <li>반환타입 : <strong>Entity</strong> or **List<Entity>**, …</Entity></li>
+            </ul>
+          </li>
+          <li><strong>COUNT</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">count…By</code></li>
+              <li>반환타입 : <code class="language-plaintext highlighter-rouge">long</code></li>
+            </ul>
+          </li>
+          <li><strong>EXISTS</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">exists…By</code></li>
+              <li>반환타입 : <code class="language-plaintext highlighter-rouge">boolean</code></li>
+            </ul>
+          </li>
+          <li><strong>DELETE</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">delete…By</code>, <code class="language-plaintext highlighter-rouge">reomve…By</code></li>
+              <li>반환타입 : <code class="language-plaintext highlighter-rouge">long</code></li>
+            </ul>
+          </li>
+          <li><strong>DISTINCT</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">find…DistinctBy</code></li>
+            </ul>
+          </li>
+          <li><strong>LIMIT</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">findFirst3</code>, <code class="language-plaintext highlighter-rouge">findFirst</code>, <code class="language-plaintext highlighter-rouge">findTop</code>, <code class="language-plaintext highlighter-rouge">findTop3</code></li>
+            </ul>
+          </li>
+          <li>이외는 <a href="https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories.query-methods.query-creation">공식 문서</a> 참고</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="메서드-이름으로-jpa-namedquery-호출">메서드 이름으로 JPA NamedQuery 호출</h3>
+
+<ul>
+  <li>
+    <p><strong>NamedQuery</strong> 선언</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@NamedQuery</span><span class="o">(</span>
+          <span class="n">name</span> <span class="o">=</span> <span class="s">"Member.findByUsername"</span><span class="o">,</span>
+          <span class="n">query</span> <span class="o">=</span> <span class="s">"select m from Member m where m.name = :username"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">Member</span><span class="o">{...}</span>
+    
+</code></pre></div>    </div>
+
+    <ul>
+      <li>JPA 에서 지원하는 <strong>NamedQuery</strong> → <strong>로딩 시점에 바인딩 및 검증, 재활용이 가능</strong>하다는 장점 존재 → <strong>SpringDataJpa 에서의 <code class="language-plaintext highlighter-rouge">@Query</code></strong></li>
+      <li>하지만, <strong>정적인 쿼리만 동작</strong>한다는 단점 존재</li>
+      <li><strong>Entity Class 단에 어노테이션</strong>으로 정의</li>
+      <li>호출될 이름과 쿼리를 해당 NamedQuery에 작성</li>
+    </ul>
+  </li>
+  <li>
+    <p>사용</p>
+
+    <p>※ 실무에서는 잘 사용되지 않는 기능 → <code class="language-plaintext highlighter-rouge">@Query</code> 라는 기능이 존재하기에!!</p>
+
+    <ul>
+      <li>
+        <p><strong>순수 JPA</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByNameNamedQuery</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">createNamedQuery</span><span class="o">(</span><span class="s">"Member.findByUsername"</span><span class="o">,</span> <span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+              <span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="s">"username"</span><span class="o">,</span> <span class="n">name</span><span class="o">)</span>
+              <span class="o">.</span><span class="na">getResultList</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>파라미터도 직접 설정해주어야 하고 코드도 길어지며 여간 귀찮은 것이 아님</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>Spring Data Jpa</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">"Member.findByUsername"</span><span class="o">)</span> <span class="c1">// 생략 가능 (메서드명을 잘 설정했다면)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nd">@Param</span><span class="o">(</span><span class="s">"username"</span><span class="o">)</span> <span class="nc">String</span> <span class="n">name</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@Query(name = "Member.findByUsername")</code>
+            <ul>
+              <li>Entity 에 정의한 NamedQuery 연결</li>
+              <li>생략 시 현재 JpaRepository 에 설정된 <strong>Entity 와 Method 명을 통해 자동으로 찾아와</strong> 연결해 줌 → Entity Type : <code class="language-plaintext highlighter-rouge">Member</code>, Method Name : <code class="language-plaintext highlighter-rouge">findByUsername</code> ⇒ <code class="language-plaintext highlighter-rouge">"Member.findByUsername"</code></li>
+            </ul>
+          </li>
+        </ul>
+
+        <aside>
+  ⚠️ <strong>@Query 없이 NamedQuery 인지 메서드명으로 쿼리 생성인지 어떻게 알지? → [동작 Rule에 따라]</strong>
+  <ul>
+  <li> 해당 메서드명 조건으로 NamedQuery 가 있다 → NamedQuery 로 동작 </li>
+  <li> 없다 → Method 명으로 query 생성 → 관례를 따라서 자동으로 query 생성 </li>
+  </ul>
+  </aside>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="query-리포지토리-메서드에-쿼리-정의">@Query (리포지토리 메서드에 쿼리 정의)</h3>
+
+<ul>
+  <li><strong>NamedQuery의 발전형</strong>이라 생각하면 됨 (NamedQuery의 모든 장점을 가져오면서 <strong>사용은 더 깔끔</strong>하게.)</li>
+  <li>NamedQuery는 Entity Class 단에 어노테이션으로 정의해야되지만, <code class="language-plaintext highlighter-rouge">@Query</code>는 <strong>리포지토리 메서드에 바로 쿼리 정의</strong>가 가능 (호출 이름도 정하지 않음)</li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">@Query</code></p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="s">"select m from Member m where m.name = :username and m.age = :age"</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findUserByNameAndAge</span><span class="o">(</span><span class="nd">@Param</span><span class="o">(</span><span class="s">"username"</span><span class="o">)</span> <span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nd">@Param</span><span class="o">(</span><span class="s">"age"</span><span class="o">)</span> <span class="kt">int</span> <span class="n">age</span><span class="o">);</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><strong>직접 jpql 문을 작성하여 적용</strong>하는 것.</li>
+      <li>NamedQuery 대신 이걸 <strong>실무에서 많이 사용</strong>함 → NamedQuery 의 장점을 가져가면서 <strong>직접 Repo 에 jpql 을 작성</strong>할 수 있음</li>
+      <li>일명 이름이 없는 NamedQuery</li>
+    </ul>
+
+    <aside>
+  ⚠️ <strong>Tip!</strong>
+  <br />
+  실무에서는 메소드 이름으로 쿼리 생성 기능은 파라미터가 증가하면 메서드 이름이 매우 지저분해짐. 따라서 <code>@Query</code> 기능을 자주 사용
+    
+  </aside>
+  </li>
+  <li><strong>조회</strong>
+    <ul>
+      <li>
+        <p><strong>단순 값</strong> 조회</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="s">"select m.username from Member m"</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="nf">findUsernameList</span><span class="o">();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>JPA <strong>값 타입</strong>( … , <code class="language-plaintext highlighter-rouge">@Embedded</code>)도 해당 방식으로 조회 가능</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>DTO로 직접</strong> 조회</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="s">"select new study.datajpa.dto.MemberDto(m.id, m.username, t.name) "</span> <span class="o">+</span>
+   <span class="s">"from Member m join m.team t"</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberDto</span><span class="o">&gt;</span> <span class="nf">findMemberDto</span><span class="o">();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>JPA의 <strong>new 명령어</strong>를 사용 → <code class="language-plaintext highlighter-rouge">new study.datajpa.dto.MemberDto(m.id, m.username, t.name)</code></li>
+          <li><strong>생성자가 맞는 DTO가 필요</strong> → JPA의 JPQL사용방식과 동일</li>
+        </ul>
+      </li>
+      <li>
+        <p>파라미터 바인딩</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="s">"select m from Member m where m.username = :name"</span><span class="o">)</span>
+  <span class="nc">Member</span> <span class="nf">findMembers</span><span class="o">(</span><span class="nd">@Param</span><span class="o">(</span><span class="s">"name"</span><span class="o">)</span> <span class="nc">String</span> <span class="n">username</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@Param("name")</code> 을 통해서 바인딩</li>
+          <li>위치기반도 존재하지만, 실수가 발생할 가능성이 크고 가독성이 떨어짐</li>
+          <li>그래서 이름기반으로 바인딩하는 것을 권장</li>
+          <li>컬렉션도 동일하게 바인딩 가능 (<strong>in query</strong> 에서 사용)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>반환 타입</strong>
+    <ul>
+      <li>컬렉션(<code class="language-plaintext highlighter-rouge">List, Set, …</code>), 단건, 단건 Optional(<code class="language-plaintext highlighter-rouge">Optional&lt;&gt;</code>) 가능</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="부가-기능-페이징-벌크연산-">부가 기능 (페이징, 벌크연산, …)</h2>
+
+<h3 id="스프링-데이터-jpa-페이징과-정렬">스프링 데이터 JPA 페이징과 정렬</h3>
+
+<ul>
+  <li>순수 JPA 페이징과 정렬
+    <ul>
+      <li>Spring Data Jpa 를 사용하지 않고 순수 JPA로 페이징과 정렬</li>
+      <li>jpql을 통해 <code class="language-plaintext highlighter-rouge">.setFirstResult()</code> [<strong>offset</strong>] , <code class="language-plaintext highlighter-rouge">.setMaxResults()</code> [<strong>limit</strong>] 사용</li>
+      <li>예시)
+        <ul>
+          <li>나이가 10살인 회원을 이름으로 내림차순하며 페이지당 보여줄 데이터는 3건인 상황</li>
+          <li>페이지에 따른 Content 와 총 count를 반환하고 싶은 상황</li>
+          <li>
+            <p><strong>페이징</strong></p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByPage</span><span class="o">(</span><span class="kt">int</span> <span class="n">age</span><span class="o">,</span> <span class="kt">int</span> <span class="n">offset</span><span class="o">,</span> <span class="kt">int</span> <span class="n">limit</span><span class="o">)</span> <span class="o">{</span>
+  	 <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">"select m from Member m where m.age = :age order by m.username desc"</span><span class="o">,</span> <span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="s">"age"</span><span class="o">,</span> <span class="n">age</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">setFirstResult</span><span class="o">(</span><span class="n">offset</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">setMaxResults</span><span class="o">(</span><span class="n">limit</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">getResultList</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">.setFirstResult(offset)</code> 을 통해서 가져올 <strong>처음 순서</strong>를 정하고 → <strong>offset</strong></li>
+              <li><code class="language-plaintext highlighter-rouge">.setMaxResults(limit)</code> 을 통해서 <strong>가져올 양</strong>을 정함 → <strong>limit</strong></li>
+            </ul>
+          </li>
+          <li>
+            <p><strong>총 COUNT</strong></p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">long</span> <span class="nf">totalCount</span><span class="o">(</span><span class="kt">int</span> <span class="n">age</span><span class="o">)</span> <span class="o">{</span>
+  	 <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">"select count(m) from Member m where m.age = :age"</span><span class="o">,</span> <span class="nc">Long</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="s">"age"</span><span class="o">,</span> <span class="n">age</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">getSingleResult</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">count()</code> 사용</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>순수 JPA를 이용한 페이징과 정렬은 물론 다양한 DB언어에 맞게 페이징 쿼리를 자동으로 날려주지만, <strong>부가적인 기능을 제공하지 않아</strong> 페이지 계산 공식 등 <strong>개발자가 직접 복잡한 계산 공식을 사용하여 부가적인 기능을 구현해 내야 됨</strong> → 스프링데이터JPA는 지원해줌!</li>
+    </ul>
+  </li>
+  <li><strong>스프링 데이터 JPA 페이징과 정렬</strong>
+    <ul>
+      <li><strong>JPA에만 국한 된 것이 아닌</strong>, 스프링 데이터 공통을 사용할 수 있게끔 <strong>공통 표준으로 페이징과 정렬을 지원</strong> (<code class="language-plaintext highlighter-rouge">org.springframework.data.domain.Pageable</code>)</li>
+      <li><strong>페이징</strong>뿐만 아니라 <strong>슬라이싱</strong>으로도 반환 가능 (슬라이싱 : 더보기 형태의 슬라이스로 페이지를 구성하는 기능). 추가로 페이징기능을 사용해도 일반 <strong>컬렉션</strong>으로도 반환 가능
+        <ul>
+          <li>페이징 : <code class="language-plaintext highlighter-rouge">org.springframework.data.domain.Page</code> : <strong>추가 count 쿼리 실행, 결과 포함</strong></li>
+          <li>슬라이싱 : <code class="language-plaintext highlighter-rouge">org.springframework.data.domain.Slice</code> : 추가 count 쿼리 없이 <strong>다음 페이지만 확인 가능</strong></li>
+          <li>일반 List (자바 컬렉션):  추가 count 쿼리 없이 <strong>결과만 반환</strong></li>
+        </ul>
+      </li>
+      <li>
+        <p>페이징과 정렬 사용법</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">);</span> <span class="c1">// 페이징 : count 쿼리 사용</span>
+        
+  <span class="nd">@Query</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">"select m from Member m left join m.team t"</span><span class="o">,</span>
+              <span class="n">countQuery</span> <span class="o">=</span> <span class="s">"select count(m) from Member m"</span><span class="o">)</span>
+  <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">);</span> <span class="c1">// 페이징 : count 쿼리 사용</span>
+        
+  <span class="nc">Slice</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">);</span> <span class="c1">// 슬라이싱 : count 쿼리 사용 안함</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">);</span> <span class="c1">// 일반 결과 : count 쿼리 사용 안함</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">Sort</span> <span class="n">sort</span><span class="o">);</span> <span class="c1">// 정렬만 사용. no paging</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p><strong>메서드 이름으로 쿼리 생성 + 페이징</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByAge</span><span class="o">(</span><span class="kt">int</span> <span class="n">age</span><span class="o">,</span> <span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>기존에 알아봤던 ‘메서드 이름으로 쿼리 생성’에 <strong>Pageable(paging 조건)</strong>만 넣어주면 해당 이름으로 생성된 쿼리의 결과에 <strong>page 조건을 자동으로 추가해서 query를 날리게 됨</strong></li>
+          <li>
+            <p>사용</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">PageRequest</span> <span class="n">pageRequest</span> <span class="o">=</span> <span class="nc">PageRequest</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="nc">Sort</span><span class="o">.</span><span class="na">by</span><span class="o">(</span><span class="nc">Sort</span><span class="o">.</span><span class="na">Direction</span><span class="o">.</span><span class="na">DESC</span><span class="o">,</span> <span class="s">"name"</span><span class="o">));</span>
+  <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">page</span> <span class="o">=</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findByAge</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="n">pageRequest</span><span class="o">);</span>
+  <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">MemberDto</span><span class="o">&gt;</span> <span class="n">memberDtos</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="n">member</span> <span class="o">-&gt;</span> <span class="k">new</span> <span class="nc">MemberDto</span><span class="o">(...));</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li><strong>Pageable</strong>에 <strong>paging 조건</strong>(<code class="language-plaintext highlighter-rouge">PageRequest pageRequest</code>)을 넣어주고 사용해주면 됨</li>
+              <li><code class="language-plaintext highlighter-rouge">PageRequest pageRequest = PageRequest.*of*(page, size, Sort);</code>
+                <ul>
+                  <li><strong>페이징 조건</strong></li>
+                  <li><code class="language-plaintext highlighter-rouge">page</code> : 원하는 페이지 (<strong>0 부터</strong> 시작)</li>
+                  <li><code class="language-plaintext highlighter-rouge">size</code> : 가져올 개수</li>
+                  <li><code class="language-plaintext highlighter-rouge">Sort</code> : 정렬 기준</li>
+                </ul>
+              </li>
+              <li><code class="language-plaintext highlighter-rouge">Page&lt;Member&gt; page = memberRepository.findByAge(10, pageRequest);</code>
+                <ul>
+                  <li>조건(<code class="language-plaintext highlighter-rouge">pageRequest</code>  → 첫번째 페이지, 3개의 content, 이름 오름차순으로 정렬) 에 맞는 결과 반환</li>
+                  <li><strong>반환되는 결과</strong> : <code class="language-plaintext highlighter-rouge">List&lt;Member&gt;</code> <strong>결과 +</strong> <code class="language-plaintext highlighter-rouge">totalCount</code> <strong>결과</strong> (query를 통해 확인할 수 있음)</li>
+                  <li><code class="language-plaintext highlighter-rouge">Page&lt;Member&gt;</code>로 반환 받지 않고 <strong>일반적인 <code class="language-plaintext highlighter-rouge">List&lt;Member&gt;</code> 로도 반환 가능!</strong> (페이지 조건을 달았지만, 페이징 기능을 쓰지 않는 결과를 받을 수 있는 것)</li>
+                </ul>
+              </li>
+              <li><code class="language-plaintext highlighter-rouge">Page&lt;MemberDto&gt; memberDtos = page.map(member -&gt; new MemberDto(...));</code>
+                <ul>
+                  <li>추가로 항상 Entity는 Entity 자체로 반환해주면 안됨! → <strong>DTO로 반환 필요</strong></li>
+                  <li>Page는 <code class="language-plaintext highlighter-rouge">map</code>을 통해 쉽게 Entity를 <strong>DTO로 변환</strong> 할 수 있음 ⇒ <code class="language-plaintext highlighter-rouge">page.map()</code></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>Page를 통해 쉽게 얻을 수 있는 <strong>부가적인 정보</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">Page&lt;Member&gt; page = memberRepository.findByAge(10, pageRequest);</code> 를 통해 page를 얻었다고 가정</li>
+              <li>반환 결과 <strong>내용</strong> : <code class="language-plaintext highlighter-rouge">List&lt;Member&gt; members = page.getContent();</code></li>
+              <li>해당 <strong>조건을 따른 Entity의 전체 개수</strong>(<code class="language-plaintext highlighter-rouge">count()</code> 사용) : <code class="language-plaintext highlighter-rouge">long totalElements = page.getTotalElements();</code></li>
+              <li><strong>현재 페이지</strong> 번호 : <code class="language-plaintext highlighter-rouge">int pageNum = page.getNumber();</code></li>
+              <li>전체 <strong>페이지 개수</strong>(복잡한 계산 과정을 거칠 필요가 없어짐) : <code class="language-plaintext highlighter-rouge">int totalPages = page.getTotalPages();</code></li>
+              <li>첫번째 페이지인지 확인 : <code class="language-plaintext highlighter-rouge">page.isFirst()</code></li>
+              <li>다음 페이지가 존재하는지 확인 : <code class="language-plaintext highlighter-rouge">page.hasNext()</code></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>메서드 이름으로 쿼리 생성 + 슬라이싱</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">PageRequest</span> <span class="n">pageRequest</span> <span class="o">=</span> <span class="nc">PageRequest</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="nc">Sort</span><span class="o">.</span><span class="na">by</span><span class="o">(</span><span class="nc">Sort</span><span class="o">.</span><span class="na">Direction</span><span class="o">.</span><span class="na">DESC</span><span class="o">,</span> <span class="s">"name"</span><span class="o">));</span>
+  <span class="nc">Slice</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">page</span> <span class="o">=</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findByAge</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="n">pageRequest</span><span class="o">);</span>
+  <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">MemberDto</span><span class="o">&gt;</span> <span class="n">memberDtos</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="n">member</span> <span class="o">-&gt;</span> <span class="k">new</span> <span class="nc">MemberDto</span><span class="o">(...));</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>나머지는 Page 와 동일. 즉, <strong>반환값만 Slice로 바꿔주면 Slice로써 사용할 수 있음 (Slice는 Page의 하위)</strong></li>
+          <li>다른점은 Slice로 반환할 시 <strong>전체 count, 전체 page 개수 를 가져와 주지 않음</strong> (쓸일이 없으니)</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code class="language-plaintext highlighter-rouge">@Query</code> 를 통해 레포에 직접 쿼리 생성 + 페이지/슬라이싱</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">"select m from Member m left join m.team t"</span><span class="o">,</span>
+              <span class="n">countQuery</span> <span class="o">=</span> <span class="s">"select count(m) from Member m"</span><span class="o">)</span>
+  <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>메서드 이름으로 쿼리 생성 뿐만 아니라, <code class="language-plaintext highlighter-rouge">@Query</code>를 통해 <strong>직접 쿼리를 생성하면서 Page 사용 가능!</strong></li>
+          <li>추가로 <strong>count Query를 분리하는 것</strong>도 가능 (<strong>실무에서 중요</strong>)
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">countQuery = "select count(m) from Member m"</code></li>
+              <li>항상 페이징 시 주의할 점은 “c<strong>ontent를 얻고자 하는 query와 count 쿼리는 다를 수 있다</strong>“는 것 → count 쿼리는 말 그대로 개수만 필요로 하는 것. 즉, <strong>최적화가 가능</strong>함 ⇒ content에서 필요로 할 수 도 있는 <strong>join문이 count에서는 필요 없을 수도 있다</strong>는 것! (Member에 Team을 Join해줘서 content를 만든다해도 <strong>총 count는 사실 Member 만 있어도 됨!</strong> → count에서는 join을 빼서 query를 날릴 수 있음 )</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>결국 이런 <strong>Page의 부가적인 기능,정보</strong>를 통해 <strong>웹의 페이지 기능을 구현</strong>할 수 있음 (총 페이지 개수 보여주기, 다음 페이지로 넘길 수 있는지 확인 하기, … 등)</li>
+      <li>추가로, <strong>Pageable 기능은 어느 method(메소드이름으로, @Query 사용하여, … )에도 적용이 가능</strong>함!</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="벌크성-수정-쿼리">벌크성 수정 쿼리</h3>
+
+<ul>
+  <li>벌크연산 : 변경 감지를 통해 UPDATE 쿼리를 날리는 것이 아닌, 변경할 것들에 대해 <strong>한번에 UPDATE 쿼리를 in query로</strong> 한방으로 날리는 것</li>
+  <li>주의점 : 벌크연산은 영속성컨텍스트를 거쳐가는것이 아니기에 <strong>변경된 사항들을 반영해주기 위해선 항상 벌크연산 후에 영속성컨텍스트를 초기화</strong>(<code class="language-plaintext highlighter-rouge">em.clear()</code>) 해주어야 함</li>
+  <li>
+    <p><strong>순수 JPA</strong>를 이용한 벌크 연산</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">bulkAgePlus</span><span class="o">(</span><span class="kt">int</span> <span class="n">age</span><span class="o">)</span> <span class="o">{</span>
+  	 <span class="kt">int</span> <span class="n">resultCount</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span>
+  		 <span class="s">"update Member m set m.age = m.age + 1"</span> <span class="o">+</span>
+  		 <span class="s">"where m.age &gt;= :age"</span><span class="o">)</span>
+  			 <span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="s">"age"</span><span class="o">,</span> <span class="n">age</span><span class="o">)</span>
+  			 <span class="o">.</span><span class="na">executeUpdate</span><span class="o">();</span>
+  	 <span class="k">return</span> <span class="n">resultCount</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">executeUpdate()</code> : 벌크성 쿼리를 날리기 위한 설정</li>
+      <li>순수 JPA는 해당 method를 실행해준 직후에 <strong>직접 <code class="language-plaintext highlighter-rouge">em.clear()</code> 를 호출하여 영속성 컨텍스트를 비어줘야 하는 단점</strong> 존재</li>
+    </ul>
+  </li>
+  <li>
+    <p><strong>스프링 데이터 JPA</strong>를 사용한 벌크 연산</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Modifying</span><span class="o">(</span><span class="n">clearAutomatically</span> <span class="o">=</span> <span class="kc">true</span><span class="o">)</span>
+  <span class="nd">@Query</span><span class="o">(</span><span class="s">"update Member m set m.age = m.age + 1 where m.age &gt;= :age"</span><span class="o">)</span>
+  <span class="kt">int</span> <span class="nf">bulkAgePlus</span><span class="o">(</span><span class="nd">@Param</span><span class="o">(</span><span class="s">"age"</span><span class="o">)</span> <span class="kt">int</span> <span class="n">age</span><span class="o">);</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">@Modifying</code> : 벌크성 쿼리를 날리기 위한 설정 (JPA의 <code class="language-plaintext highlighter-rouge">executeUpdate</code> 역할). 해당 <code class="language-plaintext highlighter-rouge">@Query</code>에 지정된 update query를 날려줌
+        <ul>
+          <li>사용하지 않으면 예외 발생</li>
+          <li><code class="language-plaintext highlighter-rouge">clearAutomatically = true</code> : 해당 벌크연산이 <strong>끝난 직후 영속성 컨텍스트를 비워줌</strong> (false가 default 이며, 벌크연산이 영속성컨텍스트에 Entity가 존재하지 않은 상태에서 이루어지는 것이면 false로 진행해도 됨) → <strong>변경된 점 반영 가능</strong></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<aside>
+⚠️ **memberRepository를 통해 사용중인 EntityManger(영속성컨텍스트)와 해당 Test단에서 새로 불러 오는 EntityManger는 같나?** 
+⇒ 같은 Transaction 안에 있으면 항상 같은 Entity Manger를 사용하기 때문에 같음! ⇒ 즉, em을 따로 불러와도 memberRepository와 동일 한 em이 할당 됨!
+
+</aside>
+
+<h3 id="entitygraph-fetch-join">@EntityGraph (Fetch Join)</h3>
+
+<ul>
+  <li><strong>연관된 Entity 들을 SQL 한번에 조회</strong>하는 방법</li>
+  <li>Lazy 로딩인 연관 Entity들을 <strong>마치 Eager 로딩과 같이 조회</strong>하는 것 (<strong>Fetch Join</strong>)</li>
+  <li>특징 : INNER JOIN이 아닌 <strong>LEFT OUTER JOIN</strong> 실행</li>
+  <li><strong>N+1 문제의 해결법</strong>
+    <ul>
+      <li>N+1 문제
+        <ul>
+          <li>예를 들어 Member를 조회하는 데, 조회 후 연관 Entity인 Team의 정보도 함께 확인한다. (이때 Member와 Team은 다대일 관계, <strong>Lazy 로딩</strong>)</li>
+          <li>
+            <p><code class="language-plaintext highlighter-rouge">findAll()</code> 로 Member를 모두 조회한 후 Member를 훑으면서 각 Member의 Team의 이름을 조회</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">members</span> <span class="o">=</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">findAll</span><span class="o">();</span>
+  <span class="k">for</span> <span class="o">(</span><span class="nc">Member</span> <span class="n">member</span> <span class="o">:</span> <span class="n">members</span><span class="o">)</span> <span class="o">{</span>
+  	 <span class="n">member</span><span class="o">.</span><span class="na">getTeam</span><span class="o">().</span><span class="na">getName</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>이때, <strong>N+1 문제</strong> 발생 → <strong>전체 Member를 조회</strong>하는 query <strong>1개</strong> (<code class="language-plaintext highlighter-rouge">findAll()</code>) + <strong>N개의 각 Member에서 Team을 조회</strong>하는 query <strong>N개</strong>(<code class="language-plaintext highlighter-rouge">member.getTeam().getName();</code> x N)</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>해결법 1 :</strong> <code class="language-plaintext highlighter-rouge">@Query</code> <strong>+ Fetch Join 사용</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Query</span><span class="o">(</span><span class="s">"select m from Member m left join fetch m.team"</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findMemberFetchJoin</span><span class="o">();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>m.team과 관련된 Team Entity를 가져와 <strong>fetch join</strong> 시켜 주는 것 → Eager Loading처럼 동작(fetch 까지 진행했기에, <strong>member의 team field(Team Entity) 를 채워</strong>줌)</li>
+        </ul>
+      </li>
+      <li><strong>해결법 2 : <code class="language-plaintext highlighter-rouge">@EntityGraph</code> 사용</strong>
+        <ul>
+          <li>스프링 데이터 JPA에서 JPA가 제공하는 <strong>엔티티 그래프 기능을 편리하게 사용</strong> 가능 → <strong>JPQL 없이 페치 조인을 사용 가능!</strong></li>
+          <li><code class="language-plaintext highlighter-rouge">@EntityGraph(attributePaths = {"team"})</code>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">attributePaths = {”team”}</code> : 조회하고자하는 객체의 <strong>team field(연관 Entity)</strong>를 Fetch Join을 통해서 가져온다는 뜻</li>
+              <li>해당 기능을 설정해주면 JPQL에서 <strong>Fetch Join을 사용한 것과 동일한 Query</strong>가 나가게 됨 (fetch join을 <strong>편리하게 사용</strong>할 수 있음!)</li>
+            </ul>
+          </li>
+          <li>유연한 사용법
+            <ul>
+              <li>
+                <p><strong>공통 인터페이스에서 제공하는 메서드를 오버라이드</strong> 해서 사용</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">//공통 메서드 오버라이드</span>
+  <span class="nd">@Override</span>
+  <span class="nd">@EntityGraph</span><span class="o">(</span><span class="n">attributePaths</span> <span class="o">=</span> <span class="o">{</span><span class="s">"team"</span><span class="o">})</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findAll</span><span class="o">();</span>
+</code></pre></div>                </div>
+              </li>
+              <li>
+                <p><strong>JPQL로 직접 쿼리를 작성하고 Fetch Join을 사용하지 않고</strong> <code class="language-plaintext highlighter-rouge">@EntityGraph</code>를 사용</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@EntityGraph</span><span class="o">(</span><span class="n">attributePaths</span> <span class="o">=</span> <span class="o">{</span><span class="s">"team"</span><span class="o">})</span>
+  <span class="nd">@Query</span><span class="o">(</span><span class="s">"select m from Member m"</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findMemberEntityGraph</span><span class="o">();</span>
+</code></pre></div>                </div>
+              </li>
+              <li>
+                <p>“<strong>메서드 이름으로 쿼리 생성</strong>”에서 <code class="language-plaintext highlighter-rouge">@EntityGraph</code> 사용</p>
+
+                <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@EntityGraph</span><span class="o">(</span><span class="n">attributePaths</span> <span class="o">=</span> <span class="o">{</span><span class="s">"team"</span><span class="o">})</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">username</span><span class="o">)</span>
+</code></pre></div>                </div>
+
+                <ul>
+                  <li><code class="language-plaintext highlighter-rouge">@EntityGraph</code> 의 사용 효율이 극대화되는 방법</li>
+                  <li>직접 JPQL을 짜지 않고도 간단히 Fetch JOIN 을 사용할 수 있게됨</li>
+                  <li>즉, 간단히 메서드 명으로도 만들 수 있는 조회에 대해서 Fetch Join을 사용하고 싶을 때 자주 사용됨</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>Spring Data Jpa 만의 기능이 아닌 원래 JPA 표준 기능
+    <ul>
+      <li>즉, <strong>JPA에서도 사용 가능</strong> → <code class="language-plaintext highlighter-rouge">NamedEntityGraph</code></li>
+      <li><code class="language-plaintext highlighter-rouge">NamedEntityGraph</code>
+        <ul>
+          <li>
+            <p>선언</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@NamedEntityGraph</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">"Member.all"</span><span class="o">,</span> <span class="n">attributeNodes</span> <span class="o">=</span>
+  <span class="nd">@NamedAttributeNode</span><span class="o">(</span><span class="s">"team"</span><span class="o">))</span>
+  <span class="nd">@Entity</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">Member</span> <span class="o">{}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>이름을 설정하고 어떤 Field의 연관객체를 한번에 가져올 지 설정</li>
+            </ul>
+          </li>
+          <li>
+            <p>사용</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@EntityGraph</span><span class="o">(</span><span class="s">"Member.all"</span><span class="o">)</span>
+  <span class="nd">@Query</span><span class="o">(</span><span class="s">"select m from Member m"</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findMemberEntityGraph</span><span class="o">();</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>설정된 정보를 가지고 Fetch Join 실행</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="jpa-hint--lock">JPA Hint &amp; Lock</h3>
+
+<ul>
+  <li>HINT
+    <ul>
+      <li>JPA Query 힌트 (SQL에 영향을 주는 HINT가 아닌, <strong>JPA 구현체에게 제공되는 HINT</strong>)</li>
+      <li><code class="language-plaintext highlighter-rouge">@Transcational(readOnly = true)</code> 와 동일한 역할을 하는 기능</li>
+      <li>
+        <p>사용</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@QueryHints</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="nd">@QueryHint</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">"org.hibernate.readOnly"</span><span class="o">,</span> <span class="n">value</span> <span class="o">=</span><span class="s">"true"</span><span class="o">))</span>
+  <span class="nc">Member</span> <span class="nf">findReadOnlyByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">username</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@QueryHints</code> : 적용할 <code class="language-plaintext highlighter-rouge">@QueryHint</code> 모음</li>
+          <li><code class="language-plaintext highlighter-rouge">@QueryHint(name = "org.hibernate.readOnly", value ="true")</code> : Entity를 가져올 때, readOnly mode로 가져오겠다는 설정</li>
+          <li><code class="language-plaintext highlighter-rouge">readOnly</code>로 가져오기 때문에 <strong>변경감지가 이루어지지 않음!</strong></li>
+        </ul>
+      </li>
+    </ul>
+
+    <aside>
+  ⚠️ **readOnly 를 사용하는 이유**
+  원래 JPA는 Entity를 DB에서 가져오면 추후 변경감지 등을 위해 스냅샷(초기 Entity모습)을 생성하고 `flush()`가 발생하면 각 field를 비교하여 변경된 점에 대한 UPDATE Query를 날림. 하지만, 해당 Entity가 읽기모드라면, 말 그대로 변경할 것이 아니기 때문에 **스냅샷을 생성할 필요가 없어지고, field 비교 또한 이루어지지 않음 → 성능 최적화 가능!**
+    
+  </aside>
+  </li>
+  <li>LOCK
+    <ul>
+      <li>SQL의 <strong>select for update</strong></li>
+      <li><strong>동시성 제어</strong>를 위하여 특정 데이터(ROW)에 대해 <strong>베타적 LOCK을 거는 기능</strong></li>
+      <li>“<strong>데이터 수정하려고 SELECT 하는 중이야! 다른 사람들은 데이터에 손 대지 마!</strong>” 의 느낌 (영화 좌석 예매를 위한 선택 등에 사용됨)</li>
+      <li>사용
+        <ul>
+          <li>
+            <p>Spring Data JPA</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Lock</span><span class="o">(</span><span class="nc">LockModeType</span><span class="o">.</span><span class="na">PESSIMISTIC_WRITE</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">);</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p>SQL 결과</p>
+
+            <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">select</span> <span class="o">*</span>
+  <span class="k">from</span> <span class="n">member</span> <span class="n">m</span>
+  <span class="k">where</span> <span class="n">m</span><span class="p">.</span><span class="n">username</span> <span class="o">=</span> <span class="p">:</span><span class="n">username</span> <span class="k">for</span> <span class="k">update</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+:ET
