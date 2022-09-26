@@ -1,0 +1,593 @@
+I"z�<h2 id="순수-jpa와-querydsl">순수 JPA와 Querydsl</h2>
+
+<p>순수 JPA와 Querydsl의 차이점을 확인하며 <strong>Repository 생성</strong>해보기</p>
+
+<h3 id="querydsl을-이용한-리포지토리">Querydsl을 이용한 리포지토리</h3>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">MemberQueryRepository</code> 생성</li>
+  <li>
+    <p>Class단 Annotation</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Repository</span>
+  <span class="nd">@RequiredArgsConstructor</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">MemberQueryRepository</span> <span class="o">{...}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">@Repository</code> : 컴포넌트로 등록, 하위 JPA의 오류를 <strong>상위 Spring의 오류로 변경</strong>해줌</li>
+      <li><code class="language-plaintext highlighter-rouge">@RequiredArgsConstructor</code> : private final 로 설정된 field에 대해 <strong>자동으로 DI실행</strong> → 생성자를 통해</li>
+    </ul>
+  </li>
+  <li>
+    <p>의존성 주입 (DI)</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="kd">final</span> <span class="nc">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+  <span class="kd">private</span> <span class="kd">final</span> <span class="nc">JPAQueryFactory</span> <span class="n">queryFactory</span><span class="o">;</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">EntityManager em;</code>
+        <ul>
+          <li><strong>EntityManger</strong> 주입</li>
+          <li>Spring에서 주입해주는 것이 아닌 <strong>JPA에서 주입</strong>해주는 것</li>
+          <li><code class="language-plaintext highlighter-rouge">@PersistanceContext</code>로 <strong>주입</strong> 가능</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">JPAQueryFactory queryFactory;</code>
+        <ul>
+          <li><strong>JPAQueryFactory</strong> 주입</li>
+          <li><strong>[중요]</strong> <strong>항상 이용되는 EntityManger를 넣어주어야 함</strong></li>
+          <li>
+            <p><strong>JPAQueryFactory</strong>를 <strong>Bean으로 등록</strong>하여 <strong>Spring에서 주입</strong>할 수 있게 설정 가능</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PersistenceContext</span>
+  <span class="kd">private</span> <span class="nc">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+            
+  <span class="nd">@Bean</span> <span class="c1">// 빈으로 등록 -&gt; 의존성 주입 가능</span>
+  <span class="nc">JPAQueryFactory</span> <span class="nf">jpaQueryFactory</span><span class="o">()</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="k">new</span> <span class="nf">JPAQueryFactory</span><span class="o">(</span><span class="n">em</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p>혹은 각각의 단에서 <strong>생성자를 통해 em을 넣어줌</strong>과 함께 생성할 수 있음</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@PersistenceContext</span>
+  <span class="kd">private</span> <span class="nc">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+  <span class="kd">private</span> <span class="kd">final</span> <span class="nc">JPAQueryFactory</span> <span class="n">queryFactory</span><span class="o">;</span>
+            
+  <span class="kd">public</span> <span class="nf">MemberJPARepository</span><span class="o">()</span> <span class="o">{</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">queryFactory</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">JPAQueryFactory</span><span class="o">(</span><span class="n">em</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+
+    <aside>
+  💡 **EntityManger와 JPAQueryFactory의 동시성 문제**
+    
+  - **EntityManger**는 **싱글톤**으로 운영되기 때문에 항상 같은 **EntityManger**를 받게됨
+  - 각 메서드에 대한 **EntityManger**은 **Transcation 단위로 동작**하는 것 → **동시성 문제발생 X**
+  - **JPAQueryFactory** 또한 **싱글톤**으로 운영
+  - **JPAQueryFactory**는 **EntityManger**을 받아서 동작하기 때문에 **똑같이 동시성 문제 X**
+  </aside>
+
+    <ul>
+      <li>
+        <p><strong>저장</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">save</span><span class="o">(</span><span class="nc">Member</span> <span class="n">member</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">em</span><span class="o">.</span><span class="na">persist</span><span class="o">(</span><span class="n">member</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>Querydsl로 코드를 작성하는 것보다 <strong>영속성 컨텍스트까지 고려하여 JPA의 기본 저장</strong> 로직인 <code class="language-plaintext highlighter-rouge">em.persist()</code>를 사용</li>
+        </ul>
+      </li>
+      <li>
+        <p>식별자 <strong>조회</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">Optional</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findById</span><span class="o">(</span><span class="nc">Long</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">Member</span> <span class="n">member</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+      <span class="k">return</span> <span class="nc">Optional</span><span class="o">.</span><span class="na">ofNullable</span><span class="o">(</span><span class="n">member</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>Querydsl로 코드를 작성하는 것보다 <strong>JPA에서 기본으로 제공</strong>하는 <code class="language-plaintext highlighter-rouge">em.find()</code> 이용 → 더 편리</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>전체 조회</strong>
+    <ul>
+      <li>
+        <p><strong>순수 JPA</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findAll</span><span class="o">()</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">"select m from Member m"</span><span class="o">,</span> <span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+              <span class="o">.</span><span class="na">getResultList</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong>직접 문자열로 JPQL을 작성</strong>해주어야 함 → 개발 편의성 DOWN</li>
+          <li><strong>Class</strong> 를 <strong>직접 지정</strong>해주어야 함</li>
+          <li>문자열의 JPQL은 <strong>컴파일 단계에서 오류 검출이 불가능</strong> → 사용자가 직접 해당 method에 접근 시 오류 확인 가능 → 굉장히 불완전한 개발</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>Querydsl 이용</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findAll_Querydsl</span><span class="o">()</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">queryFactory</span>
+              <span class="o">.</span><span class="na">selectFrom</span><span class="o">(</span><span class="n">member</span><span class="o">)</span> <span class="c1">// QMember.member</span>
+              <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">member</code> → <code class="language-plaintext highlighter-rouge">QMember.member</code> 를 <strong>static import</strong></li>
+          <li><strong>자바 코드</strong>로써 SQL을 작성할 수 있음 → 개발 편의성 UP</li>
+          <li>Class 직접 지정할 필요 없이, <strong>Entity의 Q-Type으로 동작</strong></li>
+          <li><strong>Application 로딩 시점에 오류 확인 가능!</strong> (<strong>컴파일 단계에서 오류 검출</strong>)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>이름에 따른 조회</strong>
+    <ul>
+      <li>
+        <p><strong>순수 JPA</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">username</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">"select m from Member m where m.username = :username"</span><span class="o">,</span> <span class="nc">Member</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+              <span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="s">"username"</span><span class="o">,</span> <span class="n">username</span><span class="o">)</span>
+              <span class="o">.</span><span class="na">getResultList</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong>where 조건</strong> 마저 <strong>문자열로</strong> 작성</li>
+          <li>파라미터 <strong>바인딩을 직접</strong> 진행</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>Querydsl</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername_Querydsl</span><span class="o">(</span><span class="nc">String</span> <span class="n">username</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">queryFactory</span>
+              <span class="o">.</span><span class="na">selectFrom</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+              <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="n">username</span><span class="o">))</span>
+              <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong>where 조건</strong>을 <strong>자바 코드</strong>로 작성 → <strong>동적 쿼리 가능</strong></li>
+          <li><code class="language-plaintext highlighter-rouge">.eq(username)</code>을 통해 <strong>파라미터 바인딩</strong>을 <strong>Querydsl에서 자동</strong>으로 진행</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="동적-쿼리-성능-최적화-조회dto-조회">동적 쿼리, 성능 최적화 조회(DTO 조회)</h3>
+
+<ul>
+  <li><strong>DTO 생성</strong>
+    <ul>
+      <li><strong>순수 JPA</strong>를 통해 DTO로 직접 조회한다면?
+        <ul>
+          <li><strong>패키지명을 모두</strong> 적어줘야 함</li>
+          <li><strong>문자열</strong>로 진행되기 때문에 <strong>IDE의 도움을 받을 수 없</strong>으며 <strong>컴파일 시점에 오류 확인 불가</strong></li>
+          <li><strong>Querydsl</strong>의 <code class="language-plaintext highlighter-rouge">Projection</code>, <code class="language-plaintext highlighter-rouge">@QueryProjection</code> 를 통해 해결 가능</li>
+        </ul>
+      </li>
+      <li>
+        <p>Member 정보와 Team 정보를 함께 받은 <strong>DTO 생성 by Querydsl</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Data</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">MemberTeamDto</span> <span class="o">{</span>
+      <span class="c1">// Member와Team 정보를 같이 반환해줄 DTO</span>
+      <span class="kd">private</span> <span class="nc">Long</span> <span class="n">memberId</span><span class="o">;</span>
+      <span class="o">...</span>
+      <span class="kd">private</span> <span class="nc">Long</span> <span class="n">teamId</span><span class="o">;</span>
+  		<span class="o">..</span>
+        
+      <span class="nd">@QueryProjection</span> <span class="c1">// 해당 DTO 생성자에 대한 QType 생성</span>
+      <span class="kd">public</span> <span class="nf">MemberTeamDto</span><span class="o">(</span><span class="nc">Long</span> <span class="n">memberId</span><span class="o">,</span> <span class="o">...)</span> <span class="o">{</span>
+          <span class="k">this</span><span class="o">.</span><span class="na">memberId</span> <span class="o">=</span> <span class="n">memberId</span><span class="o">;</span>
+          <span class="o">...</span>
+      <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@QueryProjection</code> 사용
+            <ul>
+              <li>해당 <strong>DTO 생성자에 대한 QType 생성</strong></li>
+              <li>항상 어노테이션을 달아주고 <code class="language-plaintext highlighter-rouge">compileQuerydsl</code> 을 통해 <strong>실제 QType을 생성</strong>해 주어야 함 (실행 후 저장 경로(<code class="language-plaintext highlighter-rouge">build/generated/…</code>)에서 확인)</li>
+              <li>더 편리하게 <strong>new 오퍼레이션으로 DTO 직접 조회</strong>가 가능</li>
+              <li>DTO가 <strong>Querydsl을 의존하게 된다는 단점</strong> 존재 → <strong>해당 DTO를 사용하는 모든 단에서 또한 Querydsl을 의존하게 됨</strong></li>
+              <li>대신 <strong>Projection</strong>의 <code class="language-plaintext highlighter-rouge">.bean()</code>, <code class="language-plaintext highlighter-rouge">.fields()</code>, <code class="language-plaintext highlighter-rouge">.constructor()</code> 을 사용해도 됨 → <strong>의존성 X</strong></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>동적 쿼리</strong> 작성
+    <ul>
+      <li><strong>순수 JPA</strong>로 동적쿼리 작성한다면?
+        <ul>
+          <li><strong>문자열 조합</strong>으로 진행해야 됨</li>
+          <li><strong>재사용이 불가</strong>능하며 <strong>오류 검출을 컴파일 단계에서 불가</strong>능하여 개발 생산성이 낮아짐</li>
+          <li><strong>Querydsl</strong>의 <code class="language-plaintext highlighter-rouge">BooleanBuilder</code>, <code class="language-plaintext highlighter-rouge">BooleanExpression</code> 사용하여 해결 가능</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>BooleanBuilder</strong>를 통한 <strong>동적 쿼리 by Querydsl</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberTeamDto</span><span class="o">&gt;</span> <span class="nf">searchByBuilder</span><span class="o">(</span><span class="nc">MemberSearchCond</span> <span class="n">cond</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">BooleanBuilder</span> <span class="n">builder</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BooleanBuilder</span><span class="o">();</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">hasText</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getUsername</span><span class="o">()))</span> <span class="o">{</span> <span class="c1">// 검색된 Member의 이름이 null 혹은 ""이 아니면</span>
+          <span class="n">builder</span><span class="o">.</span><span class="na">and</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getUsername</span><span class="o">()));</span> <span class="c1">// 해당 조건 builder에 추가</span>
+      <span class="o">}</span>
+      <span class="o">...</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getAgeGoe</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+          <span class="n">builder</span><span class="o">.</span><span class="na">and</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">goe</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getAgeGoe</span><span class="o">()));</span>
+      <span class="o">}</span>
+      <span class="o">...</span>
+        
+      <span class="k">return</span> <span class="n">queryFactory</span>
+              <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="k">new</span> <span class="nc">QMemberTeamDto</span><span class="o">(</span>
+                      <span class="n">member</span><span class="o">.</span><span class="na">id</span><span class="o">,</span> <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">,</span> <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">,</span> <span class="n">team</span><span class="o">.</span><span class="na">id</span><span class="o">,</span> <span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">))</span>
+              <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span> <span class="c1">// inner join이 아니라 outer join -&gt; where 문에서 join된 team에 대해서 판단하므로 team은 null이면 안됨 (team이 null인 member는 제외)</span>
+              <span class="o">.</span><span class="na">leftJoin</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">team</span><span class="o">,</span> <span class="n">team</span><span class="o">)</span> <span class="c1">// fetchJoin() X -&gt; 연관된 Entity를 넣는 것이 아니기때문</span>
+              <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">builder</span><span class="o">)</span> <span class="c1">// join한 후 where을 넣는 이유 : join한 결과에서 판단하므로</span>
+              <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">BooleanBuilder builder = new BooleanBuilder();</code>
+            <ul>
+              <li>builder 생성</li>
+              <li><code class="language-plaintext highlighter-rouge">.and()</code>, <code class="language-plaintext highlighter-rouge">.or()</code> 로 <strong>체인식으로 연결</strong>지어 <strong>조건을 추가</strong>할 수 있음</li>
+              <li>혹은 <strong>생성자에 기본 조건</strong>을 넣을 수 있음 → <code class="language-plaintext highlighter-rouge">new BooleanBuilder(member.username.eq(cond.getUsername));</code></li>
+            </ul>
+          </li>
+          <li><strong>조건 추가</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">if (hasText(cond.getUsername()))</code> : MemberSearchCond의 username 이 null 혹은 “”(빈 문자열)이 아니라면
+                <ul>
+                  <li><code class="language-plaintext highlighter-rouge">builder.and(member.username.eq(cond.getUsername()));</code> : 빌더에 <strong>조건 추가</strong> → <code class="language-plaintext highlighter-rouge">where m.uesrname = :username</code></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li><strong>buider</strong>를 <strong>where문에 추가</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">.where(builder)</code></li>
+              <li>조건에 따라 <strong>완성된 builder를 where 문에 넣으면 조건에 따른 조회가 가능</strong>해짐</li>
+              <li>builder를 통해 <strong>동적 쿼리</strong>를 작성하는 부분</li>
+              <li>MemberSearchCond 에 아무 조건도 걸리지 않는다면 <strong>builder에 조건이 추가되지 않은 상태</strong>로 where문에 들어감 → <strong>전체 조회와 동일</strong>해짐. (해당 부분도 따로 처리가 필요)</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>Where절 파라미터 사용</strong> (<code class="language-plaintext highlighter-rouge">BooleanExpression</code> or <code class="language-plaintext highlighter-rouge">Predicate</code> 사용)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberTeamDto</span><span class="o">&gt;</span> <span class="nf">search</span><span class="o">(</span><span class="nc">MemberSearchCond</span> <span class="n">cond</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">queryFactory</span>
+              <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="k">new</span> <span class="nc">QMemberTeamDto</span><span class="o">(</span>
+                      <span class="n">member</span><span class="o">.</span><span class="na">id</span><span class="o">,</span> <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">,</span> <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">,</span> <span class="n">team</span><span class="o">.</span><span class="na">id</span><span class="o">,</span> <span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">))</span>
+              <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+              <span class="o">.</span><span class="na">leftJoin</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">team</span><span class="o">,</span> <span class="n">team</span><span class="o">)</span>
+              <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">usernameEq</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getUsername</span><span class="o">()),</span> <span class="c1">// 해당 메서드에서 null을 반환하게 되면 무시됨</span>
+                      <span class="n">teamNameEq</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getTeamName</span><span class="o">()),</span>
+                      <span class="n">ageGoe</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getAgeGoe</span><span class="o">()),</span>
+                      <span class="n">ageLoe</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getAgeLoe</span><span class="o">()))</span>
+              <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>where 조건들을 <strong>method로</strong> 빼내서 <strong>해당 조건이 포함되어 있다면 그 조건을 반환</strong>해주고 <strong>아니면 null을 반환</strong>하여 해당 조건을 무시하도록 설정</li>
+          <li><strong>재사용이 가능</strong>하며 <strong>조합</strong> 또한 가능 → <strong>실무에서 자주 사용</strong></li>
+          <li>
+            <p>예시) <code class="language-plaintext highlighter-rouge">usernameEq(cond.getUsername())</code></p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="nc">BooleanExpression</span> <span class="nf">usernameEq</span><span class="o">(</span><span class="nc">String</span> <span class="n">username</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="nf">hasText</span><span class="o">(</span><span class="n">username</span><span class="o">)</span> <span class="o">?</span> <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="n">username</span><span class="o">)</span> <span class="o">:</span> <span class="kc">null</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li><strong>MemberSearchCond</strong>의 <strong>uesrname이 null이거나 빈문자열이면 null을 반환</strong> 하고 <strong>아니라면 조건 추가</strong></li>
+            </ul>
+          </li>
+          <li>
+            <p><strong>조건 조합</strong> 예시</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="nc">BooleanExpression</span> <span class="nf">ageBetween</span><span class="o">(</span><span class="nc">Integer</span> <span class="n">ageGoe</span><span class="o">,</span> <span class="nc">Integer</span> <span class="n">ageLoe</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">ageGoe</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span> <span class="n">ageLoe</span><span class="o">(</span><span class="n">ageLoe</span><span class="o">);</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">ageLoe</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span> <span class="n">ageGoe</span><span class="o">(</span><span class="n">ageGoe</span><span class="o">);</span>
+      <span class="k">return</span> <span class="nf">ageGoe</span><span class="o">(</span><span class="n">ageGoe</span><span class="o">).</span><span class="na">and</span><span class="o">(</span><span class="n">ageLoe</span><span class="o">(</span><span class="n">ageLoe</span><span class="o">));</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>조건들을 조합(<code class="language-plaintext highlighter-rouge">.and()</code>, <code class="language-plaintext highlighter-rouge">.or()</code>) 해서 반환해주는 방식</li>
+              <li>이때 <code class="language-plaintext highlighter-rouge">~~Predicate</code>로 반환~~하면 동작하지 않음 → 조합을 위해서 <code class="language-plaintext highlighter-rouge">BooleanExpression</code> 사용</li>
+              <li><strong>조합</strong> 시 항상 <strong>null 조건에 대해 유의</strong>해야 됨 → 조합중 하나만 null일 경우, 둘다 null일 경우 등</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Respository 활용</strong> (조회 API 컨트롤러 개발)
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">MemberController</code> 개발</li>
+      <li>
+        <p>Class 단 Annotation</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@RestController</span> <span class="c1">// Rest API</span>
+  <span class="nd">@RequiredArgsConstructor</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">MemberController</span> <span class="o">{...}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@RestController</code> : <strong>API 반환</strong>을 위한 <strong>Controller</strong> 설정</li>
+          <li><code class="language-plaintext highlighter-rouge">@RequiredArgsConstructor</code> : private final 로 설정된 field에 대해 <strong>자동으로 DI</strong>실행 → 생성자를 통해</li>
+        </ul>
+      </li>
+      <li>
+        <p>의존성 주입 (DI)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="kd">final</span> <span class="nc">MemberQueryRepository</span> <span class="n">memberQueryRepository</span><span class="o">;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>MemberQueryRepository 주입 : Querydsl을 통해 개발한 Repository</li>
+        </ul>
+      </li>
+      <li>
+        <p>검색조건에 따른 데이터 반환</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/v1/members"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberTeamDto</span><span class="o">&gt;</span> <span class="nf">searchMemberV1</span><span class="o">(</span><span class="nd">@ModelAttribute</span> <span class="nc">MemberSearchCond</span> <span class="n">cond</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">memberQueryRepository</span><span class="o">.</span><span class="na">search</span><span class="o">(</span><span class="n">cond</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@GetMapping</code>
+            <ul>
+              <li>/v1/members 에 응답</li>
+            </ul>
+          </li>
+          <li><code class="language-plaintext highlighter-rouge">@ModelAttribute MemberSearchCond cond</code>
+            <ul>
+              <li>RequestParam을 통해 들어오는 값들을 <strong>MemberSearchCond에 Mapping</strong> 시켜줌</li>
+              <li>ex) <strong>?username=kim&amp;goe=20</strong> → <code class="language-plaintext highlighter-rouge">MemberSearchCond{username = kim, goe = 20, …}</code></li>
+            </ul>
+          </li>
+          <li><code class="language-plaintext highlighter-rouge">return memberJPARepository.search(cond)</code>
+            <ul>
+              <li>리포지토리를 통해 <strong>자바코드로 작성한 동적 쿼리의 결과를 반환</strong></li>
+              <li>JSON형식으로 반환 → API호출 결과값</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="스프링-데이터-jpa와-querydsl">스프링 데이터 JPA와 Querydsl</h2>
+
+<p><strong>스프링 데이터 JPA 와 Querydsl을 동시에 사용</strong>하기</p>
+
+<h3 id="스프링-데이터-jpa-기반-repository-생성">스프링 데이터 JPA 기반 Repository 생성</h3>
+
+<ul>
+  <li><strong>MemberRepository interface</strong> 생성
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">extends JpaRepository&lt;Member, Long&gt;</code> : <strong>스프링 데이터 JPA를 사용</strong>하기 위해서 JpaRepository 상속</li>
+      <li><code class="language-plaintext highlighter-rouge">public interface MemberRepository extends JpaRepository&lt;Member, Long&gt; { }</code></li>
+      <li><strong>공통 인터페이스 기능 제공</strong>됨
+        <ul>
+          <li>저장(<code class="language-plaintext highlighter-rouge">save()</code>), 아이디를 통한 조회(<code class="language-plaintext highlighter-rouge">findById()</code>), 전체 조회(<code class="language-plaintext highlighter-rouge">findAll()</code>), …</li>
+        </ul>
+      </li>
+      <li><strong>메서드 이름을 통해 자동 쿼리 생성</strong> 가능
+        <ul>
+          <li>ex) 이름을 통한 조회(<code class="language-plaintext highlighter-rouge">findByUsername()</code> → <strong>find…ByField()</strong>)</li>
+        </ul>
+      </li>
+      <li>하지만 <strong>해당 Repository에는 Querydsl을 사용할 수 없음</strong> → Interface 이므로 Querydsl을 사용하고 싶다면 <strong>해당 Repository의 모든 메서드를 구현</strong>하면서 <strong>Querydsl항목을 추가 구현</strong>해주어야 됨 → 불가능 <strong>⇒ [중요] 사용자 정의 리포지토리를 통해 Querydsl만 따로 구현</strong></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="사용자-정의-리포지토리-생성">사용자 정의 리포지토리 생성</h3>
+
+<ul>
+  <li>
+    <p>사용자 정의 리포지토리 사용법</p>
+
+    <p><img src="Querydsl%20-%20In%20Practice%2051ebbfd086da4e64a553ae8637fc786e/Untitled.png" alt="Untitled" /></p>
+
+    <ol>
+      <li>사용자 정의 <strong>인터페이스 생성</strong> (MemberRepoCustom interface)</li>
+      <li>사용자 정의 <strong>인터페이스 구현</strong> (MemberRepositoryImpl class (<strong>구현체</strong>))</li>
+      <li>스프링 데이터 JPA를 사용하는 리포지토리 인터페이스에 사용자 정의 <strong>인터페이스 상속</strong> 
+  (<code class="language-plaintext highlighter-rouge">... extends JPARepository&lt;,&gt; , MemberRepoCustom</code>)
+        <ol>
+          <li><strong>사용자 정의 인터페이스 생성 → <code class="language-plaintext highlighter-rouge">MemberRepoCustom interface</code></strong></li>
+        </ol>
+      </li>
+    </ol>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">MemberRepositoryCustom</span> <span class="o">{</span>
+      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberTeamDto</span><span class="o">&gt;</span> <span class="nf">search</span><span class="o">(</span><span class="nc">MemberSearchCond</span> <span class="n">condition</span><span class="o">);</span>
+  <span class="o">}</span>
+    
+</code></pre></div>    </div>
+
+    <ul>
+      <li>QueryDSL과 Spring Data JPA를 <strong>같이 사용하기 위한 custom repo 인터페이스</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">search()</code> : 이전 파트에서 진행했던 <strong>조건에 따른 검색 쿼리 생성</strong>을 <strong>Querydsl의 BooleanExpression 으로 구현</strong>한 메서드</li>
+      <li>이렇게 Interface로 선언해주고 <strong>구현체에서 해당 메서드를 Override 해서 구현</strong>해주면 됨!
+        <ol>
+          <li><strong>사용자 정의 인터페이스 구현 → <code class="language-plaintext highlighter-rouge">MemberRepositoryImpl class</code> (구현체)</strong></li>
+        </ol>
+      </li>
+    </ul>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@RequiredArgsConstructor</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">MemberRepositoryImpl</span> <span class="kd">implements</span> <span class="nc">MemberRepositoryCustom</span><span class="o">{</span> 
+    		
+      <span class="kd">private</span> <span class="kd">final</span> <span class="nc">JPAQueryFactory</span> <span class="n">queryFactory</span><span class="o">;</span>
+    
+      <span class="nd">@Override</span>
+      <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberTeamDto</span><span class="o">&gt;</span> <span class="nf">search</span><span class="o">(</span><span class="nc">MemberSearchCond</span> <span class="n">cond</span><span class="o">)</span> <span class="o">{...}</span>
+  	  <span class="o">...</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>QueryDSL과 Spring Data JPA를 <strong>같이 사용하기 위한 custom repo 구현체</strong></li>
+      <li>주의할 점은 <strong>구현체의 이름</strong>을 항상 <strong>스프링 데이터 JPA를 사용하는 Interface의 이름(”MemberRepository”) + “Impl” 로 설정</strong>해주어야 함 → 이래야지 스프링 데이터 JPA가 <strong>구현체를 인식하고 Custom Interface와 연결</strong>해줌!</li>
+      <li>QueryDSL을 사용하기 위해 <strong>JPAQueryFactory를 의존성 주입</strong>해줌</li>
+      <li>custom Interface에서 정의한 <code class="language-plaintext highlighter-rouge">search()</code> <strong>메서드 구현</strong> → 이전과 동일한 method (Where절에 파라미터를 이용하여 동적 쿼리 작성)
+        <ol>
+          <li><strong>스프링 데이터 JPA를 사용하는 리포지토리 인터페이스에 사용자 정의 인터페이스 상속 → <code class="language-plaintext highlighter-rouge">extends JPARepository&lt;Member, Long&gt; , MemberRepoCustom)</code></strong></li>
+        </ol>
+      </li>
+    </ul>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">MemberRepository</span> <span class="kd">extends</span> <span class="nc">JpaRepository</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">,</span> <span class="nc">Long</span><span class="o">&gt;,</span> <span class="nc">MemberRepositoryCustom</span> <span class="o">{</span>
+      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="nf">findByUsername</span><span class="o">(</span><span class="nc">String</span> <span class="n">username</span><span class="o">);</span> <span class="c1">// 메서드 이름을 통한 자동 쿼리 생성</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>이렇게 되면 <strong>스프링 데이터 JPA를 사용하는 MemberRepository 에서도 Querydsl을 이용한 method 사용 가능</strong> → <code class="language-plaintext highlighter-rouge">memberRepository.search(…)</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="querydsl-페이징-연동">Querydsl 페이징 연동</h3>
+
+<ul>
+  <li><strong>Spring Data 의 Page, Pageable을 사용</strong>해서 <strong>Querydsl로도 페이징 기능을 구현</strong>해보기</li>
+  <li>
+    <p>Queyrdsl을 위한 <strong>Custom Repository에 페이징 기능을 포함한 method 추가</strong></p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">MemberRepositoryCustom</span> <span class="o">{</span>
+    
+      <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberTeamDto</span><span class="o">&gt;</span> <span class="nf">search</span><span class="o">(</span><span class="nc">MemberSearchCond</span> <span class="n">condition</span><span class="o">);</span>
+    
+      <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">MemberTeamDto</span><span class="o">&gt;</span> <span class="nf">searchPage</span><span class="o">(</span><span class="nc">MemberSearchCond</span> <span class="n">condition</span><span class="o">,</span> <span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">Page&lt;MemberTeamDto&gt; searchPage(MemberSearchCond condition, Pageable pageable);</code>
+        <ul>
+          <li>pageable에 <strong>page 조건을 넣어주면 Page로 사용할 수 있게 끔 반환</strong></li>
+          <li>해당 method를 구현체에서 구현해주기만 하면 됨</li>
+          <li>즉, <strong>Pageable을 사용한 Querydsl의 동적 쿼리로 Page 반환 가능</strong> → 그대로 웹계층에서 Page를 통해 페이징 기능 사용 가능!</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">searchPage()</code> method 구현
+    <ul>
+      <li>
+        <p>쿼리 결과(content) 부분</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">MemberTeamDto</span><span class="o">&gt;</span> <span class="n">content</span> <span class="o">=</span> <span class="n">queryFactory</span>
+  	      <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="k">new</span> <span class="nc">QMemberTeamDto</span><span class="o">(</span>
+  	              <span class="n">member</span><span class="o">.</span><span class="na">id</span><span class="o">,</span> <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">,</span> <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">,</span> <span class="n">team</span><span class="o">.</span><span class="na">id</span><span class="o">,</span> <span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">))</span>
+  	      <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+  	      <span class="o">.</span><span class="na">leftJoin</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">team</span><span class="o">,</span> <span class="n">team</span><span class="o">)</span>
+  	      <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">usernameEq</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getUsername</span><span class="o">()),</span> <span class="c1">// 해당 메서드에서 null을 반환하게 되면 무시됨</span>
+  	              <span class="n">teamNameEq</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getTeamName</span><span class="o">()),</span>
+  	              <span class="n">ageGoe</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getAgeGoe</span><span class="o">()),</span>
+  	              <span class="n">ageLoe</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getAgeLoe</span><span class="o">()))</span>
+  	      <span class="o">.</span><span class="na">orderBy</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">asc</span><span class="o">())</span>
+  	      <span class="o">.</span><span class="na">offset</span><span class="o">(</span><span class="n">pageable</span><span class="o">.</span><span class="na">getOffset</span><span class="o">())</span>
+  	      <span class="o">.</span><span class="na">limit</span><span class="o">(</span><span class="n">pageable</span><span class="o">.</span><span class="na">getPageSize</span><span class="o">())</span>
+  	      <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong>Pageable(페이징 정보를 담은 객체)</strong> 에서 <strong>offset</strong>과 <strong>page size</strong>를 얻어와 <code class="language-plaintext highlighter-rouge">.offset()</code> 과 <code class="language-plaintext highlighter-rouge">.limit()</code> 설정을 통해 <strong>페이징 구현</strong>
+            <ul>
+              <li><code class="language-plaintext highlighter-rouge">.offset(pageable.getOffset())</code></li>
+              <li><code class="language-plaintext highlighter-rouge">.limit(pageable.getPageSize())</code></li>
+            </ul>
+          </li>
+          <li><code class="language-plaintext highlighter-rouge">~~.fetchResults()~~</code> 를 사용할 수 없게 됨으로써 <strong>직접 count query 작성 필요</strong></li>
+        </ul>
+      </li>
+      <li>
+        <p>전체 개수 조회 부분</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Long</span> <span class="n">total</span> <span class="o">=</span> <span class="n">queryFactory</span>
+        <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">count</span><span class="o">())</span> <span class="c1">// count query -&gt; fetchCount 대용</span>
+        <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">leftJoin</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">team</span><span class="o">,</span> <span class="n">team</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">usernameEq</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getUsername</span><span class="o">()),</span> <span class="c1">// 해당 메서드에서 null을 반환하게 되면 무시됨</span>
+                <span class="n">teamNameEq</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getTeamName</span><span class="o">()),</span>
+                <span class="n">ageGoe</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getAgeGoe</span><span class="o">()),</span>
+                <span class="n">ageLoe</span><span class="o">(</span><span class="n">cond</span><span class="o">.</span><span class="na">getAgeLoe</span><span class="o">()))</span>
+        <span class="o">.</span><span class="na">fetchOne</span><span class="o">();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>성능 최적화 및 <code class="language-plaintext highlighter-rouge">~~.fetchResults()~~</code> 를 사용할 수 없게됨으로써 <strong>직접 count query</strong> 생성</li>
+          <li><code class="language-plaintext highlighter-rouge">~~.fetchCount()~~</code> 가 없어짐으로써 <code class="language-plaintext highlighter-rouge">member.count()</code> 를 통해 <strong>전체 개수를 가져</strong>옴</li>
+        </ul>
+      </li>
+      <li>
+        <p>content(쿼리 결과 내용)와 total(전체 개수)를 통해 <strong>Page 생성</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">return</span> <span class="k">new</span> <span class="nc">PageImpl</span><span class="o">&lt;&gt;(</span><span class="n">content</span><span class="o">,</span> <span class="n">pageable</span><span class="o">,</span> <span class="n">total</span><span class="o">);</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><strong>Page</strong>를 통해 반환하여 <strong>웹 계층에서 직접 페이징 기능을 사용</strong>할 수 있도록 설정</li>
+          <li><code class="language-plaintext highlighter-rouge">PageImpl&lt;&gt;</code> 에 <strong>쿼리 결과 내용, 페이징 정보, 전체 개수</strong>를 넣어 <strong>Page 객체를 생성</strong>하여 반환</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>Querydsl + Page 를 사용하기 위한 <strong>컨트롤러</strong> 개발</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/v2/members"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">Page</span><span class="o">&lt;</span><span class="nc">MemberTeamDto</span><span class="o">&gt;</span> <span class="nf">searchMemberByPage</span><span class="o">(</span><span class="nc">MemberSearchCond</span> <span class="n">cond</span><span class="o">,</span> <span class="nc">Pageable</span> <span class="n">pageable</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">memberRepository</span><span class="o">.</span><span class="na">searchPage</span><span class="o">(</span><span class="n">cond</span><span class="o">,</span> <span class="n">pageable</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>기존에 생성했던 <code class="language-plaintext highlighter-rouge">MemberController</code>에 <code class="language-plaintext highlighter-rouge">searchMemberByPage</code>추가</li>
+      <li><code class="language-plaintext highlighter-rouge">“/v2/members”</code> 에서의 RequestParam 으로 받아온 <strong>MemberSearchCond(검색 조건)</strong> 과 <strong>Pageable(페이징 정보)</strong>를 통해 searchPage 동작</li>
+      <li>ex) <strong>?uesrname=kim&amp;page=0&amp;size=16</strong> ⇒ username이 “kim”인 member를 조회하는데 16개로 끊어진 페이지에서 가장 첫번째 페이지의 결과를 가져오라 → <strong>Page정보를 가진 JSON으로 반환</strong></li>
+      <li>Page로 반환되었기 때문에 <strong>content 뿐만 아닌 page 정보들이 JSON으로 반환</strong>됨 → API 호출의 결과</li>
+    </ul>
+  </li>
+</ul>
+:ET

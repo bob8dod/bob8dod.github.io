@@ -1,0 +1,874 @@
+I"7<h2 id="querydsl">Querydsl</h2>
+
+<h3 id="querydsl-이란">Querydsl 이란?</h3>
+
+<ul>
+  <li><strong>정적 타입</strong>을 이용해서 SQL과 같은 쿼리를 생성할 수 있도록 해주는 프레임워크</li>
+  <li>JPA나 Spring Data JPA와 같이 문자열로 JPQL을 작성하는 것과는 다르게 <strong>자바코드로써 SQL 쿼리를 작성</strong>할 수 있는 것</li>
+  <li>즉, SQL, JPQL을 자바 코드로 작성할 수 있도록 도와주는 <strong>오픈소스 빌더 API</strong></li>
+  <li>장점
+    <ul>
+      <li><strong>쿼리를 자바 코드로 작성</strong> 가능 (+ 쉬운 SQL 스타일 문법, 재사용 가능)</li>
+      <li>그에 따라 문법 오류를 접근 시점이 아닌 <strong>컴파일 시점에 확인 가능</strong> (자바 코드로 작성하기 때문! → 자바 컴파일러가 문법 오류를 잡아줌!)
+        <ul>
+          <li>jpql 같은 경우 sql query를 문자열로 작성하기 때문에 컴파일 시점에 오류를 발견할 수 없음! (스프링 데이터 JPA의 <code class="language-plaintext highlighter-rouge">@Query</code>는 가능)</li>
+        </ul>
+      </li>
+      <li><strong>동적 쿼리 가능</strong></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="사용해야-되는-이유">사용해야 되는 이유</h3>
+
+<ul>
+  <li>최신 자바 백엔드 기술은 <strong>스프링 부트 + JPA + 스프링 데이터 JPA</strong> 기술들을 조합해서 사용하는 추세</li>
+  <li>하지만 이런 기술들로는 해결하지 못하는 <strong>한계점</strong> 존재 → <strong>복잡한 쿼리, 동적 쿼리</strong> (실무에서 복잡한 쿼리와 동적 쿼리는 필수적으로 사용됨)</li>
+  <li><strong>Querydsl</strong>을 사용하게 되면 <strong>복잡한 쿼리, 동적 쿼리를 자바 코드로 해결</strong>해 낼 수 있음</li>
+</ul>
+
+<h3 id="querydsl-설정-중요">Querydsl 설정 [중요]</h3>
+
+<ul>
+  <li><strong>Querydsl</strong>은 설정이 좀 까다로우며 <strong>버전에 따라 설정이 계속 변하</strong>여 <strong>버전 업데이트 시 항상 설정 부분에 유의</strong>해야 됨
+    <ol>
+      <li><strong>Querydsl 설정 (for Querydsl 5.0.0)</strong></li>
+    </ol>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">build.gradle</code> 에서 Querydsl을 사용할 수 있도록 <code class="language-plaintext highlighter-rouge">buildscript</code>, <code class="language-plaintext highlighter-rouge">plugins</code>, <code class="language-plaintext highlighter-rouge">dependencies</code>, <strong>+별도의 세팅</strong> 을 추가해주어야 함</li>
+      <li>
+        <p><strong>buildscript</strong> 설정 (<strong>버전</strong> 명시용)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">buildscript</span> <span class="o">{</span>
+  	<span class="n">ext</span> <span class="o">{</span>
+  		<span class="n">queryDslVersion</span> <span class="o">=</span> <span class="s">"5.0.0"</span>
+  	<span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p><strong>plugins</strong> 추가 (<strong>프레임워크로써 사용</strong>할 수 있게끔 설정)</p>
+
+        <p><code class="language-plaintext highlighter-rouge">id "com.ewerk.gradle.plugins.querydsl" version "1.0.10"</code></p>
+      </li>
+      <li>
+        <p><strong>dependecies</strong> 추가 (의존관계 추가 → 직접 <strong>가져와서 사용</strong>할 수 있게끔 설정)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">implementation</span> <span class="s">"com.querydsl:querydsl-jpa:${queryDslVersion}"</span>
+  <span class="n">annotationProcessor</span> <span class="s">"com.querydsl:querydsl-apt:${queryDslVersion}"</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>이전 버전에서는 annotationProcessor가 필요없었지만, 5.0.0 에선 필요</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>부가 설정</strong> (<strong>Q-Type을 뽑아내기</strong> 위한 설정)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">def</span> <span class="n">querydslDir</span> <span class="o">=</span> <span class="s">"$buildDir/generated/querydsl"</span> <span class="c1">// 저장 경로</span>
+  <span class="n">querydsl</span> <span class="o">{</span>
+  	<span class="n">jpa</span> <span class="o">=</span> <span class="kc">true</span>
+  	<span class="n">querydslSourcesDir</span> <span class="o">=</span> <span class="n">querydslDir</span>
+  <span class="o">}</span>
+  <span class="n">sourceSets</span> <span class="o">{</span> <span class="c1">// src 폴더에 해당 경로를 자동 import -&gt; Q-Type을 쓸 수 있게끔</span>
+  	<span class="n">main</span><span class="o">.</span><span class="na">java</span><span class="o">.</span><span class="na">srcDir</span> <span class="n">querydslDir</span>
+  <span class="o">}</span>
+  <span class="n">configurations</span> <span class="o">{</span>
+  	<span class="n">querydsl</span><span class="o">.</span><span class="na">extendsFrom</span> <span class="n">compileClasspath</span>
+  <span class="o">}</span>
+  <span class="n">compileQuerydsl</span> <span class="o">{</span>
+  	<span class="n">options</span><span class="o">.</span><span class="na">annotationProcessorPath</span> <span class="o">=</span> <span class="n">configurations</span><span class="o">.</span><span class="na">querydsl</span>
+  <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>전체 build.gradle</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">buildscript</span> <span class="o">{</span>
+  	<span class="n">ext</span> <span class="o">{</span>
+  		<span class="n">queryDslVersion</span> <span class="o">=</span> <span class="s">"5.0.0"</span>
+  	<span class="o">}</span>
+  <span class="o">}</span>
+        
+  <span class="n">plugins</span> <span class="o">{</span>
+  	<span class="n">id</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="err">'</span> <span class="n">version</span> <span class="err">'</span><span class="mf">2.7</span><span class="o">.</span><span class="mi">3</span><span class="err">'</span>
+  	<span class="n">id</span> <span class="err">'</span><span class="n">io</span><span class="o">.</span><span class="na">spring</span><span class="o">.</span><span class="na">dependency</span><span class="o">-</span><span class="n">management</span><span class="err">'</span> <span class="n">version</span> <span class="err">'</span><span class="mf">1.0</span><span class="o">.</span><span class="mi">13</span><span class="o">.</span><span class="na">RELEASE</span><span class="err">'</span>
+  	<span class="c1">// querydsl 추가</span>
+  	<span class="n">id</span> <span class="s">"com.ewerk.gradle.plugins.querydsl"</span> <span class="n">version</span> <span class="s">"1.0.10"</span>
+  	<span class="n">id</span> <span class="err">'</span><span class="n">java</span><span class="err">'</span>
+  <span class="o">}</span>
+        
+  <span class="n">group</span> <span class="o">=</span> <span class="err">'</span><span class="n">spring</span><span class="err">'</span>
+  <span class="n">version</span> <span class="o">=</span> <span class="err">'</span><span class="mf">0.0</span><span class="o">.</span><span class="mi">1</span><span class="o">-</span><span class="no">SNAPSHOT</span><span class="err">'</span>
+  <span class="n">sourceCompatibility</span> <span class="o">=</span> <span class="err">'</span><span class="mi">17</span><span class="err">'</span>
+        
+  <span class="n">configurations</span> <span class="o">{</span>
+  	<span class="n">compileOnly</span> <span class="o">{</span>
+  		<span class="n">extendsFrom</span> <span class="n">annotationProcessor</span>
+  	<span class="o">}</span>
+  <span class="o">}</span>
+        
+  <span class="n">repositories</span> <span class="o">{</span>
+  	<span class="n">mavenCentral</span><span class="o">()</span>
+  <span class="o">}</span>
+        
+  <span class="n">dependencies</span> <span class="o">{</span>
+  	<span class="n">implementation</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="o">:</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="n">starter</span><span class="o">-</span><span class="n">data</span><span class="o">-</span><span class="n">jpa</span><span class="err">'</span>
+  	<span class="n">implementation</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="o">:</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="n">starter</span><span class="o">-</span><span class="n">web</span><span class="err">'</span>
+        
+  	<span class="c1">// querydsl 추가</span>
+  	<span class="n">implementation</span> <span class="s">"com.querydsl:querydsl-jpa:${queryDslVersion}"</span>
+  	<span class="n">annotationProcessor</span> <span class="s">"com.querydsl:querydsl-apt:${queryDslVersion}"</span>
+        
+  	<span class="c1">// p6spy (qeury log)</span>
+  	<span class="n">implementation</span> <span class="err">'</span><span class="n">com</span><span class="o">.</span><span class="na">github</span><span class="o">.</span><span class="na">gavlyukovskiy</span><span class="o">:</span><span class="n">p6spy</span><span class="o">-</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="nl">starter:</span><span class="mf">1.8</span><span class="o">.</span><span class="mi">0</span><span class="err">'</span>
+        
+  	<span class="c1">// lombok for main</span>
+  	<span class="n">compileOnly</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">projectlombok</span><span class="o">:</span><span class="n">lombok</span><span class="err">'</span>
+  	<span class="n">annotationProcessor</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">projectlombok</span><span class="o">:</span><span class="n">lombok</span><span class="err">'</span>
+  	<span class="c1">// lombok for test</span>
+  	<span class="n">testCompileOnly</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">projectlombok</span><span class="o">:</span><span class="n">lombok</span><span class="err">'</span>
+  	<span class="n">testAnnotationProcessor</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">projectlombok</span><span class="o">:</span><span class="n">lombok</span><span class="err">'</span>
+        
+  	<span class="n">runtimeOnly</span> <span class="err">'</span><span class="n">com</span><span class="o">.</span><span class="na">h2database</span><span class="o">:</span><span class="n">h2</span><span class="err">'</span>
+  	<span class="n">testImplementation</span> <span class="err">'</span><span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="o">:</span><span class="n">spring</span><span class="o">-</span><span class="n">boot</span><span class="o">-</span><span class="n">starter</span><span class="o">-</span><span class="n">test</span><span class="err">'</span>
+  <span class="o">}</span>
+        
+  <span class="n">tasks</span><span class="o">.</span><span class="na">named</span><span class="o">(</span><span class="err">'</span><span class="n">test</span><span class="err">'</span><span class="o">)</span> <span class="o">{</span>
+  	<span class="n">useJUnitPlatform</span><span class="o">()</span>
+  <span class="o">}</span>
+        
+  <span class="c1">// querydsl 추가 세팅 시작</span>
+  <span class="n">def</span> <span class="n">querydslDir</span> <span class="o">=</span> <span class="s">"$buildDir/generated/querydsl"</span> <span class="c1">// 저장 경로</span>
+  <span class="n">querydsl</span> <span class="o">{</span>
+  	<span class="n">jpa</span> <span class="o">=</span> <span class="kc">true</span>
+  	<span class="n">querydslSourcesDir</span> <span class="o">=</span> <span class="n">querydslDir</span>
+  <span class="o">}</span>
+  <span class="n">sourceSets</span> <span class="o">{</span> <span class="c1">// src 폴더에 해당 경로를 자동 import -&gt; Q-Type을 쓸 수 있게끔</span>
+  	<span class="n">main</span><span class="o">.</span><span class="na">java</span><span class="o">.</span><span class="na">srcDir</span> <span class="n">querydslDir</span>
+  <span class="o">}</span>
+  <span class="n">configurations</span> <span class="o">{</span>
+  	<span class="n">querydsl</span><span class="o">.</span><span class="na">extendsFrom</span> <span class="n">compileClasspath</span>
+  <span class="o">}</span>
+  <span class="n">compileQuerydsl</span> <span class="o">{</span>
+  	<span class="n">options</span><span class="o">.</span><span class="na">annotationProcessorPath</span> <span class="o">=</span> <span class="n">configurations</span><span class="o">.</span><span class="na">querydsl</span>
+  <span class="o">}</span>
+  <span class="c1">// querydsl 세팅 끝</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<ol>
+  <li><strong>Querydsl 동작 확인</strong> (<strong>Q-Type 생성 확인</strong>)
+    <ul>
+      <li>먼저 <strong>External Libraries</strong>에서 <strong>querydsl</strong> 관련된 것들이 <strong>implementation</strong> 되었다면 잘 받아와 진 것</li>
+      <li>그 후 임시 Entity 하나를 생성하고 <code class="language-plaintext highlighter-rouge">Gradle → other → complieQuerydsl</code> 을 동작시켜 <strong>해당 Entity에 대한 Q-Type</strong>이 지정된 경로(여기선 build/generated/querydsl)에 <strong>생성되는지 확인</strong> <strong>(Hello → QHello)</strong>
+        <ul>
+          <li>터미널로 실행하고자 하면 <code class="language-plaintext highlighter-rouge">./gredlew complieQuerydsl</code> or <code class="language-plaintext highlighter-rouge">./gredlewJava</code></li>
+          <li>생성된 모든 Q-Type을 제거하고자 하면 <code class="language-plaintext highlighter-rouge">./gredlew clean</code></li>
+          <li>참고로 해당 생성된 파일들은 <strong>git에 올리면 안됨</strong> (build 하위에 생성되게 설정하여 git에 올라가지 않게 함)</li>
+          <li><strong>[중요] Querydsl을 사용하려면 항상 Entity의 Q-Type이 필요</strong>하기에 <strong>Entity 생성 후 항상 complieQuerydsl을 실행</strong>해 주어야 함</li>
+        </ul>
+      </li>
+      <li>위의 모든 과정이 제대로 동작한다면 Querydsl 사용 가능!
+    - Querydsl 라이브러리 살펴보기</li>
+      <li><code class="language-plaintext highlighter-rouge">com.querydsl:querydsl-apt:5.0.0</code> → <strong>Q-Type 을 generate 하는 용도</strong>의 library</li>
+      <li><code class="language-plaintext highlighter-rouge">com.querydsl:querydsl-jpa:5.0.0</code> → <strong>실제 웹 어플리케이션 작성할 때 필요한 library</strong> (jpa 특화용. sql,Mongodb 등 다양하게 지원)</li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="사용-도메인">사용 도메인</h2>
+
+<ul>
+  <li>
+    <p>엔티티</p>
+
+    <p><img src="Querydsl%20-%20Basic%20e660156b9a954ad69df80688058c09ec/Untitled.png" alt="Untitled" /></p>
+  </li>
+  <li>
+    <p>ERD(Entity Relationship Diagram)</p>
+
+    <p><img src="Querydsl%20-%20Basic%20e660156b9a954ad69df80688058c09ec/Untitled%201.png" alt="Untitled" /></p>
+  </li>
+  <li>
+    <p>연관관계 정의</p>
+    <ul>
+      <li>Member ↔ Team
+        <ul>
+          <li>다대일↔일대다 양방향 관계</li>
+        </ul>
+      </li>
+      <li>
+        <p>Member Entity</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">fetch</span> <span class="o">=</span> <span class="nc">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
+  <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">"team_id"</span><span class="o">)</span>
+  <span class="kd">private</span> <span class="nc">Team</span> <span class="n">team</span><span class="o">;</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@ManyToOne(fetch = FetchType.LAZY)</code> : Team Entity와 <strong>다대일 관계</strong>를 표시, <strong>지연로딩</strong>을 통해 Proxy객체가 설정될 수 있도록 세팅</li>
+          <li><code class="language-plaintext highlighter-rouge">@JoinColumn(name = "team_id")</code> : DB Table의 team_id col과 매핑하여 <strong>PK로 사용</strong>하겠다는 뜻. → <strong>연관관계의 주인</strong> 설정</li>
+        </ul>
+      </li>
+      <li>
+        <p>Team Entity</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">mappedBy</span> <span class="o">=</span> <span class="s">"team"</span><span class="o">)</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">members</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">@OneToMany(mappedBy = "team")</code> : Member Entity와 <strong>일대다 관계</strong>. 연관관계의 주인이 아니며 Member의 team에 의해 <strong>매핑된 field</strong> 라고 선언</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="기본-문법">기본 문법</h2>
+
+<h3 id="jpaqueryfactory">JPAQueryFactory</h3>
+
+<ul>
+  <li><strong>Querydsl을 실행</strong>해주는 역할 (JPA로 치면 <strong>EntityManger</strong>같은 역할)</li>
+  <li>사용법 2가지
+    <ol>
+      <li>
+        <p><strong>new 오퍼레이션</strong>을 통해 인스턴스 할당</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nd">@Repository</span>
+ <span class="kd">public</span> <span class="kd">class</span> <span class="nc">MemberJPARepository</span> <span class="o">{</span>
+        
+     <span class="nd">@PersistenceContext</span>
+     <span class="kd">private</span> <span class="nc">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+        
+     <span class="kd">private</span> <span class="kd">final</span> <span class="nc">JPAQueryFactory</span> <span class="n">queryFactory</span><span class="o">;</span>
+        
+     <span class="kd">public</span> <span class="nf">MemberJPARepository</span><span class="o">()</span> <span class="o">{</span>
+         <span class="k">this</span><span class="o">.</span><span class="na">queryFactory</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">JPAQueryFactory</span><span class="o">(</span><span class="n">em</span><span class="o">);</span>
+     <span class="o">}</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>원래는 생성자에서 <code class="language-plaintext highlighter-rouge">MemberJPARepository(EntityManger em)</code> 으로 할 수 있었으나 EntityManger를 JPA에서 주입시키기 때문에 <strong>먼저 JPA가 EntityManger를 주입</strong>(<code class="language-plaintext highlighter-rouge">@PersistenceContext</code>)시킨 후에 <strong>해당 em 을 JPAQueryFactory에 할당</strong>해주어야 함</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>[권장] Bean으로 등록해서 의존성 주입(Dependency Injection)</strong>하여 사용</p>
+        <ul>
+          <li>
+            <p>최상단 Application(<code class="language-plaintext highlighter-rouge">@SpringBootApplication</code>)에서 <strong>JPAQueryFactory</strong>를 <strong>Bean</strong>으로 등록</p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@SpringBootApplication</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">QuerydslApplication</span> <span class="o">{</span>
+            
+  	<span class="nd">@PersistenceContext</span>
+  	<span class="nc">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+            	
+  	<span class="nd">@Bean</span> <span class="c1">//빈으로 등록 </span>
+  	<span class="nc">JPAQueryFactory</span> <span class="nf">jpaQueryFactory</span><span class="o">()</span> <span class="o">{</span>
+  		<span class="k">return</span> <span class="k">new</span> <span class="nf">JPAQueryFactory</span><span class="o">(</span><span class="n">em</span><span class="o">);</span>
+  	<span class="o">}</span>
+            
+  	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{...}</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li>원래는 생성자에서 <code class="language-plaintext highlighter-rouge">MemberJPARepository(EntityManger em)</code> 으로 할 수 있었으나 EntityManger를 JPA에서 주입시키기 때문에 <strong>먼저 JPA가 EntityManger를 주입</strong>(<code class="language-plaintext highlighter-rouge">@PersistenceContext</code>)시킨 후에 <strong>해당 em 을 JPAQueryFactory에 할당</strong>해주어야 함</li>
+            </ul>
+          </li>
+          <li>
+            <p><strong>[권장]</strong> 혹은 <strong>Config</strong>(<code class="language-plaintext highlighter-rouge">@Configuration</code>)에서 <strong>JPAQueryFactory를 Bean으로 등록</strong></p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Configuration</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">QuerydslConfig</span> <span class="o">{</span>
+            
+      <span class="nd">@PersistenceContext</span>
+      <span class="kd">private</span> <span class="nc">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+            
+      <span class="nd">@Bean</span> <span class="c1">//빈으로 등록</span>
+      <span class="nc">JPAQueryFactory</span> <span class="nf">jpaQueryFactory</span><span class="o">()</span> <span class="o">{</span>
+          <span class="k">return</span> <span class="k">new</span> <span class="nf">JPAQueryFactory</span><span class="o">(</span><span class="n">em</span><span class="o">);</span>
+      <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+          </li>
+          <li>
+            <p><strong>[권장]</strong> 마지막으로 <strong>Repository단</strong>에 <strong>의존성 주입</strong></p>
+
+            <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Repository</span>
+  <span class="nd">@RequiredArgsConstructor</span>
+  <span class="kd">public</span> <span class="kd">class</span> <span class="nc">MemberJPARepository</span> <span class="o">{</span>
+            
+      <span class="kd">private</span> <span class="kd">final</span> <span class="nc">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+      <span class="kd">private</span> <span class="kd">final</span> <span class="nc">JPAQueryFactory</span> <span class="n">queryFactory</span><span class="o">;</span>
+  		<span class="o">...</span>
+  <span class="o">}</span>
+</code></pre></div>            </div>
+
+            <ul>
+              <li><strong>JPAQueryFactory가 bean으로 등록</strong>되었기 때문에 <strong>생성자로 주입이 가능</strong>하며, 따라서 <code class="language-plaintext highlighter-rouge">@RequiredArgsConstructor</code> 를 통해서 <strong>자동 주입 가능!</strong></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+</ul>
+
+<aside>
+💡 **JPAQueryFactory를 Bean으로 등록 시 EntityManger의 동시성 문제**
+
+Spring은 여러 Thread에서 동시에 같은 EntityManager에 접근해도, 트랜잭션 마다 **별도의 영속성 컨텍스트를 제공**하기 때문에, **동시성 문제는 걱정하지 않아도 됨**
+
+</aside>
+
+<h3 id="기본-q-type-활용">기본 Q-Type 활용</h3>
+
+<ul>
+  <li><strong>Querydsl을 사용</strong>하기 위해선 항상 <strong>JPAQueryFactory</strong> + <strong>Entity의 Q-Type의 인스턴스</strong>를 이용하여 코드를 작성해주어야 함</li>
+  <li>이런 <strong>Q-Type Class의 인스턴스를 사용하는 방법</strong>은 2가지</li>
+  <li><strong>별칭을 직접 지정</strong>하여 <strong>인스턴스</strong> 생성
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">QMember qMember = new QMember("m");</code> → SQL로 치면 as 를 통해 <strong>별칭을 주는</strong> 역할
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">from QMember as m</code> 으로 SQL을 짜는 거라고 생각하면 됨</li>
+        </ul>
+      </li>
+      <li><strong>가장 기본</strong>적인 방법</li>
+      <li><strong>[중요]</strong> 잘 사용되지는 않지만, <strong>같은 테이블(Entity)</strong>에 대한 <strong>Join, SubQuery</strong>를 실행할 때 <strong>각각을 구분하기 위해 사용</strong>됨 → 즉, <strong>인스턴스를 2개 할당</strong>해야 될 때 (같은 인스턴스를 Join하거나 subQuery로 이용할 경우 충돌! ⇒ Querydsl - Advanced 의 subQuery 부분 참고)</li>
+    </ul>
+  </li>
+  <li><strong>[권장]</strong> <strong>기본 인스턴스</strong> 사용
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">QMember qMember = QMember.member;</code></li>
+      <li><strong>자주 사용</strong>되는 방법</li>
+      <li>Q-Type에서 <strong>기본으로 제공하는 인스턴스</strong>를 사용하는 것 → SQL로 치면 as 를 통해 별칭을 자동으로 주도록 하는 것</li>
+      <li><strong>static import 를 통해 <code class="language-plaintext highlighter-rouge">QMember.member</code> → <code class="language-plaintext highlighter-rouge">*member</code>* 로 사용하는 것을 권장</strong></li>
+    </ul>
+  </li>
+  <li>
+    <p>권장 방법 예시</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kn">import</span> <span class="nn">static</span> <span class="n">study</span><span class="o">.</span><span class="na">querydsl</span><span class="o">.</span><span class="na">entity</span><span class="o">.</span><span class="na">QMember</span><span class="o">.*;</span>
+    
+  <span class="nc">Member</span> <span class="n">findMember</span> <span class="o">=</span> <span class="n">queryFactory</span>
+              <span class="o">.</span><span class="na">select</span><span class="o">(*</span><span class="n">member</span><span class="o">*)</span> <span class="c1">// 원래 QMember.member</span>
+              <span class="o">.</span><span class="na">from</span><span class="o">(*</span><span class="n">member</span><span class="o">*)</span>
+              <span class="o">.</span><span class="na">where</span><span class="o">(*</span><span class="n">member</span><span class="o">*.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="s">"member1"</span><span class="o">))</span>
+              <span class="o">.</span><span class="na">fetchOne</span><span class="o">();</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h3 id="기본-조회">기본 조회</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">all</span> <span class="o">=</span> <span class="n">queryFactory</span>
+            <span class="o">.</span><span class="na">select</span><span class="o">(*</span><span class="n">member</span><span class="o">*)</span> <span class="c1">// QMember.member</span>
+            <span class="o">.</span><span class="na">from</span><span class="o">(*</span><span class="n">member</span><span class="o">*)</span>
+            <span class="o">.</span><span class="na">fetchAll</span><span class="o">();</span>
+</code></pre></div></div>
+
+<ul>
+  <li>JPQL의 기본 조회 <code class="language-plaintext highlighter-rouge">“select m form Member m”</code> 을 <strong>Querydsl을 통해 자바코드로 작성</strong></li>
+  <li><code class="language-plaintext highlighter-rouge">.select()</code>
+    <ul>
+      <li>Querydsl 에서 자바코드를 통해 <strong>조회</strong>하는 방법</li>
+      <li>항상 마지막에는 <code class="language-plaintext highlighter-rouge">fetch(), fetch…()</code> 을 통해 직접 가져와야 함 (순수 JPA의 <code class="language-plaintext highlighter-rouge">.getResultList()</code> 등과 같은 역할)</li>
+      <li><code class="language-plaintext highlighter-rouge">.selectFrom()</code> 을 통해 <code class="language-plaintext highlighter-rouge">**from</code> 절과 통합 가능**</li>
+      <li><strong>distinct</strong>를 사용하고 싶으면 <code class="language-plaintext highlighter-rouge">select()</code> 바로 뒤에 <strong>체인 형식으로 <code class="language-plaintext highlighter-rouge">distinct()</code> 적용</strong>해주면 됨 → <code class="language-plaintext highlighter-rouge">.select(…).distinct().from(…)</code></li>
+    </ul>
+  </li>
+</ul>
+
+<blockquote>
+  <p>참고 : Querydsl의 결과로 실행되는 JPQL 확인 방법 → application.yml 에서 <code class="language-plaintext highlighter-rouge">spring.jpa.properties.hibernate.use_sql_comments: true</code> 설정 추가</p>
+
+</blockquote>
+
+<h3 id="검색-조건-쿼리">검색 조건 쿼리</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Member</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+          <span class="o">.</span><span class="na">selectFrom</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="s">"member1"</span><span class="o">)</span>
+                  <span class="o">.</span><span class="na">and</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">between</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">)))</span>
+          <span class="o">.</span><span class="na">fetchOne</span><span class="o">();</span>
+</code></pre></div></div>
+
+<ul>
+  <li>JPQL의 <code class="language-plaintext highlighter-rouge">“where …"</code>  을 <strong>Querydsl을 통해 자바코드</strong>로 작성</li>
+  <li>검색 조건
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">member.username.eq("member1")</code>
+        <ul>
+          <li>to JPQL : <code class="language-plaintext highlighter-rouge">m.username = ?1</code> , <code class="language-plaintext highlighter-rouge">.setParameter(”member1”)</code></li>
+          <li><strong>체인 형식</strong>으로 field에 <strong>조건 및 파라미터 자동 바인딩</strong> 가능</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">.and(member.age.between(10, 20))</code>
+        <ul>
+          <li>to JPQL : <code class="language-plaintext highlighter-rouge">and m.age between 10 , 50</code></li>
+          <li><code class="language-plaintext highlighter-rouge">.and()</code> 와 같이 <strong>체인 형식으로 조건 추가 가능</strong> (<code class="language-plaintext highlighter-rouge">.or()</code> 도 가능)</li>
+        </ul>
+      </li>
+      <li>결과
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">.where(member.username.eq("member1").and(member.age.between(10, 20)))</code></li>
+          <li>to JPQL : <code class="language-plaintext highlighter-rouge">where m.username = ?1 and m.age between 10 and 50</code></li>
+          <li>추가로 <code class="language-plaintext highlighter-rouge">where()</code> 절의 <code class="language-plaintext highlighter-rouge">.and()</code> 는 <code class="language-plaintext highlighter-rouge">‘,’</code>로도 표현 가능 → <code class="language-plaintext highlighter-rouge">.where(member.username.eq("member1") , member.age.between(10, 20))</code>
+            <ul>
+              <li><strong>해당 파라미터에 null이 들어갈 경우 무시</strong> → <code class="language-plaintext highlighter-rouge">where(member.username.eq("member1"), null)</code> <strong>⇒ null은 무시</strong></li>
+              <li>이 표현식은 <strong>동적 쿼리 적용</strong> 시 굉장히 유용함</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>JPQL이 제공하는 모든 검색 조건 제공</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="s">"member1"</span><span class="o">)</span> <span class="c1">// username = 'member1'</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">ne</span><span class="o">(</span><span class="s">"member1"</span><span class="o">)</span> <span class="c1">// username != 'member1'</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="s">"member1"</span><span class="o">).</span><span class="na">not</span><span class="o">()</span> <span class="c1">// username != 'member1'</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">isNotNull</span><span class="o">()</span> <span class="c1">// name is not null -&gt; 이름이 null이 아닌것만</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">in</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">)</span> <span class="c1">// age in (10,20)</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">notIn</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">)</span> <span class="c1">// age not in (10, 20)</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">between</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span><span class="mi">30</span><span class="o">)</span> <span class="c1">// between 10 and 30</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">goe</span><span class="o">(</span><span class="mi">30</span><span class="o">)</span> <span class="c1">// age &gt;= 30</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">gt</span><span class="o">(</span><span class="mi">30</span><span class="o">)</span> <span class="c1">// age &gt; 30</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">loe</span><span class="o">(</span><span class="mi">30</span><span class="o">)</span> <span class="c1">// age &lt;= 30</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">lt</span><span class="o">(</span><span class="mi">30</span><span class="o">)</span> <span class="c1">// age &lt; 30</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">like</span><span class="o">(</span><span class="s">"member%"</span><span class="o">)</span> <span class="c1">// 기본 like 검색 %필수</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">contains</span><span class="o">(</span><span class="s">"member"</span><span class="o">)</span> <span class="c1">// like ‘%member%’ 검색</span>
+  <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"member"</span><span class="o">)</span> <span class="c1">// like ‘member%’ 검색</span>
+  <span class="o">...</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h3 id="결과-조회">결과 조회</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">fetch</span> <span class="o">=</span> <span class="n">queryFactory</span>
+	 <span class="o">.</span><span class="na">selectFrom</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+	 <span class="o">.</span><span class="na">fetch</span><span class="o">();</span> <span class="c1">// .fetchOne(), .fetchFirst(), ...</span>
+</code></pre></div></div>
+
+<ul>
+  <li><strong>결과를 어떻게 가져오냐</strong>에 대한 설정 (순수 JPA로 치면 <code class="language-plaintext highlighter-rouge">.getSingleResult()</code>, <code class="language-plaintext highlighter-rouge">.getResultList()</code> 역할)</li>
+  <li><code class="language-plaintext highlighter-rouge">fetch()</code> : <strong>List 조회</strong>, 데이터 없을 시 빈 리스트 반환</li>
+  <li><code class="language-plaintext highlighter-rouge">fetchOne()</code> : <strong>단건 조회</strong>
+    <ul>
+      <li>결과 없으면 <code class="language-plaintext highlighter-rouge">null</code> 반환</li>
+      <li>결과가 <strong>둘 이상이면 Exception</strong> 발생 (<code class="language-plaintext highlighter-rouge">com.querydsl.core.NonUniqueResultException</code>)</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">fetchFirst()</code>
+    <ul>
+      <li>결과들 중 <strong>가장 먼저나오는 결과 하나</strong>를 반환</li>
+      <li><code class="language-plaintext highlighter-rouge">limit(1).fetchOne()</code> 과 동일</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">~~fetchResults()~~</code>
+    <ul>
+      <li>content, count 를 구분하여 query 생성 → 2개의 query가 나감</li>
+      <li><strong>ver 5.0.0 부터 사용 금지</strong> <strong>⇒</strong> <strong>직접 content 쿼리와 count 쿼리를 구분해서 사용</strong>해야됨</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">~~fetchCount()~~</code>
+    <ul>
+      <li>count query</li>
+      <li><strong>ver 5.0.0 부터 사용 금지 ⇒ <code class="language-plaintext highlighter-rouge">member.count()</code> 로 대체하여 사용</strong>해야 됨</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="정렬">정렬</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+      <span class="o">.</span><span class="na">selectFrom</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+      <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
+      <span class="o">.</span><span class="na">orderBy</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">desc</span><span class="o">(),</span> <span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">asc</span><span class="o">().</span><span class="na">nullsLast</span><span class="o">())</span>
+      <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">.orderBy()</code> 사용</li>
+  <li>원하는 <strong>필드에 체인형식</strong>으로 <code class="language-plaintext highlighter-rouge">.desc()</code>, <code class="language-plaintext highlighter-rouge">.asc()</code> 를 달아 <strong>정렬 기준 선택</strong> 가능 (<strong>정렬 기준 둘 중 하나를 무조건 선택</strong>해주어야 함 → <strong>default 설정이 없음</strong>)</li>
+  <li>추가로 <code class="language-plaintext highlighter-rouge">**nullsLast()**</code> 를 통해 <strong>null인 항목에 대한 순서 지정</strong> 가능 → <strong>null 이면 마지막</strong>으로 (<code class="language-plaintext highlighter-rouge">nullsFirst()</code> : <strong>null이면 처음</strong>으로)</li>
+  <li>핵심
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">desc()</code> , <code class="language-plaintext highlighter-rouge">asc()</code> : 일반 정렬 → 정렬을 위해 <strong>필수적인 요소</strong></li>
+      <li><code class="language-plaintext highlighter-rouge">nullsLast()</code> , <code class="language-plaintext highlighter-rouge">nullsFirst()</code> : <strong>null 데이터 순서</strong> 부여</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="페이징">페이징</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+          <span class="o">.</span><span class="na">selectFrom</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">orderBy</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">asc</span><span class="o">())</span>
+          <span class="o">.</span><span class="na">offset</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="c1">// 1번째 데이터부터 (0부터 시작)</span>
+          <span class="o">.</span><span class="na">limit</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="c1">// 최대 2건 가져오기</span>
+          <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div></div>
+
+<ul>
+  <li><strong>offset</strong> 과 <strong>limit</strong> 을 통해 페이징 동작</li>
+  <li><code class="language-plaintext highlighter-rouge">.offset()</code> : <strong>시작 데이터</strong> 설정 (몇번째 데이터부터 가져올 것인지. <strong>0부터 시작</strong>)</li>
+  <li><code class="language-plaintext highlighter-rouge">.limit()</code> : 가져올 <strong>데이터 개수</strong> 설정 (몇개를 가져올 것인지)</li>
+</ul>
+
+<aside>
+💡 **Querydsl의 버전 변경에 따른 페이징 주의!**
+원래는 `.fetchResults()` 를 통해서 페이징 정보를 얻어올 수 있지만, **ver 5.0.0 부터 `.fetchResults()` 를 사용하지 못하**므로 **직접 정보를 얻어오기 위한 쿼리를 동작**해주어야 함
+
+</aside>
+
+<h3 id="집합-함수">집합 함수</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Tuple</span> <span class="n">tuple</span> <span class="o">=</span> <span class="n">queryFactory</span>
+            <span class="o">.</span><span class="na">select</span><span class="o">(</span>
+                    <span class="n">member</span><span class="o">.</span><span class="na">count</span><span class="o">(),</span> <span class="c1">// 개수</span>
+                    <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">sum</span><span class="o">(),</span> <span class="c1">// 합</span>
+                    <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">min</span><span class="o">(),</span> <span class="c1">// 최소값</span>
+                    <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">max</span><span class="o">(),</span> <span class="c1">// 최대값</span>
+                    <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">avg</span><span class="o">()</span> <span class="c1">// 평균</span>
+            <span class="o">)</span>
+						<span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">).</span><span class="na">fetchOne</span><span class="o">();</span>
+</code></pre></div></div>
+
+<ul>
+  <li>SQL에서 지원하는 <strong>대부분의 함수 사용 가능</strong></li>
+  <li>JPQL과는 다르게 <strong>field에 체인형식으로 적용</strong></li>
+  <li><code class="language-plaintext highlighter-rouge">Tuple</code>
+    <ul>
+      <li><strong>단일 객체의 결과가 아니기 때문에 Tuple로 반환</strong>됨</li>
+      <li><code class="language-plaintext highlighter-rouge">get()</code> 을 통해 <strong>값 접근</strong> 가능 → <code class="language-plaintext highlighter-rouge">tuple.get(*member*.count())</code></li>
+      <li>Querydsl - Advanced 파트 참고</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="그룹화">그룹화</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">List</span><span class="o">&lt;</span><span class="nc">Tuple</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+                <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">,</span> <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">avg</span><span class="o">())</span>
+                <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">join</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">team</span><span class="o">,</span> <span class="n">team</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">groupBy</span><span class="o">(</span><span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div></div>
+
+<ul>
+  <li><strong>groupBy</strong>를 통해서 <strong>grouping</strong> 진행
+    <ul>
+      <li>ex) member에 team을 join 시킨 후 team의 name으로 그룹화를 시킨 후 (teamA : {member1, member2}, teamB : {…}) member의 age를 평균내어 반환 → [{teamA, 20},{teamB,30}]</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">.groupBy()</code>
+    <ul>
+      <li>그룹화하고자 하는 field 부여</li>
+      <li>
+        <p><code class="language-plaintext highlighter-rouge">.having()</code> 도 사용 가능 → <strong>그룹화된 결과 필터링</strong></p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="o">.</span><span class="na">groupBy</span><span class="o">(</span><span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">)</span>
+  <span class="o">.</span><span class="na">having</span><span class="o">(</span><span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="s">"teamA"</span><span class="o">))</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="조인">조인</h3>
+
+<ul>
+  <li>내부 조인(inner join) : <code class="language-plaintext highlighter-rouge">.join()</code> , <code class="language-plaintext highlighter-rouge">.innerJoin()</code></li>
+  <li>left 외부 조인(left outer join) : <code class="language-plaintext highlighter-rouge">.leftJoin()</code></li>
+  <li>right 외부 조인(right outer join) : <code class="language-plaintext highlighter-rouge">.rightJoin()</code></li>
+  <li>
+    <p><strong>기본 조인</strong></p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+  		 <span class="o">.</span><span class="na">selectFrom</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">join</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">team</span><span class="o">,</span> <span class="n">team</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="s">"teamA"</span><span class="o">))</span>
+  		 <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">join(</code>조인 대상<code class="language-plaintext highlighter-rouge">,</code> 조인할 Q타입<code class="language-plaintext highlighter-rouge">)</code>
+        <ul>
+          <li>다른 테이블 조인 → <code class="language-plaintext highlighter-rouge">.join(member.team, team)</code> ⇒ <code class="language-plaintext highlighter-rouge">join Team t on m.team_id = t.id</code></li>
+          <li><strong>같은 테이블 조인</strong>
+            <ul>
+              <li><strong>새로운 별칭(구분을 위해)</strong>으로 <strong>Q-Type 생성</strong> → <code class="language-plaintext highlighter-rouge">QMember sub = new QMember(”sub”)</code></li>
+              <li>그 후 join → <code class="language-plaintext highlighter-rouge">.join(member, sub)</code> ⇒ <code class="language-plaintext highlighter-rouge">join Member sub on m.id = sub.id</code></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p><strong>세타 조인</strong> (막 조인)</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+  			 <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+  			 <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">,</span> <span class="n">team</span><span class="o">)</span> <span class="c1">// 세타 조인 (inner join. 외부 조인 불가능)</span>
+  			 <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">))</span>
+  			 <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><strong>연관관계가 없는 필드로 조인</strong> → <code class="language-plaintext highlighter-rouge">cross join</code></li>
+      <li>일명 <strong>막조인</strong></li>
+      <li><strong>외부 조인 불가능</strong> (hibernate를 사용하면 <strong>Join on절을 통해 가능</strong>)
+        <ul>
+          <li>null 일 발생하거나 이런 Exception 때문이 아닌, <strong>from()을 통한 세타조인에서 지원을 안하는 것</strong></li>
+          <li>하이버네이트 5.1부터 <strong>on 을 사용해서 서로 관계가 없는 필드로 외부 조인하는 기능이 추가</strong></li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">.from(member, team)</code>
+        <ul>
+          <li>from 절에 여러 엔티티를 선택해서 세타 조인</li>
+          <li>JPQL : <code class="language-plaintext highlighter-rouge">select m from Member m, Team team</code></li>
+          <li>SQL : <code class="language-plaintext highlighter-rouge">selet …. from member m **cross join team t**</code></li>
+          <li><code class="language-plaintext highlighter-rouge">.from(member).join(team)</code> 으로도 <strong>막조인</strong> 가능 (<code class="language-plaintext highlighter-rouge">join(member.team, team)</code>이 아닌 그냥 <strong>조건 없이 team을 join</strong> 하는 것)</li>
+        </ul>
+      </li>
+      <li>member의 <strong>row X team</strong>의 row 의 결과가 생성됨 (where 전)</li>
+    </ul>
+  </li>
+  <li><strong>ON절</strong>
+    <ul>
+      <li>ON절을 활용한 조인(JPA 2.1부터 가능)</li>
+      <li>
+        <p>조인 후 <strong>where을 통한 필터링이 아닌</strong>, <strong>조인 하는 시점에 on을 통해 필터링</strong> 하고자 할 때 사용  (ex. 회원과 팀을 조인하면서, 팀 이름이 <strong>teamA인 팀만 조인</strong>, 회원은 모두 조회)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Tuple</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+  			 <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">member</span><span class="o">,</span> <span class="n">team</span><span class="o">)</span>
+  			 <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+  			 <span class="o">.</span><span class="na">leftJoin</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">team</span><span class="o">,</span> <span class="n">team</span><span class="o">).</span><span class="na">on</span><span class="o">(</span><span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="s">"teamA"</span><span class="o">))</span>
+  			 <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>JPQL: <code class="language-plaintext highlighter-rouge">SELECT m, t FROM Member m LEFT JOIN m.team t **on t.name = 'teamA'**</code></li>
+          <li>SQL: <code class="language-plaintext highlighter-rouge">SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.TEAM_ID=t.id **and t.name='teamA'**</code></li>
+          <li><strong>필터링 시 outer join을 사용하고자 할때 on은 필수</strong> → where을 통해 join 후 필터링이 불가능( ← Null) ⇒ 그래서 <strong>on을 통해 join 하는 시점에 필터링을 진행</strong>하는 것 (<strong>join할 것을 가져올때 필터링</strong>함)</li>
+          <li>필터링 시 <strong>inner join을 사용하고자 할 때는 on은 필수가 아님</strong> → <strong>where을 통해 join 후 필터링 가능</strong> ⇒ <code class="language-plaintext highlighter-rouge">.join(member.team, team).where(team.name.eq("teamA"))</code></li>
+        </ul>
+
+        <aside>
+  💡 **핵심 정리**
+        
+  - **inner join + where** 을 할 경우에는 모든 회원을 조회할 수 없음 (null이 제외됨)
+  - **outer join + where** 은 조건을 만족시킬 수 없음 → **join 후 team이 null인 member에서 team.name을 조회할 수 없**으므로
+  - 해결 : **outer join + on** 으로 **조건을 만족시키는 team에 대해서만 join을 진행**하는 것 → sql에서의 `on __ and __`
+  - 결국 **inner join 을 사용하면 on 을 사용하든 where을 사용하든 똑같**음 → 익숙한 where을 사용하자
+  - But **outer join 은 where이 먹히지 않으므로 절대 on 사용!**
+  </aside>
+      </li>
+      <li>
+        <p><strong>연관관계가 없는 엔티티를 외부 조인</strong>하고자 할 때 사용 (<strong>세타외부조인</strong>. ex. 회원의 이름과 팀의 이름이 같은 대상 외부 조인)</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Tuple</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+        <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">member</span><span class="o">,</span> <span class="n">team</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">leftJoin</span><span class="o">(</span><span class="n">team</span><span class="o">).</span><span class="na">on</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="n">team</span><span class="o">.</span><span class="na">name</span><span class="o">))</span> <span class="c1">// 주의 : 연관관계가 없기때문에 leftJoin()에 team Entity 하나만 들어감</span>
+        <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div>        </div>
+
+        <ul>
+          <li>JPQL: **<code class="language-plaintext highlighter-rouge">SELECT m, t FROM Member m LEFT JOIN Team t on m.username = t.name</code></li>
+          <li>SQL: <code class="language-plaintext highlighter-rouge">SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.username = t.name</code></li>
+          <li>하이버네이트 5.1부터 <strong>on 을 사용해서 서로 관계가 없는 필드로 외부 조인하는 기능이 추가</strong>됨</li>
+          <li>join 할 때, <strong>해당 Member의 이름과 동일한 Team만 join</strong>이 되는 것. <strong>join되지 않은 Member도 반환 (외부 조인)</strong></li>
+          <li><code class="language-plaintext highlighter-rouge">leftJoin(team)</code>
+            <ul>
+              <li>연관관계가 없기때문에 <code class="language-plaintext highlighter-rouge">leftJoin()</code>에 <strong>team Entity 하나만</strong> 들어감</li>
+              <li>일반조인: <code class="language-plaintext highlighter-rouge">leftJoin(member.team, team)</code> ↔ 세타 on 조인: <code class="language-plaintext highlighter-rouge">from(member).leftJoin(team).on(xxx)</code></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p><strong>Fetch Join</strong></p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">Member</span> <span class="n">findMember</span> <span class="o">=</span> <span class="n">queryFactory</span>
+  		 <span class="o">.</span><span class="na">selectFrom</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">join</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">team</span><span class="o">,</span> <span class="n">team</span><span class="o">).</span><span class="na">fetchJoin</span><span class="o">()</span>
+  		 <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="s">"member1"</span><span class="o">))</span>
+  		 <span class="o">.</span><span class="na">fetchOne</span><span class="o">();</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">join()</code>, <code class="language-plaintext highlighter-rouge">leftJoin()</code> 등 조인 기능 뒤에 <code class="language-plaintext highlighter-rouge">fetchJoin()</code> 이라고 추가
+        <ul>
+          <li>join 뒤에 <code class="language-plaintext highlighter-rouge">fetchJoin()</code> 설정을 통해 가능</li>
+          <li>member만 조회했지만, member와 <strong>지연로딩으로 연관된 team까지 member에 넣어</strong>주는 것</li>
+        </ul>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">select(member)…</code>
+        <ul>
+          <li>일반 조인 → <code class="language-plaintext highlighter-rouge">select m.*</code></li>
+          <li><strong>패치 조인</strong> → <code class="language-plaintext highlighter-rouge">select m.*, t.*</code></li>
+        </ul>
+      </li>
+      <li>조인을 활용해서 <strong>연관된 엔티티를 SQL 한번에 조회</strong>하는 기능 (SQL에서 제공하는 기능은 아님)</li>
+      <li>지연 로딩의 연관 Entity를 마치 <strong>즉시로딩처럼 한번에 가져오</strong>는 기능 (<strong>1+N 문제 해결 가능</strong>)</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="서브-쿼리">서브 쿼리</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">QMember</span> <span class="n">memberSub</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">QMember</span><span class="o">(</span><span class="s">"memberSub"</span><span class="o">);</span>
+
+<span class="nc">List</span><span class="o">&lt;</span><span class="nc">Member</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+          <span class="o">.</span><span class="na">selectFrom</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span> <span class="c1">// goe 등 다양하게 사용 가능</span>
+                  <span class="nc">JPAExpressions</span>
+                          <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">memberSub</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">max</span><span class="o">())</span> <span class="c1">// avg 가능</span>
+                          <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">memberSub</span><span class="o">)</span>
+          <span class="o">))</span>
+          <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">com.querydsl.jpa.JPAExpressions</code> 사용
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">JPAExpressions</code> 뒤에 보통 Querydsl 짜듯이 <strong>select, from 을 체인형식으로 작성</strong>해주면 됨</li>
+      <li><code class="language-plaintext highlighter-rouge">JPAExpressions.*</code> 를 <strong>static import</strong> 하여 바로 <code class="language-plaintext highlighter-rouge">.select()</code> 로도 사용 가능</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">QMember memberSub = new QMember("memberSub");</code>
+    <ul>
+      <li>서브쿼리 사용 시 <strong>똑같은 인스턴스를 서브쿼리에 넣으면 충돌</strong> 발생 → 구분되는 <strong>새로운 인스턴스 생성</strong> 필요</li>
+      <li>SQL로 치면 <strong>as 를 통해 별칭을 주는 역할</strong> (<code class="language-plaintext highlighter-rouge">from QMember as m</code> 으로 SQL을 짜는 거라고 생각하면 됨)</li>
+      <li>결과적으로 <code class="language-plaintext highlighter-rouge">QMember as member1, QMember as memberSub</code> <strong>두가지 인스턴스를 활용</strong>하는 것</li>
+    </ul>
+  </li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">where()</code> 절 안에 사용하는 것 뿐만 아니라 <strong><code class="language-plaintext highlighter-rouge">select()</code> 절 안에서도 사용 가능</strong></p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Tuple</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+            <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">,</span>
+                    <span class="nc">JPAExpressions</span>
+                            <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">memberSub</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">avg</span><span class="o">())</span>
+                            <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">memberSub</span><span class="o">)</span>
+            <span class="o">).</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><strong>하이버네이트 구현체에서 가능</strong>한 것</li>
+    </ul>
+  </li>
+  <li>But, <strong>from절에선 사용 불가</strong>능! → JPA JPQL에서 지원하지 않으므로
+    <ul>
+      <li>서브쿼리를 <strong>join으로 변경</strong>하여 해결하거나 <strong>쿼리를 2번 분리해서 실행</strong>하는 등의 방법으로 해결해야 됨 (웬만하면 대안 가능)</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="case-문">Case 문</h3>
+
+<ul>
+  <li><strong>select, 조건절(where), order by</strong>에서 사용 가능</li>
+  <li>
+    <p>간단 Case절</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+                  <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span>
+                          <span class="o">.</span><span class="na">when</span><span class="o">(</span><span class="mi">10</span><span class="o">).</span><span class="na">then</span><span class="o">(</span><span class="s">"열살"</span><span class="o">)</span>
+                          <span class="o">.</span><span class="na">when</span><span class="o">(</span><span class="mi">20</span><span class="o">).</span><span class="na">then</span><span class="o">(</span><span class="s">"스무살"</span><span class="o">)</span>
+                          <span class="o">.</span><span class="na">otherwise</span><span class="o">(</span><span class="s">"기타"</span><span class="o">))</span>
+                  <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+                  <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><strong>filed에 체인형식으로 case절 작성</strong></li>
+    </ul>
+  </li>
+  <li>
+    <p>복잡한 Case조건</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">result2</span> <span class="o">=</span> <span class="n">queryFactory</span>
+              <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="k">new</span> <span class="nc">CaseBuilder</span><span class="o">()</span>
+                      <span class="o">.</span><span class="na">when</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">between</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">20</span><span class="o">)).</span><span class="na">then</span><span class="o">(</span><span class="s">"0~20살"</span><span class="o">)</span>
+                      <span class="o">.</span><span class="na">when</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">between</span><span class="o">(</span><span class="mi">21</span><span class="o">,</span> <span class="mi">30</span><span class="o">)).</span><span class="na">then</span><span class="o">(</span><span class="s">"21~30살"</span><span class="o">)</span>
+                      <span class="o">.</span><span class="na">otherwise</span><span class="o">(</span><span class="s">"기타"</span><span class="o">))</span>
+              <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+              <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">CaseBuilder</code> 에 <strong>체인형식</strong>으로 case절 작성</li>
+    </ul>
+  </li>
+  <li>
+    <p><strong>[중요]</strong> <strong>Case문 + Orderby</strong></p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">NumberExpression</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">rankPath</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">CaseBuilder</span><span class="o">()</span>
+  		 <span class="o">.</span><span class="na">when</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">between</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">20</span><span class="o">)).</span><span class="na">then</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">when</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">between</span><span class="o">(</span><span class="mi">21</span><span class="o">,</span> <span class="mi">30</span><span class="o">)).</span><span class="na">then</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">otherwise</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span>
+    
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Tuple</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">queryFactory</span>
+  		 <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">,</span> <span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">,</span> <span class="n">rankPath</span><span class="o">)</span>
+  		 <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+  	   <span class="o">.</span><span class="na">orderBy</span><span class="o">(</span><span class="n">rankPath</span><span class="o">.</span><span class="na">desc</span><span class="o">())</span>
+  	   <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>Case를 통해 <strong>Sort 기준을 줄 때</strong> 사용</li>
+      <li>Querydsl은 <strong>자바 코드</strong>로 작성하기 때문에 rankPath 처럼 <strong>복잡한 조건을 변수로 선언해서 select 절, orderBy 절에서 함께 사용</strong></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="상수-추가">상수 추가</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">List</span><span class="o">&lt;</span><span class="nc">Tuple</span><span class="o">&gt;</span> <span class="n">addString</span> <span class="o">=</span> <span class="n">queryFactory</span>
+          <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">,</span> <span class="nc">Expressions</span><span class="o">.</span><span class="na">constant</span><span class="o">(</span><span class="s">"A"</span><span class="o">))</span>
+          <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">fetch</span><span class="o">();</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Expressions.constant("A")</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">“A”</code> 라는 상수를 <code class="language-plaintext highlighter-rouge">member.username</code> 와 함께 <strong>결과에 추가</strong></li>
+      <li>결과 : [{”member1”, “A”}, {”member2”, “A”}, … ]</li>
+      <li>constant 를 사용하게 되면 SQL에서 A를 생성해서 가져오는 것이 아니라 <strong>SQL에서 member.username을 가져온 결과에 “A”를 추가</strong>하는 것 → <strong>최적화</strong></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="문자-더하기">문자 더하기</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">concat</span> <span class="o">=</span> <span class="n">queryFactory</span>
+          <span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">concat</span><span class="o">(</span><span class="s">"_"</span><span class="o">).</span><span class="na">concat</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">age</span><span class="o">.</span><span class="na">stringValue</span><span class="o">()))</span> <span class="c1">// : member.age.stringValue() 부분이 중요 (int -&gt; String)</span>
+          <span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">member</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">member</span><span class="o">.</span><span class="na">username</span><span class="o">.</span><span class="na">eq</span><span class="o">(</span><span class="s">"member1"</span><span class="o">))</span>
+          <span class="o">.</span><span class="na">fetchOne</span><span class="o">();</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">.concat()</code> : 애초에 <strong>지정문자를 합쳐서 조회</strong>해 오는 것</li>
+  <li><code class="language-plaintext highlighter-rouge">.stringValue()</code> : <strong>문자로 만들어주는 기능</strong> (중요: <strong>ENUM 처리 시 자주 사용!</strong>) → SQL의 cast() 역할</li>
+  <li>결과 : member1_10</li>
+</ul>
+:ET
